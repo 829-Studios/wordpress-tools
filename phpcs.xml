@@ -1,0 +1,128 @@
+<?xml version="1.0"?>
+<ruleset name="829 Coding Standards">
+	<description>829 Coding Standards</description>
+
+	<!-- Test for PHP 8.3 compatibility. -->
+    <config name="testVersion" value="8.3-"/>
+    <config name="php_version" value="80200"/>
+
+	<!-- Pass some flags to PHPCS:
+		 p flag: Show progress of the run.
+		 s flag: Show sniff codes in all reports.
+	-->
+	<arg value="ps"/>
+
+	<!-- Scan all files in directory -->
+	<file>.</file>
+
+	<!-- Scan only PHP files -->
+	<arg name="extensions" value="php"/>
+
+	<!-- Exclude patterns. -->
+	<exclude-pattern>/node_modules/*</exclude-pattern>
+	<exclude-pattern>/vendor/*</exclude-pattern>
+	<exclude-pattern>/templates/acf-blocks/*</exclude-pattern>
+	<exclude-pattern>/themes/twenty*</exclude-pattern>
+	<exclude-pattern>*.asset.php</exclude-pattern>
+	<exclude-pattern>*.modules.php</exclude-pattern>
+	<exclude-pattern>/lighthouse/*</exclude-pattern>
+
+	<!-- Check up to 8 files simultaneously. -->
+	<arg name="parallel" value="8"/>
+
+	<!-- Show colors in console -->
+	<arg value="-colors"/>
+
+	<rule ref="WordPress">
+		<exclude name="WordPress.WP.I18n.MissingTranslatorsComment"/>
+		<exclude name="WordPress.WP.I18n.MissingSingularPlaceholder"/>
+		<exclude name="Universal.Arrays.DisallowShortArraySyntax.Found"/>
+
+		<!-- Comment punctuation doesn't matter -->
+		<exclude name="Squiz.Commenting.FunctionComment.ParamCommentFullStop"/>
+		<exclude name="Squiz.Commenting.FunctionComment.ThrowsNoFullStop"/>
+
+		<!-- Allow empty catch statements -->
+		<exclude name="Generic.CodeAnalysis.EmptyStatement.DetectedCatch"/>
+
+		<exclude name="WordPress.Files.FileName"/>
+
+		<!-- Allow same line control structures e.g. if ( true ) { echo 1; } -->
+		<exclude name="Squiz.ControlStructures.ControlSignature.NewlineAfterOpenBrace"/>
+
+		<!-- Don't require punctuation after inline comments -->
+		<exclude name="Squiz.Commenting.InlineComment.InvalidEndChar"/>
+
+		<!-- Don't worry about capitalizing long lines -->
+		<exclude name="Generic.Commenting.DocComment.LongNotCapital"/>
+
+		<!-- Dont need to capitalize first letter -->
+		<exclude name="Generic.Commenting.DocComment.ShortNotCapital"/>
+
+		<!-- This nonce sniff almost never works right -->
+		<exclude name="WordPress.Security.NonceVerification.Missing"/>
+	</rule>
+
+	<!-- Allow for theme specific exceptions to the file name rules based
+		 on the theme hierarchy. -->
+	<rule ref="WordPress.Files.FileName">
+		<properties>
+			<property name="is_theme" value="true"/>
+		</properties>
+	</rule>
+
+	<!-- Set the minimum supported WP version. This is used by several sniffs.
+		 The minimum version set here should be in line with the minimum WP version
+		 as set in the "Requires at least" tag in the readme.txt file. -->
+	<config name="minimum_supported_wp_version" value="4.5"/>
+
+	<rule ref="WordPress.Arrays.MultipleStatementAlignment">
+		<properties>
+			<!-- Array assignment operator should always be on the same line as the array key. -->
+			<property name="ignoreNewlines" value="false"/>
+		</properties>
+	</rule>
+
+	<rule ref="PHPCompatibilityWP"/>
+
+	<rule ref="WordPress.Security.EscapeOutput">
+		<properties>
+			<property name="customAutoEscapedFunctions" type="array">
+				<element value="propel_array_to_link"/>
+			</property>
+		</properties>
+	</rule>
+
+	<rule ref="Generic.CodeAnalysis.UnusedFunctionParameter.FoundAfterLastUsed">
+        <exclude-pattern>.*</exclude-pattern>
+    </rule>
+
+	<rule ref="Generic.CodeAnalysis.UnusedFunctionParameter.Found">
+        <exclude-pattern>.*</exclude-pattern>
+    </rule>
+
+	<rule ref="Universal.Operators.DisallowShortTernary.Found">
+        <exclude-pattern>.*</exclude-pattern>
+	</rule>
+
+	<!-- Don't worry about files that don't contain any code. -->
+	<rule ref="Internal.NoCodeFound">
+		<severity>0</severity>
+	</rule>
+
+	<!-- Ignore mixed line-endings warnings -->
+	<rule ref="Internal.LineEndings.Mixed">
+		<severity>0</severity>
+	</rule>
+
+	<!-- Sometimes we need to override globals -->
+	<rule ref="WordPress.WP.GlobalVariablesOverride.OverrideProhibited">
+		<type>warning</type>
+	</rule>
+
+	<!-- Make sure we always exit after a redirect -->
+	<rule ref="WordPressVIPMinimum.Security.ExitAfterRedirect"/>
+
+	<!-- Make sure that the proper escaping functions are being used -->
+	<rule ref="WordPressVIPMinimum.Security.ProperEscapingFunction"/>
+</ruleset>
