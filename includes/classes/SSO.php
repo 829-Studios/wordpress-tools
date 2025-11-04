@@ -15,6 +15,13 @@ use WP_Error;
 class SSO {
 
 	/**
+	 * Errors array
+	 *
+	 * @var array
+	 */
+	protected $errors = [];
+
+	/**
 	 * Setup SSO
 	 */
 	public function __construct() {
@@ -39,7 +46,8 @@ class SSO {
 		}
 
 		add_filter( 'wp_login_errors', [ $this, 'add_login_errors' ] );
-		add_action( 'login_form_wpt-login', [ $this, 'process_client_login' ] );
+		add_action( 'login_form_wpt-start-login', [ $this, 'start_login' ] );
+		add_action( 'init', [ $this, 'process_login' ] );
 		add_action( 'login_form', [ $this, 'update_login_form' ] );
 		add_action( 'login_head', [ $this, 'render_login_form_styles' ] );
 		add_filter( 'authenticate', [ $this, 'prevent_standard_login_for_sso_user' ], 999 );
@@ -170,176 +178,171 @@ class SSO {
 	 * @return WP_Error
 	 */
 	public function add_login_errors( WP_Error $errors ) {
-		global $wpt_login_failed;
 
-		if ( $wpt_login_failed ) {
-			$error_code = filter_input( INPUT_GET, 'error' );
-			switch ( $error_code ) {
-				case 'invalid_email_domain':
-					$errors->add( 'wpt-sso-login', esc_html__( 'The email address is not allowed.', 'wordpress-tools' ) );
-					break;
-				case 'bad_permissions':
-					$errors->add( 'wpt-sso-login', esc_html__( 'You do not have permission to log into this site.', 'wordpress-tools' ) );
-					break;
-				default:
-					$errors->add( 'wpt-sso-login', esc_html__( 'Login failed.', 'wordpress-tools' ) );
-					break;
-			}
+		foreach ( $this->errors as $error ) {
+			$errors->add( 'wpt-sso-login', $error );
 		}
 
 		return $errors;
 	}
 
+	public function validate_sso_token( string $sso_token ) {
+		$url = WORDPRESS_TOOLS_SSO_PROXY_URL . '/sso/token-revalidation';
+
+		$response = wp_remote_post( $url, array(
+			'body' => array(
+				'sso_token' => $sso_token,
+			),
+		) );
+
+		if ( wp_remote_retrieve_response_code( $response ) !== 200 ) {
+			return new WP_Error( 'wpt-sso-login', esc_html__( 'Failed to validate SSO token.', 'wordpress-tools' ) );
+		}
+
+		try {
+			$body = json_decode( wp_remote_retrieve_body( $response ), true );
+		} catch ( \Exception $e ) {
+			return new WP_Error( 'wpt-sso-login', esc_html__( 'Failed to decode SSO token response.', 'wordpress-tools' ) );
+		}
+
+		return [
+			'email'      => $body['data']['email'],
+			'role'       => $body['data']['role'],
+			'first_name' => $body['data']['first_name'],
+			'last_name'  => $body['data']['last_name'],
+			'nonce'      => $body['data']['nonce'],
+		];
+	}
+
+	public function start_login() {
+		$redirect_to = filter_input( INPUT_GET, 'redirect_to' );
+
+		if ( empty( $redirect_to ) ) {
+			$redirect_to = home_url();
+		}
+
+		$site_url = home_url();
+		$nonce = wp_create_nonce();
+
+		$proxy_url = add_query_arg( 'site', $site_url, WORDPRESS_TOOLS_SSO_PROXY_URL . '/sso/login' );
+		$proxy_url = add_query_arg( 'nonce', $nonce, $proxy_url );
+
+		set_transient(
+			'auth_session_' . $nonce,
+			[
+				'redirect_to' => $redirect_to,
+			],
+			300
+		);
+
+		wp_redirect( $proxy_url );
+		exit;
+	}
+
 	/**
 	 * Process a login request
 	 */
-	public function process_client_login() {
+	public function process_login() {
 		global $wpt_login_failed;
 
-		$email = filter_input( INPUT_GET, 'email', FILTER_VALIDATE_EMAIL );
+		$sso_token = filter_input( INPUT_GET, 'sso_token' );
 
-		if ( ! empty( $_GET['error'] ) ) {
-			$wpt_login_failed = true;
-		} elseif ( ! empty( $email ) ) {
-			$verify = add_query_arg(
-				array(
-					'action'      => 'wpt-verify',
-					'email'       => rawurlencode( $email ),
-					'sso_version' => WORDPRESS_TOOLS_VERSION,
-					'nonce'       => rawurlencode( filter_input( INPUT_GET, 'nonce' ) ),
-				),
-				WORDPRESS_TOOLS_SSO_PROXY_URL
-			);
-
-			$response = wp_remote_get( $verify );
-
-			if ( wp_remote_retrieve_response_code( $response ) !== 200 ) {
-				wp_safe_redirect( wp_login_url() );
-				exit;
-			}
-
-			$user_id = false;
-			$user    = get_user_by( 'email', $email );
-
-			if ( ! $user ) {
-				$default_role = defined( 'WORDPRESS_TOOLS_SSO_DEFAULT_ROLE' )
-					? WORDPRESS_TOOLS_SSO_DEFAULT_ROLE
-					: 'subscriber';
-
-				$username = current( explode( '@', $email ) );
-
-				if ( username_exists( $username ) ) {
-					// Turn periods into dashes.
-					$username = str_replace( '.', '-', $username );
-					// Add the domain onto the end, so it's more unique.
-					$username = sprintf(
-						'%s-%s',
-						$username,
-						explode( '.', explode( '@', $email )[1], 2 )[0]
-					);
-				}
-
-				$user_id = wp_insert_user(
-					array(
-						'user_login'   => $username,
-						'user_pass'    => wp_generate_password(),
-						'user_email'   => $email,
-						'display_name' => filter_input( INPUT_GET, 'full_name' ),
-						'first_name'   => filter_input( INPUT_GET, 'first_name' ),
-						'last_name'    => filter_input( INPUT_GET, 'last_name' ),
-						'role'         => $default_role,
-					)
-				);
-
-				if ( ! is_wp_error( $user_id ) ) {
-					add_user_meta( $user_id, 'wpt-sso', 1 );
-
-					if ( is_multisite() ) {
-						add_user_to_blog( get_current_blog_id(), $user_id, $default_role );
-						if ( defined( 'WORDPRESS_TOOLS_SSO_GRANT_SUPER_ADMIN' ) && filter_var( WORDPRESS_TOOLS_SSO_GRANT_SUPER_ADMIN, FILTER_VALIDATE_BOOLEAN ) ) {
-							require_once ABSPATH . 'wp-admin/includes/ms.php';
-							grant_super_admin( $user_id );
-						}
-					}
-
-					$user = get_user_by( 'id', $user_id );
-				}
-			} else {
-				$user_id = $user->ID;
-			}
-
-			if ( ! empty( $user_id ) ) {
-				add_filter( 'auth_cookie_expiration', [ $this, 'change_cookie_expiration' ], 1000 );
-				wp_set_auth_cookie( $user_id );
-				remove_filter( 'auth_cookie_expiration', [ $this, 'change_cookie_expiration' ], 1000 );
-
-				$redirect_to           = admin_url();
-				$requested_redirect_to = '';
-
-				// We're only checking if the var exists here, so no need to sanitize.
-				// phpcs:ignore WordPress.Security.ValidatedSanitizedInput.InputNotSanitized
-				if ( isset( $_REQUEST['redirect_to'] ) ) {
-					$redirect_to           = sanitize_text_field( $_REQUEST['redirect_to'] );
-					$requested_redirect_to = sanitize_text_field( $_REQUEST['redirect_to'] );
-				}
-
-				$redirect_to = apply_filters( 'login_redirect', $redirect_to, $requested_redirect_to, $user );
-				if ( empty( $redirect_to ) ) {
-					// If the user doesn't belong to a blog, send them to user admin. If the user can't edit posts, send them to their profile.
-					if ( is_multisite() && ! get_active_blog_for_user( $user->ID ) && ! is_super_admin( $user->ID ) ) {
-						$redirect_to = user_admin_url();
-					} elseif ( is_multisite() && ! $user->has_cap( 'read' ) ) {
-						$redirect_to = get_dashboard_url( $user->ID );
-					} elseif ( ! $user->has_cap( 'edit_posts' ) ) {
-						$redirect_to = admin_url( 'profile.php' );
-					} else {
-						// Just in case everything else fails, go home...
-						$redirect_to = home_url();
-					}
-				}
-
-				wp_safe_redirect( $redirect_to );
-				exit;
-			}
-
-			$wpt_login_failed = true;
-		} else {
-			$redirect_url = wp_login_url();
-			if ( isset( $_REQUEST['redirect_to'] ) && is_string( sanitize_text_field( $_REQUEST['redirect_to'] ) ) ) {
-				$redirect_url = add_query_arg( 'redirect_to', rawurlencode( sanitize_text_field( $_REQUEST['redirect_to'] ) ), $redirect_url );
-			}
-
-			$proxy_url = add_query_arg(
-				array(
-					'action'      => 'wpt-login',
-					'redirect'    => rawurlencode( $redirect_url ),
-					'type'        => filter_input( INPUT_GET, 'type' ),
-					'sso_version' => WORDPRESS_TOOLS_VERSION,
-				),
-				WORDPRESS_TOOLS_SSO_PROXY_URL
-			);
-
-			wp_redirect( $proxy_url );
-			exit;
+		if ( empty( $sso_token ) ) {
+			return;
 		}
+
+		$payload = $this->validate_sso_token( $sso_token );
+
+		if ( is_wp_error( $payload ) ) {
+			$this->errors[] = $payload->get_error_message();
+			return;
+		}
+
+		$session = get_transient( 'auth_session_' . $payload['nonce'] );
+		if ( empty( $session ) ) {
+			$this->errors[] = esc_html__( 'Invalid session.', 'wordpress-tools' );
+			return;
+		}
+
+		delete_transient( 'auth_session_' . $payload['nonce'] );
+
+		if ( empty( $payload['email'] ) || empty( $payload['role'] ) ) {
+			$this->errors[] = esc_html__( 'Login failed.', 'wordpress-tools' );
+			return;
+		}
+
+		$user = get_user_by( 'email', $payload['email'] );
+
+		if ( ! $user ) {
+			$username = current( explode( '@', $payload['email'] ) );
+
+			if ( username_exists( $username ) ) {
+				// Turn periods into dashes.
+				$username = str_replace( '.', '-', $username );
+				// Add the domain onto the end, so it's more unique.
+				$username = sprintf(
+					'%s-%s',
+					$username,
+					explode( '.', explode( '@', $payload['email'] )[1], 2 )[0]
+				);
+			}
+
+			$user_id = wp_insert_user(
+				array(
+					'user_login'   => $username,
+					'user_pass'    => wp_generate_password(),
+					'user_email'   => $payload['email'],
+					'display_name' => $payload['first_name'] . ' ' . $payload['last_name'],
+					'first_name'   => $payload['first_name'],
+					'last_name'    => $payload['last_name'],
+					'role'         => $payload['role'],
+				)
+			);
+
+			if ( ! is_wp_error( $user_id ) ) {
+				add_user_meta( $user_id, 'wpt-sso', 1 );
+
+				if ( is_multisite() ) {
+					add_user_to_blog( get_current_blog_id(), $user_id, $payload['role'] );
+					if ( 'administrator' === $payload['role'] && defined( 'WORDPRESS_TOOLS_SSO_GRANT_SUPER_ADMIN' ) && filter_var( WORDPRESS_TOOLS_SSO_GRANT_SUPER_ADMIN, FILTER_VALIDATE_BOOLEAN ) ) {
+						require_once ABSPATH . 'wp-admin/includes/ms.php';
+						grant_super_admin( $user_id );
+					}
+				}
+
+				$user = get_user_by( 'id', $user_id );
+			}
+		} else {
+			$user_id = $user->ID;
+		}
+
+		if ( empty( $user_id ) ) {
+			$this->errors[] = esc_html__( 'Failed to create user.', 'wordpress-tools' );
+			return;
+		}
+
+		add_filter( 'auth_cookie_expiration', [ $this, 'change_cookie_expiration' ], 1000 );
+		wp_set_auth_cookie( $user_id );
+		remove_filter( 'auth_cookie_expiration', [ $this, 'change_cookie_expiration' ], 1000 );
+
+		$redirect_to = $session['redirect_to'] ?? home_url();
+
+		wp_safe_redirect( $redirect_to );
+		exit;
 	}
 
 	/**
 	 * Insert login button into login form
 	 */
 	public function update_login_form() {
-		$site_url = get_site_url();
-		$nonce = wp_create_nonce();
-
-		$proxy_url = add_query_arg( 'site', $site_url, WORDPRESS_TOOLS_SSO_PROXY_URL );
-		$proxy_url = add_query_arg( 'nonce', $nonce, $proxy_url );
+		$login_url = home_url( '/wp-login.php?action=wpt-start-login');
 
 		$buttons_html = '<div class="sso"><div class="buttons">';
 
 		$svg = file_get_contents( WORDPRESS_TOOLS_PLUGIN_DIR . 'assets/svg/logo.svg' );
 		$svg = str_replace( "\n", '', $svg );
 
-		$buttons_html .= '<a href="' . esc_url( $proxy_url ) . '" class="wpt-button button"> ' . $svg . ' ' .
+		$buttons_html .= '<a href="' . esc_url( $login_url ) . '" class="wpt-button button"> ' . $svg . ' ' .
 		'<span>Sign in with 829 Studios</span></a>';
 
 		$buttons_html .= '</div><span class="or"><span>or</span></span>';

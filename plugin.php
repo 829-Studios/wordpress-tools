@@ -24,7 +24,7 @@ define( 'WORDPRESS_TOOLS_PLUGIN_DIR', plugin_dir_path( __FILE__ ) );
 define( 'WORDPRESS_TOOLS_PLUGIN_URL', plugin_dir_url( __FILE__ ) );
 
 if ( ! defined( 'WORDPRESS_TOOLS_SSO_PROXY_URL' ) ) {
-	define( 'WORDPRESS_TOOLS_SSO_PROXY_URL', 'https://x829-sso-proxy-ee756094fea9.herokuapp.com/sso/login' );
+	define( 'WORDPRESS_TOOLS_SSO_PROXY_URL', 'https://x829-sso-proxy-ee756094fea9.herokuapp.com' );
 }
 
 if ( ! defined( 'WORDPRESS_TOOLS_SSO_DEFAULT_ROLE' ) ) {
