@@ -72,4 +72,4 @@ All settings are managed through the centralized **829 Settings** page:
 
 ## License
 
-Proprietary - 829 Studios LLC
+MIT
