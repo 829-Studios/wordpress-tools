@@ -42,6 +42,20 @@ class Settings {
 	 * @return bool
 	 */
 	protected function can_access_settings() {
+		// Check proper capability based on network activation
+		if ( WPT_IS_NETWORK ) {
+			if ( ! current_user_can( 'manage_network_options' ) ) {
+				return false;
+			}
+		} elseif ( ! current_user_can( 'manage_options' ) ) {
+				return false;
+		}
+
+		// If WPT_ALLOW_ADMIN_SETTINGS_ACCESS is true, allow any admin/super admin
+		if ( defined( 'WPT_ALLOW_ADMIN_SETTINGS_ACCESS' ) && WPT_ALLOW_ADMIN_SETTINGS_ACCESS ) {
+			return true;
+		}
+
 		// Check if we're on a local environment
 		// phpcs:ignore WordPress.NamingConventions.ValidFunctionName.FunctionNameInvalid
 		if ( is_local_environment() ) {

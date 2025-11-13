@@ -56,6 +56,31 @@ if ( ! defined( 'WPT_SSO_DISALLOW_ALL_DIRECT_LOGIN' ) ) {
 	define( 'WPT_SSO_DISALLOW_ALL_DIRECT_LOGIN', false );
 }
 
+if ( ! defined( 'WPT_ALLOW_ADMIN_SETTINGS_ACCESS' ) ) {
+	define( 'WPT_ALLOW_ADMIN_SETTINGS_ACCESS', false );
+}
+
+if ( ! defined( 'WP_ENVIRONMENT_TYPE' ) ) {
+	$staging_domains = [ '829dev.com', 'wpenginepowered.com' ];
+	$current_domain  = strtolower( wp_parse_url( site_url(), PHP_URL_HOST ) );
+	$is_staging      = false;
+
+	// Check if current domain matches or is a subdomain of any staging domain
+	foreach ( $staging_domains as $staging_domain ) {
+		$suffix = '.' . $staging_domain;
+		if ( $current_domain === $staging_domain || substr( $current_domain, -strlen( $suffix ) ) === $suffix ) {
+			$is_staging = true;
+			break;
+		}
+	}
+
+	if ( $is_staging ) {
+		define( 'WP_ENVIRONMENT_TYPE', 'staging' );
+	} elseif ( Utils\is_local_environment() ) {
+		define( 'WP_ENVIRONMENT_TYPE', 'development' );
+	}
+}
+
 // Define a constant if we're network activated to allow plugin to respond accordingly.
 $network_activated = Utils\is_network_activated( plugin_basename( __FILE__ ) );
 

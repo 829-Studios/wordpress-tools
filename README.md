@@ -11,6 +11,8 @@ A comprehensive WordPress security and management plugin designed to enhance sit
 - Ability to disable comments
 - Ability to disable post passwords
 - Security hardening features
+- Environment indicator in admin toolbar
+- Automatic environment detection (Production/Staging/Development)
 
 
 ## Security
@@ -45,6 +47,21 @@ This plugin provides multiple layers of security protection:
   - Users with @829llc.com email addresses (production)
   - Any administrator (local development environments)
 - **Network/Multisite Support**: All settings work seamlessly in both single-site and network-activated configurations
+
+
+## Admin Customizations
+
+### Environment Indicator
+The plugin automatically adds a color-coded environment indicator to the WordPress admin toolbar, making it easy to identify which environment you're working in:
+
+- **🔴 Production** (Red): Live production sites
+- **🟡 Staging** (Orange): Staging environments (automatically detected for *.829dev.com and *.wpenginepowered.com domains)
+- **🟢 Development** (Green): Local development environments
+
+The environment type is automatically detected based on domain or can be set via the `WP_ENVIRONMENT_TYPE` constant in `wp-config.php`.
+
+### Other Customizations
+- Custom admin footer text crediting WordPress and 829 Studios
 
 
 ## Requirements

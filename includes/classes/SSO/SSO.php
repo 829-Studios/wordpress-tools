@@ -73,11 +73,14 @@ class SSO {
 	public function validate_sso_token( string $sso_token ) {
 		$url = WPT_SSO_PROXY_URL . '/sso/token-revalidation';
 
-		$response = wp_remote_post( $url, array(
-			'body' => array(
-				'sso_token' => $sso_token,
-			),
-		) );
+		$response = wp_remote_post(
+			$url,
+			array(
+				'body' => array(
+					'sso_token' => $sso_token,
+				),
+			)
+		);
 
 		if ( wp_remote_retrieve_response_code( $response ) !== 200 ) {
 			return new WP_Error( 'wpt-sso-login', esc_html__( 'Failed to validate SSO token.', 'wordpress-tools' ) );
@@ -106,7 +109,7 @@ class SSO {
 		}
 
 		$site_url = home_url();
-		$nonce = wp_create_nonce();
+		$nonce    = wp_create_nonce();
 
 		$proxy_url = add_query_arg( 'site', $site_url, WPT_SSO_PROXY_URL . '/sso/login' );
 		$proxy_url = add_query_arg( 'nonce', $nonce, $proxy_url );
@@ -219,7 +222,7 @@ class SSO {
 	 * Insert login button into login form
 	 */
 	public function update_login_form() {
-		$login_url = home_url( '/wp-login.php?action=wpt-start-login');
+		$login_url = home_url( '/wp-login.php?action=wpt-start-login' );
 
 		$buttons_html = '<div class="sso"><div class="buttons">';
 
