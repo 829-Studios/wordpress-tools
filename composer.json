@@ -11,7 +11,8 @@
   ],
   "require": {
       "php": ">=8.2",
-      "yahnis-elsts/plugin-update-checker": "^5.6"
+      "yahnis-elsts/plugin-update-checker": "^5.6",
+      "bjeavons/zxcvbn-php": "^1.0"
   },
   "require-dev": {
       "wp-coding-standards/wpcs": "^3.0",
