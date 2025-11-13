@@ -7,9 +7,9 @@
 
 namespace WordPressTools\Authentication;
 
+use WordPressTools\Singleton;
 use function WordPressTools\Utils\is_local_environment;
 
-use WordPressTools\Singleton;
 /**
  * Username extension functionality
  */

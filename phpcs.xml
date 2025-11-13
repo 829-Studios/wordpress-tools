@@ -61,6 +61,11 @@
 
 		<!-- This nonce sniff almost never works right -->
 		<exclude name="WordPress.Security.NonceVerification.Missing"/>
+
+		<!-- Allow direct access to superglobals -->
+		<exclude name="WordPress.Security.ValidatedSanitizedInput.InputNotSanitized"/>
+		<exclude name="WordPress.Security.ValidatedSanitizedInput.MissingUnslash"/>
+		<exclude name="WordPress.Security.ValidatedSanitizedInput.InputNotValidated"/>
 	</rule>
 
 	<!-- Allow for theme specific exceptions to the file name rules based

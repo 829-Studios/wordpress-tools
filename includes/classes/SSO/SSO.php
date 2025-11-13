@@ -70,6 +70,12 @@ class SSO {
 		return $errors;
 	}
 
+	/**
+	 * Validate an SSO token
+	 *
+	 * @param string $sso_token The SSO token to validate
+	 * @return array|WP_Error The SSO token data or a WP_Error if validation fails
+	 */
 	public function validate_sso_token( string $sso_token ) {
 		$url = WPT_SSO_PROXY_URL . '/sso/token-revalidation';
 
@@ -101,6 +107,9 @@ class SSO {
 		];
 	}
 
+	/**
+	 * Start a login process
+	 */
 	public function start_login() {
 		$redirect_to = filter_input( INPUT_GET, 'redirect_to' );
 
