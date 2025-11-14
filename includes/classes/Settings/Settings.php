@@ -183,6 +183,17 @@ class Settings {
 			]
 		);
 
+		// Register Limit Login Attempts setting
+		register_setting(
+			'wpt_829_settings',
+			'wpt_limit_login',
+			[
+				'type'              => 'string',
+				'sanitize_callback' => [ $this, 'validate_yes_no_setting' ],
+				'default'           => 'yes',
+			]
+		);
+
 		add_settings_section(
 			'wpt_829_general_section',
 			esc_html__( 'General Settings', 'wordpress-tools' ),
@@ -240,6 +251,15 @@ class Settings {
 			'wpt_restrict_rest_api',
 			esc_html__( 'REST API Availability', 'wordpress-tools' ),
 			[ $this, 'restrict_rest_api_setting_callback' ],
+			'wpt-829-settings',
+			'wpt_829_general_section'
+		);
+
+		// Limit Login Attempts setting field
+		add_settings_field(
+			'wpt_limit_login',
+			esc_html__( 'Limit Login Attempts', 'wordpress-tools' ),
+			[ $this, 'limit_login_setting_callback' ],
 			'wpt-829-settings',
 			'wpt_829_general_section'
 		);
@@ -391,6 +411,40 @@ class Settings {
 	}
 
 	/**
+	 * Limit Login Attempts setting callback.
+	 */
+	public function limit_login_setting_callback() {
+		$limit_login     = WPT_IS_NETWORK ? get_site_option( 'wpt_limit_login', 'yes' ) : get_option( 'wpt_limit_login', 'yes' );
+		$attempt_limit   = defined( 'WPT_LOGIN_ATTEMPT_LIMIT' ) ? WPT_LOGIN_ATTEMPT_LIMIT : 10;
+		$lockout_minutes = defined( 'WPT_LOGIN_LOCKOUT_DURATION' ) ? ceil( WPT_LOGIN_LOCKOUT_DURATION / 60 ) : 15;
+		?>
+		<fieldset>
+			<input id="wpt-limit-login-yes" name="wpt_limit_login" type="radio" value="yes"<?php checked( $limit_login, 'yes' ); ?> />
+			<label for="wpt-limit-login-yes">
+				<?php esc_html_e( 'Yes', 'wordpress-tools' ); ?>
+			</label><br>
+
+			<input id="wpt-limit-login-no" name="wpt_limit_login" type="radio" value="no"<?php checked( $limit_login, 'no' ); ?> />
+			<label for="wpt-limit-login-no">
+				<?php esc_html_e( 'No', 'wordpress-tools' ); ?>
+			</label>
+			<p class="description">
+				<?php
+					echo esc_html(
+						sprintf(
+							/* translators: 1: attempt limit, 2: lockout minutes */
+							__( 'Limits login attempts to %1$d per IP address within 5 minutes. After %1$d failed attempts, the IP is locked out for %2$d minutes.', 'wordpress-tools' ),
+							$attempt_limit,
+							$lockout_minutes
+						)
+					);
+				?>
+			</p>
+		</fieldset>
+		<?php
+	}
+
+	/**
 	 * Validate yes/no setting.
 	 *
 	 * @param  string $value Current value.
@@ -473,6 +527,12 @@ class Settings {
 			update_site_option( 'wpt_restrict_rest_api', $restrict_rest_api_value );
 		}
 
+		// Save Limit Login Attempts setting
+		if ( isset( $_POST['wpt_limit_login'] ) ) {
+			$limit_login_value = $this->validate_yes_no_setting( sanitize_text_field( $_POST['wpt_limit_login'] ) );
+			update_site_option( 'wpt_limit_login', $limit_login_value );
+		}
+
 		wp_safe_redirect(
 			add_query_arg(
 				[
@@ -504,12 +564,17 @@ class Settings {
 		$password_protect         = get_site_option( 'wpt_password_protect', 0 );
 		$disallow_file_mods       = get_site_option( 'wpt_disallow_file_mods', 'no' );
 		$restrict_rest_api        = get_site_option( 'wpt_restrict_rest_api', 'users' );
+		$limit_login              = get_site_option( 'wpt_limit_login', 'yes' );
 		$is_disabled              = defined( 'WPT_DISABLE_COMMENTS' ) || has_filter( 'wpt_disable_comments' );
 		?>
 		<div class="wrap">
 			<h1><?php echo esc_html( get_admin_page_title() ); ?></h1>
 
-			<?php if ( isset( $_GET['updated'] ) ) : ?>
+			<?php
+			// phpcs:ignore WordPress.Security.NonceVerification.Recommended
+			if ( isset( $_GET['updated'] ) ) :
+				?>
+
 				<div class="notice notice-success is-dismissible">
 					<p><?php esc_html_e( 'Settings saved.', 'wordpress-tools' ); ?></p>
 				</div>
@@ -641,6 +706,38 @@ class Settings {
 										<label for="wpt-restrict-rest-api-none">
 											<?php esc_html_e( 'Publicly accessible', 'wordpress-tools' ); ?>
 										</label>
+									</p>
+								</fieldset>
+							</td>
+						</tr>
+						<tr>
+							<th scope="row">
+								<?php esc_html_e( 'Limit Login Attempts', 'wordpress-tools' ); ?>
+							</th>
+							<td>
+								<fieldset>
+									<input id="wpt-limit-login-yes" name="wpt_limit_login" type="radio" value="yes"<?php checked( $limit_login, 'yes' ); ?> />
+									<label for="wpt-limit-login-yes">
+										<?php esc_html_e( 'Yes', 'wordpress-tools' ); ?>
+									</label><br>
+
+									<input id="wpt-limit-login-no" name="wpt_limit_login" type="radio" value="no"<?php checked( $limit_login, 'no' ); ?> />
+									<label for="wpt-limit-login-no">
+										<?php esc_html_e( 'No', 'wordpress-tools' ); ?>
+									</label>
+									<p class="description">
+										<?php
+											$attempt_limit_net   = defined( 'WPT_LOGIN_ATTEMPT_LIMIT' ) ? WPT_LOGIN_ATTEMPT_LIMIT : 10;
+											$lockout_minutes_net = defined( 'WPT_LOGIN_LOCKOUT_DURATION' ) ? ceil( WPT_LOGIN_LOCKOUT_DURATION / 60 ) : 15;
+											echo esc_html(
+												sprintf(
+													/* translators: 1: attempt limit, 2: lockout minutes */
+													__( 'Limits login attempts to %1$d per IP address within 5 minutes. After %1$d failed attempts, the IP is locked out for %2$d minutes.', 'wordpress-tools' ),
+													$attempt_limit_net,
+													$lockout_minutes_net
+												)
+											);
+										?>
 									</p>
 								</fieldset>
 							</td>

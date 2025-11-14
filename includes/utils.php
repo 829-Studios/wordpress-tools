@@ -45,13 +45,37 @@ function is_network_activated( $plugin ) {
  * Get a site option or a network option
  *
  * @param string $option The option name
- * @param mixed  $default The default value
+ * @param mixed  $default_value The default value
  * @return mixed
  */
-function get_maybe_site_option( $option, $default = null ) {
+function get_maybe_site_option( $option, $default_value = null ) {
 	if ( WPT_IS_NETWORK ) {
-		return get_site_option( $option, $default );
+		return get_site_option( $option, $default_value );
 	}
 
-	return get_option( $option, $default );
+	return get_option( $option, $default_value );
+}
+
+/**
+ * Get the IP address of the current user
+ *
+ * @return string
+ */
+function get_ip_address() {
+	$ip = '';
+
+	// Check for proxy headers first
+	if ( ! empty( $_SERVER['HTTP_X_FORWARDED_FOR'] ) ) {
+		$ips = explode( ',', $_SERVER['HTTP_X_FORWARDED_FOR'] );
+		$ip  = trim( $ips[0] );
+	} elseif ( ! empty( $_SERVER['HTTP_X_REAL_IP'] ) ) {
+		$ip = $_SERVER['HTTP_X_REAL_IP'];
+	} elseif ( ! empty( $_SERVER['REMOTE_ADDR'] ) ) {
+		$ip = $_SERVER['REMOTE_ADDR'];
+	}
+
+	// Sanitize IP address
+	$ip = filter_var( $ip, FILTER_VALIDATE_IP );
+
+	return $ip ? $ip : '0.0.0.0';
 }

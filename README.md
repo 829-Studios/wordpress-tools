@@ -28,6 +28,12 @@ This plugin provides multiple layers of security protection:
   - Forces users with weak passwords to reset before accessing the site
 - **Reserved Username Protection**: Blocks authentication with common/generic usernames (admin, root, test, etc.) to prevent brute force attacks
 - **SSO-Only Account Enforcement**: Users created via SSO can only login through SSO, preventing password-based attacks
+- **Login Attempt Limiting**: Prevents brute force attacks by:
+  - Limiting login attempts (default: 10) per IP address within a 5-minute window
+  - Locking out IP addresses (default: 15 minutes) after exceeding the limit
+  - Using transients for performance (no permanent database bloat)
+  - Automatically clearing limits after successful login
+  - Configurable via `WPT_LOGIN_ATTEMPT_LIMIT` and `WPT_LOGIN_LOCKOUT_DURATION` constants
 
 ### Site Hardening
 - **Disable File Modifications**: Dashboard option to set `DISALLOW_FILE_MODS` constant to prevent:
@@ -86,6 +92,36 @@ All settings are managed through the centralized **829 Settings** page:
 - **Enable Password Protected Content**: Allow password protected posts/pages
 - **Disable File Modifications**: Prevent plugin/theme installations and updates
 - **REST API Availability**: Control access to WordPress REST API endpoints
+- **Limit Login Attempts**: Enable/disable login attempt limiting (enabled by default)
+
+## Constants
+
+The following constants can be defined in `wp-config.php` to customize plugin behavior:
+
+### Login Limiting
+- `WPT_LOGIN_ATTEMPT_LIMIT` (default: `10`) - Maximum number of failed login attempts per IP address within the time window
+- `WPT_LOGIN_LOCKOUT_DURATION` (default: `900`) - Lockout duration in seconds (default is 15 minutes)
+
+### Settings Access
+- `WPT_ALLOW_ADMIN_SETTINGS_ACCESS` (default: `false`) - If set to `true`, allows any administrator (or super admin on multisite) to access the 829 Settings page
+
+## WP-CLI Commands
+
+This plugin provides WP-CLI commands for managing various features:
+
+### Clear Login Attempts
+
+Clear all login attempt transients, effectively unlocking any IP addresses that are currently locked out.
+
+```bash
+wp 829-tools clear-login-attempts
+```
+
+**Example output:**
+```
+Clearing login attempt transients...
+Success: Cleared 5 login attempt transient(s).
+```
 
 ## License
 

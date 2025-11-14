@@ -21,8 +21,10 @@ use WordPressTools\Comments\Comments;
 use WordPressTools\Settings\Settings;
 use WordPressTools\Authentication\Passwords;
 use WordPressTools\Authentication\Usernames;
+use WordPressTools\Authentication\LimitLogin;
 use WordPressTools\AdminCustomizations\AdminCustomizations;
 use WordPressTools\API\API;
+use WP_CLI;
 
 // Prevent direct access.
 if ( ! defined( 'ABSPATH' ) ) {
@@ -58,6 +60,14 @@ if ( ! defined( 'WPT_SSO_DISALLOW_ALL_DIRECT_LOGIN' ) ) {
 
 if ( ! defined( 'WPT_ALLOW_ADMIN_SETTINGS_ACCESS' ) ) {
 	define( 'WPT_ALLOW_ADMIN_SETTINGS_ACCESS', false );
+}
+
+if ( ! defined( 'WPT_LOGIN_ATTEMPT_LIMIT' ) ) {
+	define( 'WPT_LOGIN_ATTEMPT_LIMIT', 10 );
+}
+
+if ( ! defined( 'WPT_LOGIN_LOCKOUT_DURATION' ) ) {
+	define( 'WPT_LOGIN_LOCKOUT_DURATION', 900 ); // 15 minutes in seconds
 }
 
 if ( ! defined( 'WP_ENVIRONMENT_TYPE' ) ) {
@@ -122,7 +132,13 @@ add_action(
 		Settings::instance();
 		Passwords::instance();
 		Usernames::instance();
+		LimitLogin::instance();
 		AdminCustomizations::instance();
 		API::instance();
 	}
 );
+
+// Register WP-CLI commands
+if ( defined( 'WP_CLI' ) && WP_CLI ) {
+	\WP_CLI::add_command( '829-tools', 'WordPressTools\Commands' );
+}
