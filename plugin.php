@@ -133,6 +133,8 @@ $plugin_updater = PucFactory::buildUpdateChecker(
 	'wordpress-tools'
 );
 
+$plugin_updater->setBranch( 'main' );
+
 add_action(
 	'plugins_loaded',
 	function () {
