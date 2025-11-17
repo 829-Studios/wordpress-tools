@@ -23,6 +23,7 @@ use WordPressTools\Authentication\Passwords;
 use WordPressTools\Authentication\Usernames;
 use WordPressTools\Authentication\LimitLogin;
 use WordPressTools\AdminCustomizations\AdminCustomizations;
+use YahnisElsts\PluginUpdateChecker\v5\PucFactory;
 use WordPressTools\API\API;
 use WP_CLI;
 
@@ -117,9 +118,19 @@ spl_autoload_register(
 
 			if ( 'WordPressTools' === $package ) {
 				require_once __DIR__ . '/includes/classes/' . implode( '/', $path_parts ) . '.php';
+			} elseif ( 'ZxcvbnPhp' === $package ) {
+				require_once __DIR__ . '/vendor/bjeavons/zxcvbn-php/src/' . implode( '/', $path_parts ) . '.php';
 			}
 		}
 	}
+);
+
+require_once __DIR__ . '/vendor/yahnis-elsts/plugin-update-checker/plugin-update-checker.php';
+
+$plugin_updater = PucFactory::buildUpdateChecker(
+	'https://github.com/829-studios/wordpress-tools/',
+	__FILE__,
+	'wordpress-tools'
 );
 
 add_action(
