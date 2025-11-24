@@ -1,9 +1,9 @@
 <?php
 /**
- * Plugin Name: 829 Studios WordPress Tools
+ * Plugin Name: 829 Studios - WordPress Tools
  * Plugin URI: https://www.829studios.com/
  * Description: WordPress tools for 829 Studios.
- * Version: 1.0.0
+ * Version: 1.0.1
  * Author: 829 Studios
  * Author URI: https://www.829studios.com/
  * Text Domain: 829-wordpress-tools
@@ -32,12 +32,18 @@ if ( ! defined( 'ABSPATH' ) ) {
 	exit;
 }
 
-define( 'WPT_VERSION', '1.0.0' );
+define( 'WPT_VERSION', '1.0.1' );
 define( 'WPT_PLUGIN_DIR', plugin_dir_path( __FILE__ ) );
 define( 'WPT_PLUGIN_URL', plugin_dir_url( __FILE__ ) );
 
 // Load utility functions
 require_once __DIR__ . '/includes/utils.php';
+
+if ( ! defined( 'WPT_IS_WPE' ) ) {
+	$is_wpe = ( defined( 'WPE_APIKEY' ) || defined( 'WPE_FORCE_SSL_LOGIN' ) || defined( 'WPE_WHITELABEL' ) );
+
+	define( 'WPT_IS_WPE', $is_wpe );
+}
 
 if ( ! defined( 'WPT_SSO_PROXY_URL' ) ) {
 	define( 'WPT_SSO_PROXY_URL', 'https://x829-sso-proxy-ee756094fea9.herokuapp.com' );
@@ -71,6 +77,10 @@ if ( ! defined( 'WPT_LOGIN_LOCKOUT_DURATION' ) ) {
 	define( 'WPT_LOGIN_LOCKOUT_DURATION', 900 ); // 15 minutes in seconds
 }
 
+if ( file_exists( __DIR__ . '/vendor/autoload.php' ) ) {
+	require_once __DIR__ . '/vendor/autoload.php';
+}
+
 if ( ! defined( 'WP_ENVIRONMENT_TYPE' ) ) {
 	$staging_domains = [ '829dev.com', 'wpenginepowered.com' ];
 	$current_domain  = strtolower( wp_parse_url( site_url(), PHP_URL_HOST ) );
@@ -99,14 +109,6 @@ if ( ! defined( 'WPT_IS_NETWORK' ) ) {
 	define( 'WPT_IS_NETWORK', (bool) $network_activated );
 }
 
-// Handle DISALLOW_FILE_MODS setting
-if ( ! defined( 'DISALLOW_FILE_MODS' ) ) {
-	$disallow_file_mods = Utils\get_maybe_site_option( 'wpt_disallow_file_mods', 'no' );
-	if ( 'yes' === $disallow_file_mods ) {
-		define( 'DISALLOW_FILE_MODS', true );
-	}
-}
-
 spl_autoload_register(
 	function ( $class_name ) {
 		$path_parts = explode( '\\', $class_name );
@@ -124,6 +126,14 @@ spl_autoload_register(
 		}
 	}
 );
+
+// Handle DISALLOW_FILE_MODS setting
+if ( ! defined( 'DISALLOW_FILE_MODS' ) ) {
+	$settings = Settings::get_settings();
+	if ( $settings['disallow_file_mods'] ) {
+		define( 'DISALLOW_FILE_MODS', true );
+	}
+}
 
 require_once __DIR__ . '/vendor/yahnis-elsts/plugin-update-checker/plugin-update-checker.php';
 

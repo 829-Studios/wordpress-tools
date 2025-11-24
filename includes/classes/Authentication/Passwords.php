@@ -8,8 +8,8 @@
 namespace WordPressTools\Authentication;
 
 use WordPressTools\Singleton;
+use WordPressTools\Settings\Settings;
 use ZxcvbnPhp\Zxcvbn;
-use function WordPressTools\Utils\get_maybe_site_option;
 
 /**
  * Password extension functionality
@@ -35,7 +35,8 @@ class Passwords {
 			return;
 		}
 
-		if ( (bool) get_maybe_site_option( 'wpt_require_strong_passwords', 0 ) ) {
+		$settings = Settings::get_settings();
+		if ( (bool) $settings['require_strong_passwords'] ) {
 			add_action( 'user_profile_update_errors', [ $this, 'validate_profile_update' ], 0, 3 );
 			add_action( 'validate_password_reset', [ $this, 'validate_strong_password' ], 10, 2 );
 			add_action( 'resetpass_form', [ $this, 'validate_resetpass_form' ], 10 );

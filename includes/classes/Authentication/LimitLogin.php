@@ -8,7 +8,7 @@
 namespace WordPressTools\Authentication;
 
 use WordPressTools\Singleton;
-use function WordPressTools\Utils\get_maybe_site_option;
+use WordPressTools\Settings\Settings;
 use function WordPressTools\Utils\get_ip_address;
 
 /**
@@ -51,8 +51,8 @@ class LimitLogin {
 			return false;
 		}
 
-		$enabled = get_maybe_site_option( 'wpt_limit_login', 'yes' );
-		return 'yes' === $enabled;
+		$settings = Settings::get_settings();
+		return (bool) $settings['limit_login'];
 	}
 
 	/**

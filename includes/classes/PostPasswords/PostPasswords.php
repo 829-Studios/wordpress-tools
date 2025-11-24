@@ -8,7 +8,7 @@
 namespace WordPressTools\PostPasswords;
 
 use WordPressTools\Singleton;
-use function WordPressTools\Utils\get_maybe_site_option;
+use WordPressTools\Settings\Settings;
 
 if ( ! defined( 'ABSPATH' ) ) {
 	exit; // Exit if accessed directly.
@@ -40,7 +40,8 @@ class PostPasswords {
 			return;
 		}
 
-		$password_protect = (bool) get_maybe_site_option( 'wpt_password_protect', 0 );
+		$settings         = Settings::get_settings();
+		$password_protect = (bool) $settings['password_protect'];
 
 		if ( ! empty( $password_protect ) || ! empty( $post->post_password ) ) {
 			return;

@@ -8,7 +8,7 @@
 namespace WordPressTools\API;
 
 use WordPressTools\Singleton;
-use function WordPressTools\Utils\get_maybe_site_option;
+use WordPressTools\Settings\Settings;
 
 /**
  * REST API customizations class
@@ -16,13 +16,6 @@ use function WordPressTools\Utils\get_maybe_site_option;
 class API {
 
 	use Singleton;
-
-	/**
-	 * Default value for API restriction
-	 *
-	 * @var string
-	 */
-	public $option_default = 'users';
 
 	/**
 	 * Setup module
@@ -49,7 +42,8 @@ class API {
 			return $result;
 		}
 
-		$restrict = get_maybe_site_option( 'wpt_restrict_rest_api', $this->option_default );
+		$settings = Settings::get_settings();
+		$restrict = $settings['restrict_rest_api'];
 
 		if ( 'all' === $restrict && ! $this->can_access_rest_api() ) {
 			return new \WP_Error( 'rest_api_restricted', esc_html__( 'Authentication Required', 'wordpress-tools' ), array( 'status' => rest_authorization_required_code() ) );
@@ -65,7 +59,8 @@ class API {
 	 * @return array
 	 */
 	public function restrict_user_endpoints( $endpoints ) {
-		$restrict = get_maybe_site_option( 'wpt_restrict_rest_api', $this->option_default );
+		$settings = Settings::get_settings();
+		$restrict = $settings['restrict_rest_api'];
 
 		if ( 'none' === $restrict ) {
 			return $endpoints;

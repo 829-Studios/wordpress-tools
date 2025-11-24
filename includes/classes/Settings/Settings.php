@@ -37,6 +37,34 @@ class Settings {
 	}
 
 	/**
+	 * Get all plugin settings with defaults.
+	 *
+	 * @since 1.0
+	 * @return array Array of all settings with default values applied.
+	 */
+	public static function get_settings() {
+		$defaults = [
+			'allow_sso'                => 1,
+			'disable_comments'         => 0,
+			'require_strong_passwords' => 1,
+			'password_protect'         => 0,
+			'disallow_file_mods'       => 0,
+			'restrict_rest_api'        => 'users',
+			'limit_login'              => 1,
+		];
+
+		// Get settings from single option
+		if ( WPT_IS_NETWORK ) {
+			$settings = get_site_option( 'wpt_settings', [] );
+		} else {
+			$settings = get_option( 'wpt_settings', [] );
+		}
+
+		// Merge with defaults to ensure all keys exist
+		return wp_parse_args( $settings, $defaults );
+	}
+
+	/**
 	 * Check if the current user can access 829 Settings.
 	 *
 	 * @return bool
@@ -117,80 +145,22 @@ class Settings {
 	 * Register settings.
 	 */
 	public function register_settings() {
-		// Register SSO setting
+		// Register all settings as a single option
 		register_setting(
 			'wpt_829_settings',
-			'wpt_allow_sso',
+			'wpt_settings',
 			[
-				'type'              => 'string',
-				'sanitize_callback' => [ $this, 'validate_yes_no_setting' ],
-				'default'           => 'yes',
-			]
-		);
-
-		// Register Comments setting
-		register_setting(
-			'wpt_829_settings',
-			'wpt_disable_comments',
-			[
-				'type'              => 'string',
-				'sanitize_callback' => [ $this, 'validate_yes_no_setting' ],
-				'default'           => 'no',
-			]
-		);
-
-		// Register Strong Passwords setting
-		register_setting(
-			'wpt_829_settings',
-			'wpt_require_strong_passwords',
-			[
-				'type'              => 'integer',
-				'sanitize_callback' => 'intval',
-				'default'           => 1,
-			]
-		);
-
-		// Register Password Protected Content setting
-		register_setting(
-			'wpt_829_settings',
-			'wpt_password_protect',
-			[
-				'type'              => 'integer',
-				'sanitize_callback' => 'intval',
-				'default'           => 0,
-			]
-		);
-
-		// Register Disable File Modifications setting
-		register_setting(
-			'wpt_829_settings',
-			'wpt_disallow_file_mods',
-			[
-				'type'              => 'string',
-				'sanitize_callback' => [ $this, 'validate_yes_no_setting' ],
-				'default'           => 'no',
-			]
-		);
-
-		// Register REST API Restriction setting
-		register_setting(
-			'wpt_829_settings',
-			'wpt_restrict_rest_api',
-			[
-				'type'              => 'string',
-				'sanitize_callback' => [ $this, 'validate_rest_api_setting' ],
-				'default'           => 'users',
-			]
-		);
-
-		// Register Limit Login Attempts setting
-		register_setting(
-			'wpt_829_settings',
-			'wpt_limit_login',
-			[
-				'type'              => 'string',
-				'sanitize_callback' => [ $this, 'validate_yes_no_setting' ],
-				'default'           => 'yes',
+				'type'              => 'array',
+				'sanitize_callback' => [ $this, 'sanitize_settings' ],
+				'default'           => [
+					'allow_sso'                => 1,
+					'disable_comments'         => 0,
+					'require_strong_passwords' => 1,
+					'password_protect'         => 0,
+					'disallow_file_mods'       => 0,
+					'restrict_rest_api'        => 'users',
+					'limit_login'              => 1,
+				],
 			]
 		);
 
@@ -276,15 +246,16 @@ class Settings {
 	 * SSO setting callback.
 	 */
 	public function sso_setting_callback() {
-		$allow_sso = WPT_IS_NETWORK ? get_site_option( 'wpt_allow_sso', 'yes' ) : get_option( 'wpt_allow_sso', 'yes' );
+		$settings  = self::get_settings();
+		$allow_sso = $settings['allow_sso'];
 		?>
 		<fieldset>
-			<input id="wpt-allow-sso-yes" name="wpt_allow_sso" type="radio" value="yes"<?php checked( $allow_sso, 'yes' ); ?> />
+			<input id="wpt-allow-sso-yes" name="wpt_settings[allow_sso]" type="radio" value="1"<?php checked( 1, $allow_sso ); ?> />
 			<label for="wpt-allow-sso-yes">
 				<?php esc_html_e( 'Yes', 'wordpress-tools' ); ?>
 			</label><br>
 
-			<input id="wpt-allow-sso-no" name="wpt_allow_sso" type="radio" value="no"<?php checked( $allow_sso, 'no' ); ?> />
+			<input id="wpt-allow-sso-no" name="wpt_settings[allow_sso]" type="radio" value="0"<?php checked( 0, $allow_sso ); ?> />
 			<label for="wpt-allow-sso-no">
 				<?php esc_html_e( 'No', 'wordpress-tools' ); ?>
 			</label>
@@ -297,16 +268,17 @@ class Settings {
 	 * Comments setting callback.
 	 */
 	public function comments_setting_callback() {
-		$disable_comments = WPT_IS_NETWORK ? get_site_option( 'wpt_disable_comments', 'no' ) : get_option( 'wpt_disable_comments', 'no' );
+		$settings         = self::get_settings();
+		$disable_comments = $settings['disable_comments'];
 		$is_disabled      = defined( 'WPT_DISABLE_COMMENTS' ) || has_filter( 'wpt_disable_comments' );
 		?>
 		<fieldset>
-			<input id="wpt-disable-comments-yes" name="wpt_disable_comments" type="radio" value="yes"<?php checked( $disable_comments, 'yes' ); ?><?php disabled( $is_disabled ); ?> />
+			<input id="wpt-disable-comments-yes" name="wpt_settings[disable_comments]" type="radio" value="1"<?php checked( 1, $disable_comments ); ?><?php disabled( $is_disabled ); ?> />
 			<label for="wpt-disable-comments-yes">
 				<?php esc_html_e( 'Yes', 'wordpress-tools' ); ?>
 			</label><br>
 
-			<input id="wpt-disable-comments-no" name="wpt_disable_comments" type="radio" value="no"<?php checked( $disable_comments, 'no' ); ?><?php disabled( $is_disabled ); ?> />
+			<input id="wpt-disable-comments-no" name="wpt_settings[disable_comments]" type="radio" value="0"<?php checked( 0, $disable_comments ); ?><?php disabled( $is_disabled ); ?> />
 			<label for="wpt-disable-comments-no">
 				<?php esc_html_e( 'No', 'wordpress-tools' ); ?>
 			</label>
@@ -319,15 +291,16 @@ class Settings {
 	 * Passwords setting callback.
 	 */
 	public function passwords_setting_callback() {
-		$require_strong_passwords = WPT_IS_NETWORK ? get_site_option( 'wpt_require_strong_passwords', 1 ) : get_option( 'wpt_require_strong_passwords', 1 );
+		$settings                 = self::get_settings();
+		$require_strong_passwords = $settings['require_strong_passwords'];
 		?>
 		<fieldset>
-			<input id="wpt-require-strong-passwords-yes" name="wpt_require_strong_passwords" type="radio" value="1"<?php checked( 1, $require_strong_passwords ); ?> />
+			<input id="wpt-require-strong-passwords-yes" name="wpt_settings[require_strong_passwords]" type="radio" value="1"<?php checked( 1, $require_strong_passwords ); ?> />
 			<label for="wpt-require-strong-passwords-yes">
 				<?php esc_html_e( 'Yes', 'wordpress-tools' ); ?>
 			</label><br>
 
-			<input id="wpt-require-strong-passwords-no" name="wpt_require_strong_passwords" type="radio" value="0"<?php checked( 0, $require_strong_passwords ); ?> />
+			<input id="wpt-require-strong-passwords-no" name="wpt_settings[require_strong_passwords]" type="radio" value="0"<?php checked( 0, $require_strong_passwords ); ?> />
 			<label for="wpt-require-strong-passwords-no">
 				<?php esc_html_e( 'No', 'wordpress-tools' ); ?>
 			</label>
@@ -340,10 +313,11 @@ class Settings {
 	 * Password Protected Content setting callback.
 	 */
 	public function password_protect_setting_callback() {
-		$password_protect = WPT_IS_NETWORK ? get_site_option( 'wpt_password_protect', 0 ) : get_option( 'wpt_password_protect', 0 );
+		$settings         = self::get_settings();
+		$password_protect = $settings['password_protect'];
 		?>
 		<fieldset>
-			<input id="wpt-password-protect" name="wpt_password_protect" type="checkbox" value="1"<?php checked( 1, $password_protect ); ?> />
+			<input id="wpt-password-protect" name="wpt_settings[password_protect]" type="checkbox" value="1"<?php checked( 1, $password_protect ); ?> />
 			<label for="wpt-password-protect">
 				<?php esc_html_e( 'Enable password protected content', 'wordpress-tools' ); ?>
 			</label>
@@ -356,15 +330,17 @@ class Settings {
 	 * Disable File Modifications setting callback.
 	 */
 	public function disallow_file_mods_setting_callback() {
-		$disallow_file_mods = WPT_IS_NETWORK ? get_site_option( 'wpt_disallow_file_mods', 'no' ) : get_option( 'wpt_disallow_file_mods', 'no' );
+
+		$settings           = self::get_settings();
+		$disallow_file_mods = $settings['disallow_file_mods'];
 		?>
 		<fieldset>
-			<input id="wpt-disallow-file-mods-yes" name="wpt_disallow_file_mods" type="radio" value="yes"<?php checked( $disallow_file_mods, 'yes' ); ?> />
+			<input id="wpt-disallow-file-mods-yes" <?php disabled( WPT_IS_WPE ); ?> name="wpt_settings[disallow_file_mods]" type="radio" value="1"<?php checked( 1, $disallow_file_mods ); ?> />
 			<label for="wpt-disallow-file-mods-yes">
 				<?php esc_html_e( 'Yes', 'wordpress-tools' ); ?>
 			</label><br>
 
-			<input id="wpt-disallow-file-mods-no" name="wpt_disallow_file_mods" type="radio" value="no"<?php checked( $disallow_file_mods, 'no' ); ?> />
+			<input id="wpt-disallow-file-mods-no" <?php disabled( WPT_IS_WPE ); ?> name="wpt_settings[disallow_file_mods]" type="radio" value="0"<?php checked( 0, $disallow_file_mods ); ?> />
 			<label for="wpt-disallow-file-mods-no">
 				<?php esc_html_e( 'No', 'wordpress-tools' ); ?>
 			</label>
@@ -377,17 +353,18 @@ class Settings {
 	 * REST API Restriction setting callback.
 	 */
 	public function restrict_rest_api_setting_callback() {
-		$restrict = WPT_IS_NETWORK ? get_site_option( 'wpt_restrict_rest_api', 'users' ) : get_option( 'wpt_restrict_rest_api', 'users' );
+		$settings = self::get_settings();
+		$restrict = $settings['restrict_rest_api'];
 		?>
 		<fieldset>
 			<p>
-				<input id="wpt-restrict-rest-api-all" name="wpt_restrict_rest_api" type="radio" value="all"<?php checked( $restrict, 'all' ); ?> />
+				<input id="wpt-restrict-rest-api-all" name="wpt_settings[restrict_rest_api]" type="radio" value="all"<?php checked( $restrict, 'all' ); ?> />
 				<label for="wpt-restrict-rest-api-all">
 					<?php esc_html_e( 'Restrict all access to authenticated users', 'wordpress-tools' ); ?>
 				</label>
 			</p>
 			<p>
-				<input id="wpt-restrict-rest-api-users" name="wpt_restrict_rest_api" type="radio" value="users"<?php checked( $restrict, 'users' ); ?> />
+				<input id="wpt-restrict-rest-api-users" name="wpt_settings[restrict_rest_api]" type="radio" value="users"<?php checked( $restrict, 'users' ); ?> />
 				<label for="wpt-restrict-rest-api-users">
 					<?php
 						echo wp_kses_post(
@@ -401,7 +378,7 @@ class Settings {
 				</label>
 			</p>
 			<p>
-				<input id="wpt-restrict-rest-api-none" name="wpt_restrict_rest_api" type="radio" value="none"<?php checked( $restrict, 'none' ); ?> />
+				<input id="wpt-restrict-rest-api-none" name="wpt_settings[restrict_rest_api]" type="radio" value="none"<?php checked( $restrict, 'none' ); ?> />
 				<label for="wpt-restrict-rest-api-none">
 					<?php esc_html_e( 'Publicly accessible', 'wordpress-tools' ); ?>
 				</label>
@@ -414,17 +391,18 @@ class Settings {
 	 * Limit Login Attempts setting callback.
 	 */
 	public function limit_login_setting_callback() {
-		$limit_login     = WPT_IS_NETWORK ? get_site_option( 'wpt_limit_login', 'yes' ) : get_option( 'wpt_limit_login', 'yes' );
+		$settings        = self::get_settings();
+		$limit_login     = $settings['limit_login'];
 		$attempt_limit   = defined( 'WPT_LOGIN_ATTEMPT_LIMIT' ) ? WPT_LOGIN_ATTEMPT_LIMIT : 10;
 		$lockout_minutes = defined( 'WPT_LOGIN_LOCKOUT_DURATION' ) ? ceil( WPT_LOGIN_LOCKOUT_DURATION / 60 ) : 15;
 		?>
 		<fieldset>
-			<input id="wpt-limit-login-yes" name="wpt_limit_login" type="radio" value="yes"<?php checked( $limit_login, 'yes' ); ?> />
+			<input id="wpt-limit-login-yes" name="wpt_settings[limit_login]" type="radio" value="1"<?php checked( 1, $limit_login ); ?> />
 			<label for="wpt-limit-login-yes">
 				<?php esc_html_e( 'Yes', 'wordpress-tools' ); ?>
 			</label><br>
 
-			<input id="wpt-limit-login-no" name="wpt_limit_login" type="radio" value="no"<?php checked( $limit_login, 'no' ); ?> />
+			<input id="wpt-limit-login-no" name="wpt_settings[limit_login]" type="radio" value="0"<?php checked( 0, $limit_login ); ?> />
 			<label for="wpt-limit-login-no">
 				<?php esc_html_e( 'No', 'wordpress-tools' ); ?>
 			</label>
@@ -442,6 +420,43 @@ class Settings {
 			</p>
 		</fieldset>
 		<?php
+	}
+
+	/**
+	 * Sanitize all settings.
+	 *
+	 * @param  array $input Raw input values.
+	 * @return array Sanitized settings.
+	 */
+	public function sanitize_settings( $input ) {
+		$sanitized = [];
+
+		// Sanitize allow_sso
+		$sanitized['allow_sso'] = isset( $input['allow_sso'] ) ? intval( $input['allow_sso'] ) : 1;
+
+		// Sanitize disable_comments
+		$sanitized['disable_comments'] = isset( $input['disable_comments'] ) ? intval( $input['disable_comments'] ) : 0;
+
+		// Sanitize require_strong_passwords
+		$sanitized['require_strong_passwords'] = isset( $input['require_strong_passwords'] ) ? intval( $input['require_strong_passwords'] ) : 1;
+
+		// Sanitize password_protect
+		$sanitized['password_protect'] = isset( $input['password_protect'] ) ? intval( $input['password_protect'] ) : 0;
+
+		// Sanitize disallow_file_mods
+		$sanitized['disallow_file_mods'] = isset( $input['disallow_file_mods'] ) ? intval( $input['disallow_file_mods'] ) : 0;
+
+		// Sanitize restrict_rest_api
+		if ( isset( $input['restrict_rest_api'] ) && in_array( $input['restrict_rest_api'], [ 'all', 'users', 'none' ], true ) ) {
+			$sanitized['restrict_rest_api'] = $input['restrict_rest_api'];
+		} else {
+			$sanitized['restrict_rest_api'] = 'users';
+		}
+
+		// Sanitize limit_login
+		$sanitized['limit_login'] = isset( $input['limit_login'] ) ? intval( $input['limit_login'] ) : 1;
+
+		return $sanitized;
 	}
 
 	/**
@@ -488,50 +503,14 @@ class Settings {
 
 		check_admin_referer( 'wpt_829_settings-options' );
 
-		// Save SSO setting
-		if ( isset( $_POST['wpt_allow_sso'] ) ) {
-			$sso_value = $this->validate_yes_no_setting( sanitize_text_field( $_POST['wpt_allow_sso'] ) );
-			update_site_option( 'wpt_allow_sso', $sso_value );
-		}
+		// Get settings from POST data
+		$input = isset( $_POST['wpt_settings'] ) ? $_POST['wpt_settings'] : []; // phpcs:ignore WordPress.Security.ValidatedSanitizedInput.InputNotSanitized
 
-		// Save Comments setting
-		if ( isset( $_POST['wpt_disable_comments'] ) ) {
-			$comments_value = $this->validate_yes_no_setting( sanitize_text_field( $_POST['wpt_disable_comments'] ) );
-			update_site_option( 'wpt_disable_comments', $comments_value );
-		}
+		// Sanitize all settings
+		$sanitized_settings = $this->sanitize_settings( $input );
 
-		// Save Strong Passwords setting
-		if ( isset( $_POST['wpt_require_strong_passwords'] ) ) {
-			$passwords_value = intval( $_POST['wpt_require_strong_passwords'] );
-			update_site_option( 'wpt_require_strong_passwords', $passwords_value );
-		}
-
-		// Save Password Protected Content setting
-		if ( isset( $_POST['wpt_password_protect'] ) ) {
-			$password_protect_value = intval( $_POST['wpt_password_protect'] );
-			update_site_option( 'wpt_password_protect', $password_protect_value );
-		} else {
-			// Checkbox not checked, set to 0
-			update_site_option( 'wpt_password_protect', 0 );
-		}
-
-		// Save Disable File Modifications setting
-		if ( isset( $_POST['wpt_disallow_file_mods'] ) ) {
-			$disallow_file_mods_value = $this->validate_yes_no_setting( sanitize_text_field( $_POST['wpt_disallow_file_mods'] ) );
-			update_site_option( 'wpt_disallow_file_mods', $disallow_file_mods_value );
-		}
-
-		// Save REST API Restriction setting
-		if ( isset( $_POST['wpt_restrict_rest_api'] ) ) {
-			$restrict_rest_api_value = $this->validate_rest_api_setting( sanitize_text_field( $_POST['wpt_restrict_rest_api'] ) );
-			update_site_option( 'wpt_restrict_rest_api', $restrict_rest_api_value );
-		}
-
-		// Save Limit Login Attempts setting
-		if ( isset( $_POST['wpt_limit_login'] ) ) {
-			$limit_login_value = $this->validate_yes_no_setting( sanitize_text_field( $_POST['wpt_limit_login'] ) );
-			update_site_option( 'wpt_limit_login', $limit_login_value );
-		}
+		// Save settings as a single option
+		update_site_option( 'wpt_settings', $sanitized_settings );
 
 		wp_safe_redirect(
 			add_query_arg(
@@ -558,13 +537,16 @@ class Settings {
 			wp_die( esc_html__( 'You do not have permission to access this page.', 'wordpress-tools' ) );
 		}
 
-		$allow_sso                = get_site_option( 'wpt_allow_sso', 'yes' );
-		$disable_comments         = get_site_option( 'wpt_disable_comments', 'no' );
-		$require_strong_passwords = get_site_option( 'wpt_require_strong_passwords', 1 );
-		$password_protect         = get_site_option( 'wpt_password_protect', 0 );
-		$disallow_file_mods       = get_site_option( 'wpt_disallow_file_mods', 'no' );
-		$restrict_rest_api        = get_site_option( 'wpt_restrict_rest_api', 'users' );
-		$limit_login              = get_site_option( 'wpt_limit_login', 'yes' );
+		$settings                 = self::get_settings();
+		$allow_sso                = $settings['allow_sso'];
+		$disable_comments         = $settings['disable_comments'];
+		$require_strong_passwords = $settings['require_strong_passwords'];
+		$password_protect         = $settings['password_protect'];
+		$disallow_file_mods       = $settings['disallow_file_mods'];
+		$restrict_rest_api        = $settings['restrict_rest_api'];
+		$limit_login              = $settings['limit_login'];
+		$attempt_limit            = defined( 'WPT_LOGIN_ATTEMPT_LIMIT' ) ? WPT_LOGIN_ATTEMPT_LIMIT : 10;
+		$lockout_minutes          = defined( 'WPT_LOGIN_LOCKOUT_DURATION' ) ? ceil( WPT_LOGIN_LOCKOUT_DURATION / 60 ) : 15;
 		$is_disabled              = defined( 'WPT_DISABLE_COMMENTS' ) || has_filter( 'wpt_disable_comments' );
 		?>
 		<div class="wrap">
@@ -591,12 +573,12 @@ class Settings {
 							</th>
 							<td>
 								<fieldset>
-									<input id="wpt-allow-sso-yes" name="wpt_allow_sso" type="radio" value="yes"<?php checked( $allow_sso, 'yes' ); ?> />
+									<input id="wpt-allow-sso-yes" name="wpt_settings[allow_sso]" type="radio" value="1"<?php checked( 1, $allow_sso ); ?> />
 									<label for="wpt-allow-sso-yes">
 										<?php esc_html_e( 'Yes', 'wordpress-tools' ); ?>
 									</label><br>
 
-									<input id="wpt-allow-sso-no" name="wpt_allow_sso" type="radio" value="no"<?php checked( $allow_sso, 'no' ); ?> />
+									<input id="wpt-allow-sso-no" name="wpt_settings[allow_sso]" type="radio" value="0"<?php checked( 0, $allow_sso ); ?> />
 									<label for="wpt-allow-sso-no">
 										<?php esc_html_e( 'No', 'wordpress-tools' ); ?>
 									</label>
@@ -610,12 +592,12 @@ class Settings {
 							</th>
 							<td>
 								<fieldset>
-									<input id="wpt-disable-comments-yes" name="wpt_disable_comments" type="radio" value="yes"<?php checked( $disable_comments, 'yes' ); ?><?php disabled( $is_disabled ); ?> />
+									<input id="wpt-disable-comments-yes" name="wpt_settings[disable_comments]" type="radio" value="1"<?php checked( 1, $disable_comments ); ?><?php disabled( $is_disabled ); ?> />
 									<label for="wpt-disable-comments-yes">
 										<?php esc_html_e( 'Yes', 'wordpress-tools' ); ?>
 									</label><br>
 
-									<input id="wpt-disable-comments-no" name="wpt_disable_comments" type="radio" value="no"<?php checked( $disable_comments, 'no' ); ?><?php disabled( $is_disabled ); ?> />
+									<input id="wpt-disable-comments-no" name="wpt_settings[disable_comments]" type="radio" value="0"<?php checked( 0, $disable_comments ); ?><?php disabled( $is_disabled ); ?> />
 									<label for="wpt-disable-comments-no">
 										<?php esc_html_e( 'No', 'wordpress-tools' ); ?>
 									</label>
@@ -629,12 +611,12 @@ class Settings {
 							</th>
 							<td>
 								<fieldset>
-									<input id="wpt-require-strong-passwords-yes" name="wpt_require_strong_passwords" type="radio" value="1"<?php checked( 1, $require_strong_passwords ); ?> />
+									<input id="wpt-require-strong-passwords-yes" name="wpt_settings[require_strong_passwords]" type="radio" value="1"<?php checked( 1, $require_strong_passwords ); ?> />
 									<label for="wpt-require-strong-passwords-yes">
 										<?php esc_html_e( 'Yes', 'wordpress-tools' ); ?>
 									</label><br>
 
-									<input id="wpt-require-strong-passwords-no" name="wpt_require_strong_passwords" type="radio" value="0"<?php checked( 0, $require_strong_passwords ); ?> />
+									<input id="wpt-require-strong-passwords-no" name="wpt_settings[require_strong_passwords]" type="radio" value="0"<?php checked( 0, $require_strong_passwords ); ?> />
 									<label for="wpt-require-strong-passwords-no">
 										<?php esc_html_e( 'No', 'wordpress-tools' ); ?>
 									</label>
@@ -648,7 +630,7 @@ class Settings {
 							</th>
 							<td>
 								<fieldset>
-									<input id="wpt-password-protect" name="wpt_password_protect" type="checkbox" value="1"<?php checked( 1, $password_protect ); ?> />
+									<input id="wpt-password-protect" name="wpt_settings[password_protect]" type="checkbox" value="1"<?php checked( 1, $password_protect ); ?> />
 									<label for="wpt-password-protect">
 										<?php esc_html_e( 'Enable password protected content', 'wordpress-tools' ); ?>
 									</label>
@@ -662,12 +644,12 @@ class Settings {
 							</th>
 							<td>
 								<fieldset>
-									<input id="wpt-disallow-file-mods-yes" name="wpt_disallow_file_mods" type="radio" value="yes"<?php checked( $disallow_file_mods, 'yes' ); ?> />
+									<input id="wpt-disallow-file-mods-yes" <?php disabled( WPT_IS_WPE ); ?> name="wpt_settings[disallow_file_mods]" type="radio" value="1"<?php checked( 1, $disallow_file_mods ); ?> />
 									<label for="wpt-disallow-file-mods-yes">
 										<?php esc_html_e( 'Yes', 'wordpress-tools' ); ?>
 									</label><br>
 
-									<input id="wpt-disallow-file-mods-no" name="wpt_disallow_file_mods" type="radio" value="no"<?php checked( $disallow_file_mods, 'no' ); ?> />
+									<input id="wpt-disallow-file-mods-no" <?php disabled( WPT_IS_WPE ); ?> name="wpt_settings[disallow_file_mods]" type="radio" value="0"<?php checked( 0, $disallow_file_mods ); ?> />
 									<label for="wpt-disallow-file-mods-no">
 										<?php esc_html_e( 'No', 'wordpress-tools' ); ?>
 									</label>
@@ -682,13 +664,13 @@ class Settings {
 							<td>
 								<fieldset>
 									<p>
-										<input id="wpt-restrict-rest-api-all" name="wpt_restrict_rest_api" type="radio" value="all"<?php checked( $restrict_rest_api, 'all' ); ?> />
+										<input id="wpt-restrict-rest-api-all" name="wpt_settings[restrict_rest_api]" type="radio" value="all"<?php checked( $restrict_rest_api, 'all' ); ?> />
 										<label for="wpt-restrict-rest-api-all">
 											<?php esc_html_e( 'Restrict all access to authenticated users', 'wordpress-tools' ); ?>
 										</label>
 									</p>
 									<p>
-										<input id="wpt-restrict-rest-api-users" name="wpt_restrict_rest_api" type="radio" value="users"<?php checked( $restrict_rest_api, 'users' ); ?> />
+										<input id="wpt-restrict-rest-api-users" name="wpt_settings[restrict_rest_api]" type="radio" value="users"<?php checked( $restrict_rest_api, 'users' ); ?> />
 										<label for="wpt-restrict-rest-api-users">
 											<?php
 												echo wp_kses_post(
@@ -702,7 +684,7 @@ class Settings {
 										</label>
 									</p>
 									<p>
-										<input id="wpt-restrict-rest-api-none" name="wpt_restrict_rest_api" type="radio" value="none"<?php checked( $restrict_rest_api, 'none' ); ?> />
+										<input id="wpt-restrict-rest-api-none" name="wpt_settings[restrict_rest_api]" type="radio" value="none"<?php checked( $restrict_rest_api, 'none' ); ?> />
 										<label for="wpt-restrict-rest-api-none">
 											<?php esc_html_e( 'Publicly accessible', 'wordpress-tools' ); ?>
 										</label>
@@ -716,25 +698,23 @@ class Settings {
 							</th>
 							<td>
 								<fieldset>
-									<input id="wpt-limit-login-yes" name="wpt_limit_login" type="radio" value="yes"<?php checked( $limit_login, 'yes' ); ?> />
+									<input id="wpt-limit-login-yes" name="wpt_settings[limit_login]" type="radio" value="1"<?php checked( 1, $limit_login ); ?> />
 									<label for="wpt-limit-login-yes">
 										<?php esc_html_e( 'Yes', 'wordpress-tools' ); ?>
 									</label><br>
 
-									<input id="wpt-limit-login-no" name="wpt_limit_login" type="radio" value="no"<?php checked( $limit_login, 'no' ); ?> />
+									<input id="wpt-limit-login-no" name="wpt_settings[limit_login]" type="radio" value="0"<?php checked( 0, $limit_login ); ?> />
 									<label for="wpt-limit-login-no">
 										<?php esc_html_e( 'No', 'wordpress-tools' ); ?>
 									</label>
 									<p class="description">
 										<?php
-											$attempt_limit_net   = defined( 'WPT_LOGIN_ATTEMPT_LIMIT' ) ? WPT_LOGIN_ATTEMPT_LIMIT : 10;
-											$lockout_minutes_net = defined( 'WPT_LOGIN_LOCKOUT_DURATION' ) ? ceil( WPT_LOGIN_LOCKOUT_DURATION / 60 ) : 15;
 											echo esc_html(
 												sprintf(
 													/* translators: 1: attempt limit, 2: lockout minutes */
 													__( 'Limits login attempts to %1$d per IP address within 5 minutes. After %1$d failed attempts, the IP is locked out for %2$d minutes.', 'wordpress-tools' ),
-													$attempt_limit_net,
-													$lockout_minutes_net
+													$attempt_limit,
+													$lockout_minutes
 												)
 											);
 										?>

@@ -8,7 +8,7 @@
 namespace WordPressTools\Comments;
 
 use WordPressTools\Singleton;
-use function WordPressTools\Utils\get_maybe_site_option;
+use WordPressTools\Settings\Settings;
 
 if ( ! defined( 'ABSPATH' ) ) {
 	exit; // Exit if accessed directly.
@@ -73,9 +73,9 @@ class Comments {
 		}
 
 		// Otherwise, check the setting.
-		$setting = get_maybe_site_option( 'wpt_disable_comments', 'no' );
+		$settings = Settings::get_settings();
 
-		return 'yes' === $setting;
+		return (bool) $settings['disable_comments'];
 	}
 
 	/**

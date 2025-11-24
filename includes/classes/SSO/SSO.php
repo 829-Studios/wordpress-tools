@@ -8,8 +8,8 @@
 namespace WordPressTools\SSO;
 
 use WordPressTools\Singleton;
+use WordPressTools\Settings\Settings;
 use WP_Error;
-use function WordPressTools\Utils\get_maybe_site_option;
 
 if ( ! defined( 'ABSPATH' ) ) {
 	exit; // Exit if accessed directly.
@@ -38,7 +38,8 @@ class SSO {
 			return;
 		}
 
-		if ( 'yes' !== get_maybe_site_option( 'wpt_allow_sso', 'yes' ) ) {
+		$settings = Settings::get_settings();
+		if ( ! $settings['allow_sso'] ) {
 			return;
 		}
 
