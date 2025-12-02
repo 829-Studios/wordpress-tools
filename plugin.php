@@ -23,6 +23,7 @@ use WordPressTools\Authentication\Passwords;
 use WordPressTools\Authentication\Usernames;
 use WordPressTools\Authentication\LimitLogin;
 use WordPressTools\AdminCustomizations\AdminCustomizations;
+use WordPressTools\PluginManagement\PluginManagement;
 use YahnisElsts\PluginUpdateChecker\v5\PucFactory;
 use WordPressTools\API\API;
 use WP_CLI;
@@ -47,6 +48,10 @@ if ( ! defined( 'WPT_IS_WPE' ) ) {
 
 if ( ! defined( 'WPT_SSO_PROXY_URL' ) ) {
 	define( 'WPT_SSO_PROXY_URL', 'https://x829-sso-proxy-ee756094fea9.herokuapp.com' );
+}
+
+if ( ! defined( 'DISALLOW_FILE_EDIT' ) ) {
+	define( 'DISALLOW_FILE_EDIT', true );
 }
 
 if ( ! defined( 'WPT_SSO_DEFAULT_ROLE' ) ) {
@@ -127,14 +132,6 @@ spl_autoload_register(
 	}
 );
 
-// Handle DISALLOW_FILE_MODS setting
-if ( ! defined( 'DISALLOW_FILE_MODS' ) ) {
-	$settings = Settings::get_settings();
-	if ( $settings['disallow_file_mods'] ) {
-		define( 'DISALLOW_FILE_MODS', true );
-	}
-}
-
 require_once __DIR__ . '/vendor/yahnis-elsts/plugin-update-checker/plugin-update-checker.php';
 
 $plugin_updater = PucFactory::buildUpdateChecker(
@@ -144,6 +141,8 @@ $plugin_updater = PucFactory::buildUpdateChecker(
 );
 
 $plugin_updater->setBranch( 'main' );
+
+PluginManagement::instance();
 
 add_action(
 	'plugins_loaded',

@@ -79,3 +79,43 @@ function get_ip_address() {
 
 	return $ip ? $ip : '0.0.0.0';
 }
+
+/**
+ * Check if a user is an 829 admin (admin with @829llc.com email).
+ *
+ * @param int|null $user_id Optional. User ID to check. Defaults to current user.
+ * @return bool
+ */
+function is_829_admin( $user_id = null ) {
+	if ( null === $user_id ) {
+		$user = wp_get_current_user();
+	} else {
+		$user = get_userdata( $user_id );
+	}
+
+	if ( ! $user || ! $user->exists() ) {
+		return false;
+	}
+
+	// Check if user has admin capabilities
+	// Note: We check roles/caps directly to avoid infinite recursion with user_has_cap filter
+	if ( WPT_IS_NETWORK ) {
+		if ( ! is_super_admin( $user->ID ) ) {
+			return false;
+		}
+	} else {
+		// Check if user has administrator role or manage_options in their allcaps
+		$is_admin = in_array( 'administrator', (array) $user->roles, true ) ||
+					( isset( $user->allcaps['manage_options'] ) && $user->allcaps['manage_options'] );
+		if ( ! $is_admin ) {
+			return false;
+		}
+	}
+
+	// Check if user has @829llc.com email
+	if ( ! empty( $user->user_email ) && preg_match( '/@829llc\.com$/', $user->user_email ) ) {
+		return true;
+	}
+
+	return false;
+}

@@ -44,13 +44,13 @@ class Settings {
 	 */
 	public static function get_settings() {
 		$defaults = [
-			'allow_sso'                => 1,
-			'disable_comments'         => 0,
-			'require_strong_passwords' => 1,
-			'password_protect'         => 0,
-			'disallow_file_mods'       => 0,
-			'restrict_rest_api'        => 'users',
-			'limit_login'              => 1,
+			'allow_sso'                  => 1,
+			'disable_comments'           => 0,
+			'require_strong_passwords'   => 1,
+			'password_protect'           => 0,
+			'restrict_plugin_management' => 0,
+			'restrict_rest_api'          => 'users',
+			'limit_login'                => 1,
 		];
 
 		// Get settings from single option
@@ -153,13 +153,13 @@ class Settings {
 				'type'              => 'array',
 				'sanitize_callback' => [ $this, 'sanitize_settings' ],
 				'default'           => [
-					'allow_sso'                => 1,
-					'disable_comments'         => 0,
-					'require_strong_passwords' => 1,
-					'password_protect'         => 0,
-					'disallow_file_mods'       => 0,
-					'restrict_rest_api'        => 'users',
-					'limit_login'              => 1,
+					'allow_sso'                  => 1,
+					'disable_comments'           => 0,
+					'require_strong_passwords'   => 1,
+					'password_protect'           => 0,
+					'restrict_plugin_management' => 0,
+					'restrict_rest_api'          => 'users',
+					'limit_login'                => 1,
 				],
 			]
 		);
@@ -207,11 +207,11 @@ class Settings {
 			'wpt_829_general_section'
 		);
 
-		// Disable File Modifications setting field
+		// Restrict Plugin Management setting field
 		add_settings_field(
-			'wpt_disallow_file_mods',
-			esc_html__( 'Disable File Modifications', 'wordpress-tools' ),
-			[ $this, 'disallow_file_mods_setting_callback' ],
+			'wpt_restrict_plugin_management',
+			esc_html__( 'Restrict Plugin/Theme Management', 'wordpress-tools' ),
+			[ $this, 'restrict_plugin_management_setting_callback' ],
 			'wpt-829-settings',
 			'wpt_829_general_section'
 		);
@@ -327,24 +327,23 @@ class Settings {
 	}
 
 	/**
-	 * Disable File Modifications setting callback.
+	 * Restrict Plugin Management setting callback.
 	 */
-	public function disallow_file_mods_setting_callback() {
-
-		$settings           = self::get_settings();
-		$disallow_file_mods = $settings['disallow_file_mods'];
+	public function restrict_plugin_management_setting_callback() {
+		$settings                   = self::get_settings();
+		$restrict_plugin_management = $settings['restrict_plugin_management'];
 		?>
 		<fieldset>
-			<input id="wpt-disallow-file-mods-yes" <?php disabled( WPT_IS_WPE ); ?> name="wpt_settings[disallow_file_mods]" type="radio" value="1"<?php checked( 1, $disallow_file_mods ); ?> />
-			<label for="wpt-disallow-file-mods-yes">
+			<input id="wpt-restrict-plugin-management-yes" name="wpt_settings[restrict_plugin_management]" type="radio" value="1"<?php checked( 1, $restrict_plugin_management ); ?> />
+			<label for="wpt-restrict-plugin-management-yes">
 				<?php esc_html_e( 'Yes', 'wordpress-tools' ); ?>
 			</label><br>
 
-			<input id="wpt-disallow-file-mods-no" <?php disabled( WPT_IS_WPE ); ?> name="wpt_settings[disallow_file_mods]" type="radio" value="0"<?php checked( 0, $disallow_file_mods ); ?> />
-			<label for="wpt-disallow-file-mods-no">
+			<input id="wpt-restrict-plugin-management-no" name="wpt_settings[restrict_plugin_management]" type="radio" value="0"<?php checked( 0, $restrict_plugin_management ); ?> />
+			<label for="wpt-restrict-plugin-management-no">
 				<?php esc_html_e( 'No', 'wordpress-tools' ); ?>
 			</label>
-			<p class="description"><?php esc_html_e( 'Disables plugin and theme uploads, updates, and file editing. This sets the DISALLOW_FILE_MODS constant.', 'wordpress-tools' ); ?></p>
+			<p class="description"><?php esc_html_e( 'Only allows administrators with @829llc.com emails to install, update, or delete plugins and themes.', 'wordpress-tools' ); ?></p>
 		</fieldset>
 		<?php
 	}
@@ -443,8 +442,8 @@ class Settings {
 		// Sanitize password_protect
 		$sanitized['password_protect'] = isset( $input['password_protect'] ) ? intval( $input['password_protect'] ) : 0;
 
-		// Sanitize disallow_file_mods
-		$sanitized['disallow_file_mods'] = isset( $input['disallow_file_mods'] ) ? intval( $input['disallow_file_mods'] ) : 0;
+		// Sanitize restrict_plugin_management
+		$sanitized['restrict_plugin_management'] = isset( $input['restrict_plugin_management'] ) ? intval( $input['restrict_plugin_management'] ) : 0;
 
 		// Sanitize restrict_rest_api
 		if ( isset( $input['restrict_rest_api'] ) && in_array( $input['restrict_rest_api'], [ 'all', 'users', 'none' ], true ) ) {
@@ -537,17 +536,17 @@ class Settings {
 			wp_die( esc_html__( 'You do not have permission to access this page.', 'wordpress-tools' ) );
 		}
 
-		$settings                 = self::get_settings();
-		$allow_sso                = $settings['allow_sso'];
-		$disable_comments         = $settings['disable_comments'];
-		$require_strong_passwords = $settings['require_strong_passwords'];
-		$password_protect         = $settings['password_protect'];
-		$disallow_file_mods       = $settings['disallow_file_mods'];
-		$restrict_rest_api        = $settings['restrict_rest_api'];
-		$limit_login              = $settings['limit_login'];
-		$attempt_limit            = defined( 'WPT_LOGIN_ATTEMPT_LIMIT' ) ? WPT_LOGIN_ATTEMPT_LIMIT : 10;
-		$lockout_minutes          = defined( 'WPT_LOGIN_LOCKOUT_DURATION' ) ? ceil( WPT_LOGIN_LOCKOUT_DURATION / 60 ) : 15;
-		$is_disabled              = defined( 'WPT_DISABLE_COMMENTS' ) || has_filter( 'wpt_disable_comments' );
+		$settings                   = self::get_settings();
+		$allow_sso                  = $settings['allow_sso'];
+		$disable_comments           = $settings['disable_comments'];
+		$require_strong_passwords   = $settings['require_strong_passwords'];
+		$password_protect           = $settings['password_protect'];
+		$restrict_plugin_management = $settings['restrict_plugin_management'];
+		$restrict_rest_api          = $settings['restrict_rest_api'];
+		$limit_login                = $settings['limit_login'];
+		$attempt_limit              = defined( 'WPT_LOGIN_ATTEMPT_LIMIT' ) ? WPT_LOGIN_ATTEMPT_LIMIT : 10;
+		$lockout_minutes            = defined( 'WPT_LOGIN_LOCKOUT_DURATION' ) ? ceil( WPT_LOGIN_LOCKOUT_DURATION / 60 ) : 15;
+		$is_disabled                = defined( 'WPT_DISABLE_COMMENTS' ) || has_filter( 'wpt_disable_comments' );
 		?>
 		<div class="wrap">
 			<h1><?php echo esc_html( get_admin_page_title() ); ?></h1>
@@ -640,20 +639,20 @@ class Settings {
 						</tr>
 						<tr>
 							<th scope="row">
-								<?php esc_html_e( 'Disable File Modifications', 'wordpress-tools' ); ?>
+								<?php esc_html_e( 'Restrict Plugin/Theme Management', 'wordpress-tools' ); ?>
 							</th>
 							<td>
 								<fieldset>
-									<input id="wpt-disallow-file-mods-yes" <?php disabled( WPT_IS_WPE ); ?> name="wpt_settings[disallow_file_mods]" type="radio" value="1"<?php checked( 1, $disallow_file_mods ); ?> />
-									<label for="wpt-disallow-file-mods-yes">
+									<input id="wpt-restrict-plugin-management-yes" name="wpt_settings[restrict_plugin_management]" type="radio" value="1"<?php checked( 1, $restrict_plugin_management ); ?> />
+									<label for="wpt-restrict-plugin-management-yes">
 										<?php esc_html_e( 'Yes', 'wordpress-tools' ); ?>
 									</label><br>
 
-									<input id="wpt-disallow-file-mods-no" <?php disabled( WPT_IS_WPE ); ?> name="wpt_settings[disallow_file_mods]" type="radio" value="0"<?php checked( 0, $disallow_file_mods ); ?> />
-									<label for="wpt-disallow-file-mods-no">
+									<input id="wpt-restrict-plugin-management-no" name="wpt_settings[restrict_plugin_management]" type="radio" value="0"<?php checked( 0, $restrict_plugin_management ); ?> />
+									<label for="wpt-restrict-plugin-management-no">
 										<?php esc_html_e( 'No', 'wordpress-tools' ); ?>
 									</label>
-									<p class="description"><?php esc_html_e( 'Disables plugin and theme uploads, updates, and file editing. This sets the DISALLOW_FILE_MODS constant.', 'wordpress-tools' ); ?></p>
+									<p class="description"><?php esc_html_e( 'Only allows administrators with @829llc.com emails to install, update, or delete plugins and themes.', 'wordpress-tools' ); ?></p>
 								</fieldset>
 							</td>
 						</tr>

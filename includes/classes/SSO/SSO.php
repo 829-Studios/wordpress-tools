@@ -53,7 +53,6 @@ class SSO {
 		add_action( 'login_form', [ $this, 'update_login_form' ] );
 		add_action( 'login_head', [ $this, 'render_login_form_styles' ] );
 		add_filter( 'authenticate', [ $this, 'prevent_standard_login_for_sso_user' ], 999 );
-		add_action( 'admin_page_access_denied', [ $this, 'check_user_blog' ] );
 	}
 
 	/**

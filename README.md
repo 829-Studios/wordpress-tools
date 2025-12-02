@@ -36,10 +36,10 @@ This plugin provides multiple layers of security protection:
   - Configurable via `WPT_LOGIN_ATTEMPT_LIMIT` and `WPT_LOGIN_LOCKOUT_DURATION` constants
 
 ### Site Hardening
-- **Disable File Modifications**: Dashboard option to set `DISALLOW_FILE_MODS` constant to prevent:
-  - Plugin installations and updates
-  - Theme installations and updates
-  - File editing through the WordPress admin
+- **Restrict Plugin/Theme Management**: Optional setting to limit plugin and theme management to 829 administrators only:
+  - Only users with @829llc.com email addresses can install, update, or delete plugins/themes
+  - Works on all hosts including WP Engine (uses WordPress capabilities, not constants)
+  - Restricts: install, activate, delete, update, edit, and upload for both plugins and themes
 - **Security Headers**: Automatic `X-Frame-Options` header set to `SAMEORIGIN` to prevent clickjacking attacks
 - **Password Protection Control**: Disallow post passwords which inherently don't work with caching.
 - **REST API Restriction**: Configurable REST API access control with three levels:
@@ -90,7 +90,7 @@ All settings are managed through the centralized **829 Settings** page:
 - **Disable Comments**: Remove comment functionality site-wide
 - **Require Strong Passwords**: Enforce strong password requirements for all users
 - **Enable Password Protected Content**: Allow password protected posts/pages
-- **Disable File Modifications**: Prevent plugin/theme installations and updates
+- **Restrict Plugin/Theme Management**: Limit plugin and theme management to 829 administrators only
 - **REST API Availability**: Control access to WordPress REST API endpoints
 - **Limit Login Attempts**: Enable/disable login attempt limiting (enabled by default)
 
