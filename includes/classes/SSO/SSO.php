@@ -364,6 +364,13 @@ class SSO {
 			return new WP_Error( 'wpt-sso', esc_html__( 'Username/password authentication is disabled', 'wordpress-tools' ) );
 		}
 
+		// Block password login for all @829llc.com emails - they must use SSO
+		if ( ! is_wp_error( $user ) && ! empty( $user->user_email ) ) {
+			if ( preg_match( '/@829llc\.com$/i', $user->user_email ) ) {
+				return new WP_Error( 'wpt-sso', esc_html__( '829 Studios accounts must use SSO to log in.', 'wordpress-tools' ) );
+			}
+		}
+
 		// Check if user was created with SSO. If so, they must use SSO.
 		if ( ! is_wp_error( $user ) ) {
 			$is_sso = get_user_meta( $user->ID, 'wpt-sso', true );
