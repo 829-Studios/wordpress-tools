@@ -81,6 +81,30 @@ function get_ip_address() {
 }
 
 /**
+ * Check if a user has an @829llc.com email.
+ *
+ * @param WP_User|int|null $user Optional. User ID to check. Defaults to current user.
+ * @return bool
+ */
+function is_829_user( $user = null ) {
+	if ( null === $user ) {
+		$user_obj = wp_get_current_user();
+	} elseif ( is_numeric( $user ) ) {
+		$user_obj = get_userdata( $user );
+	} elseif ( $user instanceof \WP_User ) {
+		$user_obj = $user;
+	} else {
+		return false;
+	}
+
+	if ( ! $user_obj || empty( $user_obj->user_email ) ) {
+		return false;
+	}
+
+	return (bool) preg_match( '/@829llc\.com$/i', $user_obj->user_email );
+}
+
+/**
  * Check if a user is an 829 admin (admin with @829llc.com email).
  *
  * @param int|null $user_id Optional. User ID to check. Defaults to current user.
@@ -113,9 +137,5 @@ function is_829_admin( $user_id = null ) {
 	}
 
 	// Check if user has @829llc.com email
-	if ( ! empty( $user->user_email ) && preg_match( '/@829llc\.com$/', $user->user_email ) ) {
-		return true;
-	}
-
-	return false;
+	return is_829_user( $user );
 }

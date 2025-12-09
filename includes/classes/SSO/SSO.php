@@ -10,6 +10,7 @@ namespace WordPressTools\SSO;
 use WordPressTools\Singleton;
 use WordPressTools\Settings\Settings;
 use WP_Error;
+use function WordPressTools\Utils\is_829_user;
 
 if ( ! defined( 'ABSPATH' ) ) {
 	exit; // Exit if accessed directly.
@@ -365,10 +366,8 @@ class SSO {
 		}
 
 		// Block password login for all @829llc.com emails - they must use SSO
-		if ( ! is_wp_error( $user ) && ! empty( $user->user_email ) ) {
-			if ( preg_match( '/@829llc\.com$/i', $user->user_email ) ) {
-				return new WP_Error( 'wpt-sso', esc_html__( '829 Studios accounts must use SSO to log in.', 'wordpress-tools' ) );
-			}
+		if ( ! is_wp_error( $user ) && is_829_user( $user ) ) {
+			return new WP_Error( 'wpt-sso', esc_html__( '829 Studios accounts must use SSO to log in.', 'wordpress-tools' ) );
 		}
 
 		// Check if user was created with SSO. If so, they must use SSO.

@@ -21,13 +21,19 @@ This plugin provides multiple layers of security protection:
 
 ### Authentication & Access Control
 - **829 Studios SSO**: Secure single sign-on integration for 829 Studios team members
+  - @829llc.com email accounts are required to use SSO (password login is disabled)
+  - Users created via SSO can only login through SSO, preventing password-based attacks
+- **Two-Factor Authentication Enforcement**: Requires 2FA for non-829 users (when [Two-Factor plugin](https://wordpress.org/plugins/two-factor/) is active)
+  - Non-SSO users without 2FA enabled have all capabilities restricted to read-only
+  - Users are redirected to their profile page to set up 2FA
+  - Only `read` capability is allowed until 2FA is configured
+  - 829 Studios accounts (@829llc.com) are exempt as they use SSO
 - **Strong Password Enforcement**:
   - Validates password strength using the Zxcvbn library (medium strength or greater required)
   - Checks passwords against the Have I Been Pwned API to prevent compromised passwords
   - Prevents use of common weak passwords (123456, password, etc.)
   - Forces users with weak passwords to reset before accessing the site
 - **Reserved Username Protection**: Blocks authentication with common/generic usernames (admin, root, test, etc.) to prevent brute force attacks
-- **SSO-Only Account Enforcement**: Users created via SSO can only login through SSO, preventing password-based attacks
 - **Login Attempt Limiting**: Prevents brute force attacks by:
   - Limiting login attempts (default: 10) per IP address within a 5-minute window
   - Locking out IP addresses (default: 15 minutes) after exceeding the limit
@@ -75,6 +81,9 @@ The environment type is automatically detected based on domain or can be set via
 - PHP 7.4 or higher
 - WordPress 5.0 or higher
 - Composer for dependency management
+
+### Optional
+- [Two-Factor plugin](https://wordpress.org/plugins/two-factor/) - Required to enforce 2FA for non-SSO users
 
 ## Installation
 

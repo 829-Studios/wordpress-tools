@@ -3,7 +3,7 @@
  * Plugin Name: 829 Studios - WordPress Tools
  * Plugin URI: https://www.829studios.com/
  * Description: WordPress tools for 829 Studios.
- * Version: 1.2.0
+ * Version: 1.3.0
  * Author: 829 Studios
  * Author URI: https://www.829studios.com/
  * Text Domain: 829-wordpress-tools
@@ -22,6 +22,7 @@ use WordPressTools\Settings\Settings;
 use WordPressTools\Authentication\Passwords;
 use WordPressTools\Authentication\Usernames;
 use WordPressTools\Authentication\LimitLogin;
+use WordPressTools\Authentication\TwoFactor;
 use WordPressTools\AdminCustomizations\AdminCustomizations;
 use WordPressTools\PluginManagement\PluginManagement;
 use YahnisElsts\PluginUpdateChecker\v5\PucFactory;
@@ -33,7 +34,7 @@ if ( ! defined( 'ABSPATH' ) ) {
 	exit;
 }
 
-define( 'WPT_VERSION', '1.2.0' );
+define( 'WPT_VERSION', '1.3.0' );
 define( 'WPT_PLUGIN_DIR', plugin_dir_path( __FILE__ ) );
 define( 'WPT_PLUGIN_URL', plugin_dir_url( __FILE__ ) );
 
@@ -155,6 +156,7 @@ add_action(
 		Passwords::instance();
 		Usernames::instance();
 		LimitLogin::instance();
+		TwoFactor::instance();
 		AdminCustomizations::instance();
 		API::instance();
 	}
