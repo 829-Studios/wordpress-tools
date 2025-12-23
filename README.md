@@ -21,8 +21,8 @@ This plugin provides multiple layers of security protection:
 
 ### Authentication & Access Control
 - **829 Studios SSO**: Secure single sign-on integration for 829 Studios team members
-  - @829llc.com email accounts are required to use SSO (password login is disabled)
   - Users created via SSO can only login through SSO, preventing password-based attacks
+  - Manually created @829llc.com accounts can still use password login
 - **Two-Factor Authentication Enforcement**: Requires 2FA for non-829 users (when [Two-Factor plugin](https://wordpress.org/plugins/two-factor/) is active)
   - Non-SSO users without 2FA enabled have all capabilities restricted to read-only
   - Users are redirected to their profile page to set up 2FA
