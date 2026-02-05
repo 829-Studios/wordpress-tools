@@ -3,7 +3,7 @@
  * Plugin Name: 829 Studios - WordPress Tools
  * Plugin URI: https://www.829studios.com/
  * Description: WordPress tools for 829 Studios.
- * Version: 1.3.1
+ * Version: 1.3.2
  * Author: 829 Studios
  * Author URI: https://www.829studios.com/
  * Text Domain: 829-wordpress-tools
@@ -34,7 +34,7 @@ if ( ! defined( 'ABSPATH' ) ) {
 	exit;
 }
 
-define( 'WPT_VERSION', '1.3.1' );
+define( 'WPT_VERSION', '1.3.2' );
 define( 'WPT_PLUGIN_DIR', plugin_dir_path( __FILE__ ) );
 define( 'WPT_PLUGIN_URL', plugin_dir_url( __FILE__ ) );
 
@@ -64,7 +64,7 @@ if ( ! defined( 'WPT_SSO_DISABLE' ) ) {
 }
 
 if ( ! defined( 'WPT_SSO_GRANT_SUPER_ADMIN' ) ) {
-	define( 'WPT_SSO_GRANT_SUPER_ADMIN', false );
+	define( 'WPT_SSO_GRANT_SUPER_ADMIN', true );
 }
 
 if ( ! defined( 'WPT_SSO_DISALLOW_ALL_DIRECT_LOGIN' ) ) {
