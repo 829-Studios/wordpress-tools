@@ -25,6 +25,15 @@ jobs:
           cache: 'npm'
           node-version-file: '.nvmrc'
 
+      - name: Set up PHP & Composer (release only)
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: 7.4
+          tools: composer:v2
+
+      - name: Run Composer install (release only)
+        run: composer install --no-dev --optimize-autoloader
+
       - name: Install dependencies
         run: npm install
 
