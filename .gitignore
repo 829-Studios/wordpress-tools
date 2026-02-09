@@ -4,7 +4,4 @@ node_modules
 .idea
 .vscode
 
-!vendor/yahnis-elsts
-!vendor/bjeavons
-
 wordpress-tools*.zip
