@@ -5,14 +5,14 @@
 	"author": "829 Studios",
 	"license": "MIT",
 	"scripts": {
-		"plugin-zip": "wp-scripts plugin-zip"
+		"zip": "wp-scripts plugin-zip && node npm-scripts/add-zip-version.js"
 	},
 	"devDependencies": {
-		"@wordpress/scripts": "^27.1.0"
+		"@wordpress/scripts": "^31.4.0"
 	},
 	"files": [
-		"README.md",
 		"wordpress-tools.php",
+		"README.md",
 		"composer.json",
 		"assets",
 		"includes",

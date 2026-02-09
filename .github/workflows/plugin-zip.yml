@@ -38,24 +38,22 @@ jobs:
         run: npm install
 
       - name: Build plugin zip
-        run: npm run plugin-zip
+        run: npm run zip
 
       - name: Verify zip exists
-        run: test -f ./wordpress-tools.zip
+        run: test -f ./wordpress-tools-$(node -p "require('./package.json').version").zip
 
       - name: Upload ZIP as artifact (manual runs)
         if: github.event_name == 'workflow_dispatch'
         uses: actions/upload-artifact@v4
         with:
           name: wordpress-tools-zip
-          path: ./wordpress-tools.zip
+          path: ./wordpress-tools-$(node -p "require('./package.json').version").zip
           retention-days: 5
 
-      - name: Attach ZIP to release
+      - name: Attach ZIP to existing release
         if: github.event_name == 'release'
-        uses: ncipollo/release-action@v1
-        with:
-          artifacts: wordpress-tools.zip
-          replacesArtifacts: true
+        run: |
+          gh release upload ${{ github.ref_name }} ./wordpress-tools-$(node -p "require('./package.json').version").zip --clobber
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
