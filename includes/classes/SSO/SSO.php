@@ -131,7 +131,7 @@ class SSO {
 			300
 		);
 
-		wp_safe_redirect( $proxy_url );
+		wp_redirect( $proxy_url ); // phpcs:ignore WordPress.Security.SafeRedirect.wp_redirect_wp_redirect
 		exit;
 	}
 
