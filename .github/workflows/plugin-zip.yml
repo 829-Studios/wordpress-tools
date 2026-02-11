@@ -1,0 +1,59 @@
+name: Create plugin zip file
+
+on:
+  release:
+    types: [published]
+  workflow_dispatch:
+    inputs:
+      ref:
+        description: "Git commit/branch/tag"
+        required: false
+        type: string
+
+jobs:
+  plugin-zip:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+        with:
+          ref: ${{ github.event.inputs.ref || github.ref }}
+
+      - name: Set up Node.js from .nvmrc
+        uses: actions/setup-node@v3
+        with:
+          cache: "npm"
+          node-version-file: ".nvmrc"
+
+      - name: Set up PHP & Composer (release only)
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: 8.2
+          tools: composer:v2
+
+      - name: Run Composer install (release only)
+        run: composer install --no-dev --optimize-autoloader
+
+      - name: Install dependencies
+        run: npm install
+
+      - name: Build plugin zip
+        run: npm run zip
+
+      - name: Verify zip exists
+        run: test -f ./wordpress-tools-$(node -p "require('./package.json').version").zip
+
+      - name: Upload ZIP as artifact (manual runs)
+        if: github.event_name == 'workflow_dispatch'
+        uses: actions/upload-artifact@v4
+        with:
+          name: wordpress-tools-zip
+          path: ./wordpress-tools-$(node -p "require('./package.json').version").zip
+          retention-days: 5
+
+      - name: Attach ZIP to existing release
+        if: github.event_name == 'release'
+        run: |
+          gh release upload ${{ github.ref_name }} ./wordpress-tools-$(node -p "require('./package.json').version").zip --clobber
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

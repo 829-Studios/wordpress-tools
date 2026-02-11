@@ -1,0 +1,21 @@
+{
+	"name": "wordpress-tools",
+	"version": "1.4.0",
+	"description": "WordPress tools for 829 Studios. A comprehensive WordPress security and management plugin designed to enhance site security, streamline authentication, and provide centralized control over critical WordPress features.",
+	"author": "829 Studios",
+	"license": "MIT",
+	"scripts": {
+		"zip": "wp-scripts plugin-zip && node npm-scripts/add-zip-version.js"
+	},
+	"devDependencies": {
+		"@wordpress/scripts": "^31.4.0"
+	},
+	"files": [
+		"wordpress-tools.php",
+		"README.md",
+		"composer.json",
+		"assets",
+		"includes",
+		"vendor"
+	]
+}
