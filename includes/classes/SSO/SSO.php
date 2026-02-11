@@ -131,7 +131,7 @@ class SSO {
 			300
 		);
 
-		wp_redirect( $proxy_url );
+		wp_redirect( $proxy_url ); // phpcs:ignore WordPress.Security.SafeRedirect.wp_redirect_wp_redirect
 		exit;
 	}
 
@@ -235,7 +235,7 @@ class SSO {
 
 		$buttons_html = '<div class="sso"><div class="buttons">';
 
-		$svg = file_get_contents( WPT_PLUGIN_DIR . 'assets/svg/logo.svg' );
+		$svg = file_get_contents( WPT_PLUGIN_DIR . 'assets/svg/logo.svg' ); // phpcs:ignore WordPress.WP.AlternativeFunctions.file_get_contents_file_get_contents
 		$svg = str_replace( "\n", '', $svg );
 
 		$buttons_html .= '<a href="' . esc_url( $login_url ) . '" class="wpt-button button"> ' . $svg . ' ' .
