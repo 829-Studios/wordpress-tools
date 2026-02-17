@@ -1,4 +1,6 @@
 vendor/*
+!vendor/yahnis-elsts
+!vendor/bjeavons
 node_modules
 .DS_Store
 .idea
