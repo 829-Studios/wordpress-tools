@@ -210,6 +210,14 @@ class SSO {
 			}
 		} else {
 			$user_id = $user->ID;
+
+			if ( is_multisite() ) {
+				$current_blog_id = get_current_blog_id();
+
+				if ( ! is_user_member_of_blog( $user_id, $current_blog_id ) ) {
+					add_user_to_blog( $current_blog_id, $user_id, $payload['role'] );
+				}
+			}
 		}
 
 		if ( empty( $user_id ) ) {
