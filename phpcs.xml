@@ -2,9 +2,9 @@
 <ruleset name="829 Coding Standards">
 	<description>829 Coding Standards</description>
 
-	<!-- Test for PHP 8.3 compatibility. -->
-    <config name="testVersion" value="8.3-"/>
-    <config name="php_version" value="80200"/>
+	<!-- Test for PHP 7.4 compatibility. -->
+    <config name="testVersion" value="7.4-"/>
+    <config name="php_version" value="70400"/>
 
 	<!-- Pass some flags to PHPCS:
 		 p flag: Show progress of the run.

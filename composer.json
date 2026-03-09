@@ -10,7 +10,7 @@
       }
   ],
   "require": {
-      "php": ">=8.2",
+      "php": ">=7.4",
       "yahnis-elsts/plugin-update-checker": "5.1",
       "bjeavons/zxcvbn-php": "^1.0"
   },
