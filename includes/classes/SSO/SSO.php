@@ -117,11 +117,14 @@ class SSO {
 			$redirect_to = home_url();
 		}
 
-		$site_url = home_url();
-		$nonce    = wp_create_nonce();
+		$site_url  = home_url();
+		$login_url = wp_login_url();
+		$nonce     = wp_create_nonce();
 
 		$proxy_url = add_query_arg( 'site', $site_url, WPT_SSO_PROXY_URL . '/sso/login' );
 		$proxy_url = add_query_arg( 'nonce', $nonce, $proxy_url );
+		$proxy_url = add_query_arg( 'login_url', rawurlencode( $login_url ), $proxy_url );
+		$proxy_url = add_query_arg( 'redirect_url', rawurlencode( $redirect_to ), $proxy_url );
 
 		set_transient(
 			'auth_session_' . $nonce,
@@ -229,7 +232,7 @@ class SSO {
 		wp_set_auth_cookie( $user_id );
 		remove_filter( 'auth_cookie_expiration', [ $this, 'change_cookie_expiration' ], 1000 );
 
-		$redirect_to = $session['redirect_to'] ?? home_url();
+		$redirect_to = $session['redirect_to'] ?? filter_input( INPUT_GET, 'redirect_url' ) ?? home_url();
 
 		wp_safe_redirect( $redirect_to );
 		exit;
@@ -239,7 +242,12 @@ class SSO {
 	 * Insert login button into login form
 	 */
 	public function update_login_form() {
-		$login_url = home_url( '/wp-login.php?action=wpt-start-login' );
+		$redirect_to = filter_input( INPUT_GET, 'redirect_to' );
+		$login_url   = add_query_arg( 'action', 'wpt-start-login', wp_login_url() );
+
+		if ( ! empty( $redirect_to ) ) {
+			$login_url = add_query_arg( 'redirect_to', rawurlencode( $redirect_to ), $login_url );
+		}
 
 		$buttons_html = '<div class="sso"><div class="buttons">';
 
