@@ -46,7 +46,6 @@ This plugin provides multiple layers of security protection:
   - Only users with @829llc.com email addresses can install, update, or delete plugins/themes
   - Works on all hosts including WP Engine (uses WordPress capabilities, not constants)
   - Restricts: install, activate, delete, update, edit, and upload for both plugins and themes
-- **Security Headers**: Automatic `X-Frame-Options` header set to `SAMEORIGIN` to prevent clickjacking attacks
 - **Password Protection Control**: Disallow post passwords which inherently don't work with caching.
 - **REST API Restriction**: Configurable REST API access control with three levels:
   - Restrict all REST API access to authenticated users only

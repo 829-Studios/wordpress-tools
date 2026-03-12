@@ -3,7 +3,7 @@
  * Plugin Name: 829 Studios - WordPress Tools
  * Plugin URI: https://www.829studios.com/
  * Description: WordPress tools for 829 Studios.
- * Version: 1.4.5
+ * Version: 1.4.6
  * Author: 829 Studios
  * Author URI: https://www.829studios.com/
  * Text Domain: 829-wordpress-tools
@@ -16,7 +16,6 @@ namespace WordPressTools;
 
 use WordPressTools\SSO\SSO;
 use WordPressTools\PostPasswords\PostPasswords;
-use WordPressTools\Headers\Headers;
 use WordPressTools\Comments\Comments;
 use WordPressTools\Settings\Settings;
 use WordPressTools\Authentication\Passwords;
@@ -34,7 +33,7 @@ if ( ! defined( 'ABSPATH' ) ) {
 	exit;
 }
 
-define( 'WPT_VERSION', '1.4.5' );
+define( 'WPT_VERSION', '1.4.6' );
 define( 'WPT_PLUGIN_DIR', plugin_dir_path( __FILE__ ) );
 define( 'WPT_PLUGIN_URL', plugin_dir_url( __FILE__ ) );
 
@@ -150,7 +149,6 @@ add_action(
 	function () {
 		SSO::instance();
 		PostPasswords::instance();
-		Headers::instance();
 		Comments::instance();
 		Settings::instance();
 		Passwords::instance();
