@@ -26,6 +26,8 @@ use WordPressTools\AdminCustomizations\AdminCustomizations;
 use WordPressTools\PluginManagement\PluginManagement;
 use YahnisElsts\PluginUpdateChecker\v5\PucFactory;
 use WordPressTools\API\API;
+use WordPressTools\SiteInfo\ActivityLog;
+use WordPressTools\SiteInfo\SiteInfo;
 use WP_CLI;
 
 // Prevent direct access.
@@ -156,6 +158,8 @@ add_action(
 		LimitLogin::instance();
 		TwoFactor::instance();
 		AdminCustomizations::instance();
+		ActivityLog::instance();
+		SiteInfo::instance();
 		API::instance();
 	}
 );
