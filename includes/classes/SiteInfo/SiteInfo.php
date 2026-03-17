@@ -72,7 +72,7 @@ class SiteInfo {
 	}
 
 	/**
-	 * Check permission via X-Wpt-Key header against WPT_API_KEY constant.
+	 * Check permission via X-Wpt-Key header against WPT_API_KEY_READ constant.
 	 * Local environments bypass authentication entirely.
 	 *
 	 * @param \WP_REST_Request $request Request object.
@@ -83,17 +83,9 @@ class SiteInfo {
 			return true;
 		}
 
-		if ( ! defined( 'WPT_API_KEY' ) || empty( WPT_API_KEY ) ) {
-			return new \WP_Error(
-				'rest_forbidden',
-				'API key is not configured.',
-				[ 'status' => 403 ]
-			);
-		}
-
 		$provided_key = $request->get_header( 'X-Wpt-Key' );
 
-		if ( empty( $provided_key ) || ! hash_equals( WPT_API_KEY, $provided_key ) ) {
+		if ( empty( $provided_key ) || ! hash_equals( WPT_API_KEY_READ, $provided_key ) ) {
 			return new \WP_Error(
 				'rest_forbidden',
 				'Invalid API key.',

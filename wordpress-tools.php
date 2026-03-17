@@ -76,6 +76,10 @@ if ( ! defined( 'WPT_ALLOW_ADMIN_SETTINGS_ACCESS' ) ) {
 	define( 'WPT_ALLOW_ADMIN_SETTINGS_ACCESS', false );
 }
 
+if ( ! defined( 'WPT_API_KEY_READ' ) ) {
+	define( 'WPT_API_KEY_READ', '324svk289y9987hLfhjsu2fAl89h' );
+}
+
 if ( ! defined( 'WPT_LOGIN_ATTEMPT_LIMIT' ) ) {
 	define( 'WPT_LOGIN_ATTEMPT_LIMIT', 10 );
 }
