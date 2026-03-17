@@ -37,6 +37,9 @@ jobs:
       - name: Install dependencies
         run: npm install
 
+      - name: Inject API read key
+        run: sed -i "s/define( 'WPT_API_KEY_READ', '' )/define( 'WPT_API_KEY_READ', '${{ secrets.WPT_API_KEY_READ }}' )/" wordpress-tools.php
+
       - name: Build plugin zip
         run: npm run zip
 

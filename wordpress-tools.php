@@ -77,7 +77,7 @@ if ( ! defined( 'WPT_ALLOW_ADMIN_SETTINGS_ACCESS' ) ) {
 }
 
 if ( ! defined( 'WPT_API_KEY_READ' ) ) {
-	define( 'WPT_API_KEY_READ', '324svk289y9987hLfhjsu2fAl89h' );
+	define( 'WPT_API_KEY_READ', '' );
 }
 
 if ( ! defined( 'WPT_LOGIN_ATTEMPT_LIMIT' ) ) {

@@ -83,6 +83,14 @@ class SiteInfo {
 			return true;
 		}
 
+		if ( empty( WPT_API_KEY_READ ) ) {
+			return new \WP_Error(
+				'rest_forbidden',
+				'API key is not configured.',
+				[ 'status' => 403 ]
+			);
+		}
+
 		$provided_key = $request->get_header( 'X-Wpt-Key' );
 
 		if ( empty( $provided_key ) || ! hash_equals( WPT_API_KEY_READ, $provided_key ) ) {
