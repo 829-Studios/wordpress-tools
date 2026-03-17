@@ -76,10 +76,6 @@ if ( ! defined( 'WPT_ALLOW_ADMIN_SETTINGS_ACCESS' ) ) {
 	define( 'WPT_ALLOW_ADMIN_SETTINGS_ACCESS', false );
 }
 
-if ( ! defined( 'WPT_API_KEY_READ' ) ) {
-	define( 'WPT_API_KEY_READ', '' );
-}
-
 if ( ! defined( 'WPT_LOGIN_ATTEMPT_LIMIT' ) ) {
 	define( 'WPT_LOGIN_ATTEMPT_LIMIT', 10 );
 }
@@ -166,6 +162,15 @@ add_action(
 		SiteInfo::instance();
 		API::instance();
 	}
+);
+
+// Generate an API key on activation if one doesn't exist.
+register_activation_hook( __FILE__, [ Settings::class, 'maybe_generate_api_key' ] );
+
+// On admin load, ensure an API key exists (covers plugin updates).
+add_action(
+	'admin_init',
+	[ Settings::class, 'maybe_generate_api_key' ]
 );
 
 // Register WP-CLI commands

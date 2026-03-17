@@ -8,6 +8,7 @@
 namespace WordPressTools\SiteInfo;
 
 use WordPressTools\Singleton;
+use WordPressTools\Settings\Settings;
 
 if ( ! defined( 'ABSPATH' ) ) {
 	exit;
@@ -72,7 +73,7 @@ class SiteInfo {
 	}
 
 	/**
-	 * Check permission via X-Wpt-Key header against WPT_API_KEY_READ constant.
+	 * Check permission via X-Wpt-Key header against WPT_DASHBOARD_API_KEY constant.
 	 * Local environments bypass authentication entirely.
 	 *
 	 * @param \WP_REST_Request $request Request object.
@@ -83,7 +84,9 @@ class SiteInfo {
 			return true;
 		}
 
-		if ( empty( WPT_API_KEY_READ ) ) {
+		$api_key = Settings::get_dashboard_api_key();
+
+		if ( empty( $api_key ) ) {
 			return new \WP_Error(
 				'rest_forbidden',
 				'API key is not configured.',
@@ -93,7 +96,7 @@ class SiteInfo {
 
 		$provided_key = $request->get_header( 'X-Wpt-Key' );
 
-		if ( empty( $provided_key ) || ! hash_equals( WPT_API_KEY_READ, $provided_key ) ) {
+		if ( empty( $provided_key ) || ! hash_equals( $api_key, $provided_key ) ) {
 			return new \WP_Error(
 				'rest_forbidden',
 				'Invalid API key.',

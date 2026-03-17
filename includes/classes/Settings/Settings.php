@@ -34,6 +34,8 @@ class Settings {
 			add_action( 'admin_init', [ $this, 'register_settings' ] );
 			add_action( 'admin_menu', [ $this, 'register_settings_page' ] );
 		}
+
+		add_action( 'admin_post_wpt_regenerate_api_key', [ $this, 'handle_api_key_regenerate' ] );
 	}
 
 	/**
@@ -62,6 +64,23 @@ class Settings {
 
 		// Merge with defaults to ensure all keys exist
 		return wp_parse_args( $settings, $defaults );
+	}
+
+	/**
+	 * Get the read API key. Constant takes priority over DB value.
+	 *
+	 * @return string
+	 */
+	public static function get_dashboard_api_key() {
+		if ( defined( 'WPT_DASHBOARD_API_KEY' ) && ! empty( WPT_DASHBOARD_API_KEY ) ) {
+			return WPT_DASHBOARD_API_KEY;
+		}
+
+		if ( WPT_IS_NETWORK ) {
+			return (string) get_site_option( 'wpt_dashboard_api_key', '' );
+		}
+
+		return (string) get_option( 'wpt_dashboard_api_key', '' );
 	}
 
 	/**
@@ -230,6 +249,15 @@ class Settings {
 			'wpt_limit_login',
 			esc_html__( 'Limit Login Attempts', 'wordpress-tools' ),
 			[ $this, 'limit_login_setting_callback' ],
+			'wpt-829-settings',
+			'wpt_829_general_section'
+		);
+
+		// API Key setting field
+		add_settings_field(
+			'wpt_dashboard_api_key',
+			esc_html__( 'Dashboard Read API Key', 'wordpress-tools' ),
+			[ $this, 'api_key_setting_callback' ],
 			'wpt-829-settings',
 			'wpt_829_general_section'
 		);
@@ -419,6 +447,101 @@ class Settings {
 			</p>
 		</fieldset>
 		<?php
+	}
+
+	/**
+	 * API Key setting callback.
+	 */
+	public function api_key_setting_callback() {
+		if ( defined( 'WPT_DASHBOARD_API_KEY' ) && ! empty( WPT_DASHBOARD_API_KEY ) ) {
+			?>
+			<input type="text" value="<?php echo esc_attr( WPT_DASHBOARD_API_KEY ); ?>" class="regular-text" readonly />
+			<p class="description"><?php esc_html_e( 'Defined in wp-config.php', 'wordpress-tools' ); ?></p>
+			<?php
+			return;
+		}
+
+		$key     = self::get_dashboard_api_key();
+		$has_key = ! empty( $key );
+
+		if ( $has_key ) {
+			?>
+			<input type="text" value="<?php echo esc_attr( $key ); ?>" class="regular-text" readonly />
+			<?php
+		} else {
+			?>
+			<input type="text" value="<?php esc_attr_e( 'No key generated', 'wordpress-tools' ); ?>" class="regular-text" disabled />
+			<?php
+		}
+		?>
+		<?php
+		$regenerate_url = wp_nonce_url(
+			admin_url( 'admin-post.php?action=wpt_regenerate_api_key' ),
+			'wpt_regenerate_api_key'
+		);
+		?>
+		<a href="<?php echo esc_url( $regenerate_url ); ?>" class="button button-secondary">
+			<?php echo $has_key ? esc_html__( 'Regenerate Key', 'wordpress-tools' ) : esc_html__( 'Generate Key', 'wordpress-tools' ); ?>
+		</a>
+		<?php
+	}
+
+	/**
+	 * Handle API key regeneration.
+	 */
+	public function handle_api_key_regenerate() {
+		check_admin_referer( 'wpt_regenerate_api_key' );
+
+		if ( WPT_IS_NETWORK ) {
+			if ( ! current_user_can( 'manage_network_options' ) ) {
+				wp_die( esc_html__( 'You do not have permission to perform this action.', 'wordpress-tools' ) );
+			}
+		} elseif ( ! current_user_can( 'manage_options' ) ) {
+			wp_die( esc_html__( 'You do not have permission to perform this action.', 'wordpress-tools' ) );
+		}
+
+		if ( defined( 'WPT_DASHBOARD_API_KEY' ) && ! empty( WPT_DASHBOARD_API_KEY ) ) {
+			wp_die( esc_html__( 'API key is defined in wp-config.php and cannot be regenerated.', 'wordpress-tools' ) );
+		}
+
+		$key = wp_generate_password( 40, false );
+
+		if ( WPT_IS_NETWORK ) {
+			update_site_option( 'wpt_dashboard_api_key', $key );
+		} else {
+			update_option( 'wpt_dashboard_api_key', $key );
+		}
+
+		$redirect = WPT_IS_NETWORK
+			? add_query_arg(
+				[
+					'page'    => 'wpt-829-settings',
+					'updated' => 'true',
+				],
+				network_admin_url( 'settings.php' )
+			)
+			: admin_url( 'options-general.php?page=wpt-829-settings' );
+
+		wp_safe_redirect( $redirect );
+		exit;
+	}
+
+	/**
+	 * Ensure an API key exists in the database.
+	 * Called on activation and plugin update.
+	 */
+	public static function maybe_generate_api_key() {
+		if ( ! empty( self::get_dashboard_api_key() ) ) {
+			return;
+		}
+
+		$key = wp_generate_password( 40, false );
+
+		if ( WPT_IS_NETWORK ) {
+			update_site_option( 'wpt_dashboard_api_key', $key );
+		} else {
+			update_option( 'wpt_dashboard_api_key', $key );
+		}
 	}
 
 	/**
@@ -719,6 +842,14 @@ class Settings {
 										?>
 									</p>
 								</fieldset>
+							</td>
+						</tr>
+						<tr>
+							<th scope="row">
+								<?php esc_html_e( 'Dashboard Read API Key', 'wordpress-tools' ); ?>
+							</th>
+							<td>
+								<?php $this->api_key_setting_callback(); ?>
 							</td>
 						</tr>
 					</tbody>

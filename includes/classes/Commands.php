@@ -69,4 +69,37 @@ class Commands extends WP_CLI_Command {
 
 		WP_CLI::success( sprintf( 'Cleared %d login attempt transient(s).', $count ) );
 	}
+
+	/**
+	 * Regenerate the read API key.
+	 *
+	 * Generates a new API key for the read-only REST endpoint and saves it
+	 * to the database. Cannot be used when WPT_DASHBOARD_API_KEY is defined in
+	 * wp-config.php.
+	 *
+	 * ## EXAMPLES
+	 *
+	 *     # Regenerate the API key
+	 *     $ wp 829-tools regenerate-api-key
+	 *     Success: New API key: abc123...
+	 *
+	 * @subcommand regenerate-api-key
+	 * @param array $args Positional arguments.
+	 * @param array $assoc_args Associative arguments.
+	 */
+	public function regenerate_api_key( $args, $assoc_args ) {
+		if ( defined( 'WPT_DASHBOARD_API_KEY' ) && ! empty( WPT_DASHBOARD_API_KEY ) ) {
+			WP_CLI::error( 'Cannot regenerate API key — WPT_DASHBOARD_API_KEY is defined in wp-config.php.' );
+		}
+
+		$key = wp_generate_password( 40, false );
+
+		if ( WPT_IS_NETWORK ) {
+			update_site_option( 'wpt_dashboard_api_key', $key );
+		} else {
+			update_option( 'wpt_dashboard_api_key', $key );
+		}
+
+		WP_CLI::success( $key );
+	}
 }
