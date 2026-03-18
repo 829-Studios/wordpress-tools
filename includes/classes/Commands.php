@@ -102,4 +102,31 @@ class Commands extends WP_CLI_Command {
 
 		WP_CLI::success( $key );
 	}
+
+	/**
+	 * Set an api key
+	 *
+	 * @subcommand set-api-key <key>
+	 * @param array $args Positional arguments.
+	 * @param array $assoc_args Associative arguments.
+	 */
+	public function set_api_key( $args, $assoc_args ) {
+		if ( defined( 'WPT_DASHBOARD_API_KEY' ) && ! empty( WPT_DASHBOARD_API_KEY ) ) {
+			WP_CLI::error( 'Cannot set API key — WPT_DASHBOARD_API_KEY is defined in wp-config.php.' );
+		}
+
+		$key = $args[0];
+
+		if ( empty( $key ) ) {
+			WP_CLI::error( 'Must provide key' );
+		}
+
+		if ( WPT_IS_NETWORK ) {
+			update_site_option( 'wpt_dashboard_api_key', $key );
+		} else {
+			update_option( 'wpt_dashboard_api_key', $key );
+		}
+
+		WP_CLI::success( $key );
+	}
 }
