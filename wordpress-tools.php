@@ -26,6 +26,8 @@ use WordPressTools\AdminCustomizations\AdminCustomizations;
 use WordPressTools\PluginManagement\PluginManagement;
 use YahnisElsts\PluginUpdateChecker\v5\PucFactory;
 use WordPressTools\API\API;
+use WordPressTools\SiteInfo\ActivityLog;
+use WordPressTools\SiteInfo\SiteInfo;
 use WP_CLI;
 
 // Prevent direct access.
@@ -156,8 +158,19 @@ add_action(
 		LimitLogin::instance();
 		TwoFactor::instance();
 		AdminCustomizations::instance();
+		ActivityLog::instance();
+		SiteInfo::instance();
 		API::instance();
 	}
+);
+
+// Generate an API key on activation if one doesn't exist.
+register_activation_hook( __FILE__, [ Settings::class, 'maybe_generate_api_key' ] );
+
+// On admin load, ensure an API key exists (covers plugin updates).
+add_action(
+	'admin_init',
+	[ Settings::class, 'maybe_generate_api_key' ]
 );
 
 // Register WP-CLI commands
