@@ -109,19 +109,40 @@ class SiteInfo {
 
 	/**
 	 * GET callback — return comprehensive site info.
+	 * On multisite with network activation, returns an array of all sites.
 	 *
 	 * @return \WP_REST_Response
 	 */
 	public function get_site_info() {
-		$data = [
+		if ( WPT_IS_NETWORK && is_multisite() ) {
+			$sites = get_sites( [ 'number' => 0 ] );
+			$data  = [];
+
+			foreach ( $sites as $site ) {
+				switch_to_blog( $site->blog_id );
+				$data[] = $this->get_single_site_info();
+				restore_current_blog();
+			}
+
+			return rest_ensure_response( $data );
+		}
+
+		return rest_ensure_response( $this->get_single_site_info() );
+	}
+
+	/**
+	 * Get info for a single site.
+	 *
+	 * @return array
+	 */
+	private function get_single_site_info() {
+		return [
 			'system'        => $this->get_system_info(),
 			'plugins'       => $this->get_plugins_info(),
 			'themes'        => $this->get_themes_info(),
 			'users'         => $this->get_users_info(),
 			'activity_logs' => $this->get_activity_logs(),
 		];
-
-		return rest_ensure_response( $data );
 	}
 
 	/**
@@ -233,7 +254,9 @@ class SiteInfo {
 		global $wp_version, $wpdb;
 
 		return [
-			'site_url'              => get_site_url(),
+			'blog_id'               => get_current_blog_id(),
+			'site_url'              => site_url(),
+			'home_url'              => home_url(),
 			'wp_version'            => $wp_version,
 			'php_version'           => PHP_VERSION,
 			'db_version'            => $wpdb->db_version(),
