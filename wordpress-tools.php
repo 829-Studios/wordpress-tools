@@ -29,6 +29,7 @@ use WordPressTools\API\API;
 use WordPressTools\SiteInfo\ActivityLog;
 use WordPressTools\SiteInfo\SiteInfo;
 use WordPressTools\MCP\MCP;
+use WordPressTools\MCP\PropelMCP;
 use WP_CLI;
 
 // Prevent direct access.
