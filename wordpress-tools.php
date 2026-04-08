@@ -28,6 +28,7 @@ use YahnisElsts\PluginUpdateChecker\v5\PucFactory;
 use WordPressTools\API\API;
 use WordPressTools\SiteInfo\ActivityLog;
 use WordPressTools\SiteInfo\SiteInfo;
+use WordPressTools\MCP\MCP;
 use WP_CLI;
 
 // Prevent direct access.
@@ -161,6 +162,7 @@ add_action(
 		ActivityLog::instance();
 		SiteInfo::instance();
 		API::instance();
+		MCP::instance();
 	}
 );
 

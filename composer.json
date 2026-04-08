@@ -12,8 +12,15 @@
   "require": {
       "php": ">=7.4",
       "yahnis-elsts/plugin-update-checker": "5.1",
-      "bjeavons/zxcvbn-php": "^1.0"
+      "bjeavons/zxcvbn-php": "^1.0",
+      "wordpress/mcp-adapter": "dev-trunk"
   },
+  "repositories": [
+    {
+      "type": "vcs",
+      "url": "https://github.com/WordPress/mcp-adapter"
+    }
+  ],
   "require-dev": {
       "wp-coding-standards/wpcs": "^3.0",
       "squizlabs/php_codesniffer": "^3.13",
