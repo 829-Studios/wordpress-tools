@@ -43,9 +43,6 @@ class MCP {
 
 		add_action( 'wp_abilities_api_categories_init', [ $this, 'register_category' ] );
 		add_action( 'wp_abilities_api_init', [ $this, 'register_abilities' ] );
-
-		// Boot Propel-specific abilities when the Propel theme is active.
-		PropelMCP::instance();
 	}
 
 	/**
@@ -604,6 +601,233 @@ class MCP {
 						'destructive' => false,
 						'idempotent'  => true,
 					),
+				),
+			)
+		);
+
+		// ── ACF ─────────────────────────────────────────────────────────────
+
+		wp_register_ability(
+			'829-tools/list-acf-blocks',
+			array(
+				'category'            => '829-tools',
+				'label'               => 'List ACF Blocks',
+				'description'         => 'Returns all registered ACF block types with their field definitions. Use this to understand what blocks are available and what data they accept before inserting block markup into post content.',
+				'input_schema'        => array( 'type' => 'object', 'properties' => array() ),
+				'output_schema'       => array(
+					'type'       => 'object',
+					'properties' => array( 'blocks' => array( 'type' => 'array' ) ),
+				),
+				'permission_callback' => [ $this, 'check_admin_permission' ],
+				'execute_callback'    => [ $this, 'list_acf_blocks' ],
+				'meta'                => array(
+					'mcp'         => array( 'public' => true ),
+					'annotations' => array( 'readonly' => true, 'destructive' => false, 'idempotent' => true ),
+				),
+			)
+		);
+
+		wp_register_ability(
+			'829-tools/get-acf-fields',
+			array(
+				'category'            => '829-tools',
+				'label'               => 'Get ACF Fields',
+				'description'         => 'Returns all ACF field values for a post, page, or custom post type. Also accepts "options" to read from the ACF options page.',
+				'input_schema'        => array(
+					'type'       => 'object',
+					'properties' => array(
+						'post_id' => array( 'type' => array( 'integer', 'string' ), 'description' => 'Post ID, or "options" for the ACF options page.' ),
+					),
+					'required' => array( 'post_id' ),
+				),
+				'output_schema'       => array(
+					'type'       => 'object',
+					'properties' => array( 'fields' => array( 'type' => 'object' ) ),
+				),
+				'permission_callback' => [ $this, 'check_admin_permission' ],
+				'execute_callback'    => [ $this, 'get_acf_fields' ],
+				'meta'                => array(
+					'mcp'         => array( 'public' => true ),
+					'annotations' => array( 'readonly' => true, 'destructive' => false, 'idempotent' => true ),
+				),
+			)
+		);
+
+		wp_register_ability(
+			'829-tools/update-acf-fields',
+			array(
+				'category'            => '829-tools',
+				'label'               => 'Update ACF Fields',
+				'description'         => 'Updates one or more ACF fields on a post. Also accepts "options" to write to the ACF options page. Only the provided fields are changed.',
+				'input_schema'        => array(
+					'type'       => 'object',
+					'properties' => array(
+						'post_id' => array( 'type' => array( 'integer', 'string' ), 'description' => 'Post ID, or "options" for the ACF options page.' ),
+						'fields'  => array( 'type' => 'object', 'description' => 'Key/value map of field names to their new values.' ),
+					),
+					'required' => array( 'post_id', 'fields' ),
+				),
+				'output_schema'       => array(
+					'type'       => 'object',
+					'properties' => array( 'updated' => array( 'type' => 'boolean' ) ),
+				),
+				'permission_callback' => [ $this, 'check_admin_permission' ],
+				'execute_callback'    => [ $this, 'update_acf_fields' ],
+				'meta'                => array(
+					'mcp'         => array( 'public' => true ),
+					'annotations' => array( 'destructive' => true, 'idempotent' => true ),
+				),
+			)
+		);
+
+		// ── Redirection plugin ───────────────────────────────────────────────
+
+		wp_register_ability(
+			'829-tools/search-redirects',
+			array(
+				'category'            => '829-tools',
+				'label'               => 'Search Redirects',
+				'description'         => 'Searches redirects managed by the Redirection plugin. Requires the Redirection plugin to be installed and active.',
+				'input_schema'        => array(
+					'type'       => 'object',
+					'properties' => array(
+						'search'   => array( 'type' => 'string', 'description' => 'Filter by source URL, target URL, or title.' ),
+						'status'   => array( 'type' => 'string', 'description' => 'Filter by status: "enabled" or "disabled". Omit for all.' ),
+						'per_page' => array( 'type' => 'integer', 'description' => 'Results per page. Default 50, max 200.', 'default' => 50 ),
+						'page'     => array( 'type' => 'integer', 'description' => 'Page number. Default 1.', 'default' => 1 ),
+					),
+				),
+				'output_schema'       => array(
+					'type'       => 'object',
+					'properties' => array(
+						'redirects' => array( 'type' => 'array' ),
+						'total'     => array( 'type' => 'integer' ),
+						'pages'     => array( 'type' => 'integer' ),
+					),
+				),
+				'permission_callback' => [ $this, 'check_admin_permission' ],
+				'execute_callback'    => [ $this, 'search_redirects' ],
+				'meta'                => array(
+					'mcp'         => array( 'public' => true ),
+					'annotations' => array( 'readonly' => true, 'destructive' => false, 'idempotent' => true ),
+				),
+			)
+		);
+
+		wp_register_ability(
+			'829-tools/get-redirect',
+			array(
+				'category'            => '829-tools',
+				'label'               => 'Get Redirect',
+				'description'         => 'Returns a single redirect by ID.',
+				'input_schema'        => array(
+					'type'       => 'object',
+					'properties' => array(
+						'id' => array( 'type' => 'integer', 'description' => 'Redirect ID.' ),
+					),
+					'required' => array( 'id' ),
+				),
+				'output_schema'       => array(
+					'type'       => 'object',
+					'properties' => array( 'redirect' => array( 'type' => 'object' ) ),
+				),
+				'permission_callback' => [ $this, 'check_admin_permission' ],
+				'execute_callback'    => [ $this, 'get_redirect' ],
+				'meta'                => array(
+					'mcp'         => array( 'public' => true ),
+					'annotations' => array( 'readonly' => true, 'destructive' => false, 'idempotent' => true ),
+				),
+			)
+		);
+
+		wp_register_ability(
+			'829-tools/create-redirect',
+			array(
+				'category'            => '829-tools',
+				'label'               => 'Create Redirect',
+				'description'         => 'Creates a new redirect in the Redirection plugin.',
+				'input_schema'        => array(
+					'type'       => 'object',
+					'properties' => array(
+						'source_url' => array( 'type' => 'string', 'description' => 'Source URL path (e.g. "/old-page").' ),
+						'target_url' => array( 'type' => 'string', 'description' => 'Target URL or path the redirect points to.' ),
+						'code'       => array( 'type' => 'integer', 'description' => 'HTTP status code: 301, 302, 307, 308, 410, 404. Default 301.', 'default' => 301 ),
+						'regex'      => array( 'type' => 'boolean', 'description' => 'Whether source_url is a regular expression. Default false.', 'default' => false ),
+						'title'      => array( 'type' => 'string', 'description' => 'Optional label for this redirect.' ),
+						'group_id'   => array( 'type' => 'integer', 'description' => 'Redirection group ID. Default 1.', 'default' => 1 ),
+					),
+					'required' => array( 'source_url', 'target_url' ),
+				),
+				'output_schema'       => array(
+					'type'       => 'object',
+					'properties' => array(
+						'id'       => array( 'type' => 'integer' ),
+						'redirect' => array( 'type' => 'object' ),
+					),
+				),
+				'permission_callback' => [ $this, 'check_admin_permission' ],
+				'execute_callback'    => [ $this, 'create_redirect' ],
+				'meta'                => array(
+					'mcp'         => array( 'public' => true ),
+					'annotations' => array( 'destructive' => false, 'idempotent' => false ),
+				),
+			)
+		);
+
+		wp_register_ability(
+			'829-tools/update-redirect',
+			array(
+				'category'            => '829-tools',
+				'label'               => 'Update Redirect',
+				'description'         => 'Updates an existing redirect. Only provided fields are changed.',
+				'input_schema'        => array(
+					'type'       => 'object',
+					'properties' => array(
+						'id'         => array( 'type' => 'integer', 'description' => 'Redirect ID.' ),
+						'source_url' => array( 'type' => 'string', 'description' => 'New source URL.' ),
+						'target_url' => array( 'type' => 'string', 'description' => 'New target URL.' ),
+						'code'       => array( 'type' => 'integer', 'description' => 'New HTTP status code.' ),
+						'regex'      => array( 'type' => 'boolean', 'description' => 'Whether source_url is a regex.' ),
+						'title'      => array( 'type' => 'string', 'description' => 'New title/label.' ),
+						'status'     => array( 'type' => 'string', 'description' => '"enabled" or "disabled".' ),
+					),
+					'required' => array( 'id' ),
+				),
+				'output_schema'       => array(
+					'type'       => 'object',
+					'properties' => array( 'updated' => array( 'type' => 'boolean' ) ),
+				),
+				'permission_callback' => [ $this, 'check_admin_permission' ],
+				'execute_callback'    => [ $this, 'update_redirect' ],
+				'meta'                => array(
+					'mcp'         => array( 'public' => true ),
+					'annotations' => array( 'destructive' => true, 'idempotent' => true ),
+				),
+			)
+		);
+
+		wp_register_ability(
+			'829-tools/delete-redirect',
+			array(
+				'category'            => '829-tools',
+				'label'               => 'Delete Redirect',
+				'description'         => 'Permanently deletes a redirect from the Redirection plugin.',
+				'input_schema'        => array(
+					'type'       => 'object',
+					'properties' => array(
+						'id' => array( 'type' => 'integer', 'description' => 'Redirect ID.' ),
+					),
+					'required' => array( 'id' ),
+				),
+				'output_schema'       => array(
+					'type'       => 'object',
+					'properties' => array( 'deleted' => array( 'type' => 'boolean' ) ),
+				),
+				'permission_callback' => [ $this, 'check_admin_permission' ],
+				'execute_callback'    => [ $this, 'delete_redirect' ],
+				'meta'                => array(
+					'mcp'         => array( 'public' => true ),
+					'annotations' => array( 'destructive' => true, 'idempotent' => false ),
 				),
 			)
 		);
@@ -1530,5 +1754,437 @@ class MCP {
 			'blocks' => $blocks,
 			'total'  => count( $blocks ),
 		);
+	}
+
+	// ── ACF ──────────────────────────────────────────────────────────────────
+
+	/**
+	 * Execute callback: list ACF block types with their fields.
+	 *
+	 * @return array|WP_Error
+	 */
+	public function list_acf_blocks() {
+		if ( ! function_exists( 'acf_get_block_types' ) ) {
+			return new WP_Error( 'acf_missing', 'ACF is not active or does not support blocks on this site.' );
+		}
+
+		$block_types = \acf_get_block_types();
+		$blocks      = array();
+
+		foreach ( $block_types as $block ) {
+			$entry = array(
+				'name'        => $block['name'],
+				'title'       => $block['title'],
+				'description' => $block['description'] ?? '',
+				'category'    => $block['category'] ?? '',
+				'icon'        => is_string( $block['icon'] ?? null ) ? $block['icon'] : '',
+				'keywords'    => $block['keywords'] ?? array(),
+				'fields'      => array(),
+			);
+
+			// Fetch the field group attached to this block.
+			if ( function_exists( 'acf_get_field_groups' ) && function_exists( 'acf_get_fields' ) ) {
+				$groups = \acf_get_field_groups( array( 'block' => $block['name'] ) );
+				foreach ( $groups as $group ) {
+					$fields = \acf_get_fields( $group['key'] );
+					if ( $fields ) {
+						foreach ( $fields as $field ) {
+							$field_entry = array(
+								'name'     => $field['name'],
+								'label'    => $field['label'],
+								'type'     => $field['type'],
+								'required' => ! empty( $field['required'] ),
+							);
+
+							if ( ! empty( $field['sub_fields'] ) ) {
+								$field_entry['sub_fields'] = array_map(
+									function ( $sf ) {
+										return array(
+											'name'     => $sf['name'],
+											'label'    => $sf['label'],
+											'type'     => $sf['type'],
+											'required' => ! empty( $sf['required'] ),
+										);
+									},
+									$field['sub_fields']
+								);
+							}
+
+							$entry['fields'][] = $field_entry;
+						}
+					}
+				}
+			}
+
+			$blocks[] = $entry;
+		}
+
+		usort( $blocks, function ( $a, $b ) { return strcmp( $a['name'], $b['name'] ); } );
+
+		return array( 'blocks' => $blocks );
+	}
+
+	/**
+	 * Execute callback: get all ACF field values for a post.
+	 *
+	 * @param  array $input Ability input.
+	 * @return array|WP_Error
+	 */
+	public function get_acf_fields( $input = array() ) {
+		if ( ! function_exists( 'get_fields' ) ) {
+			return new WP_Error( 'acf_missing', 'ACF is not active.' );
+		}
+
+		$post_id = $input['post_id'] ?? null;
+
+		if ( null === $post_id ) {
+			return new WP_Error( 'missing_post_id', 'post_id is required.' );
+		}
+
+		// Accept "options" string or integer post IDs.
+		if ( 'options' !== $post_id ) {
+			$post_id = intval( $post_id );
+
+			if ( ! $post_id || ! get_post( $post_id ) ) {
+				return new WP_Error( 'not_found', 'Post not found.' );
+			}
+		}
+
+		$fields = \get_fields( $post_id );
+
+		return array( 'fields' => $fields ?: array() );
+	}
+
+	/**
+	 * Execute callback: update ACF field values on a post.
+	 *
+	 * @param  array $input Ability input.
+	 * @return array|WP_Error
+	 */
+	public function update_acf_fields( $input = array() ) {
+		if ( ! function_exists( 'update_field' ) ) {
+			return new WP_Error( 'acf_missing', 'ACF is not active.' );
+		}
+
+		$post_id = $input['post_id'] ?? null;
+		$fields  = $input['fields'] ?? array();
+
+		if ( null === $post_id ) {
+			return new WP_Error( 'missing_post_id', 'post_id is required.' );
+		}
+
+		if ( empty( $fields ) || ! is_array( $fields ) ) {
+			return new WP_Error( 'missing_fields', 'fields must be a non-empty object.' );
+		}
+
+		if ( 'options' !== $post_id ) {
+			$post_id = intval( $post_id );
+
+			if ( ! $post_id || ! get_post( $post_id ) ) {
+				return new WP_Error( 'not_found', 'Post not found.' );
+			}
+		}
+
+		foreach ( $fields as $key => $value ) {
+			\update_field( $key, $value, $post_id );
+		}
+
+		return array( 'updated' => true );
+	}
+
+	// ── Redirection plugin ───────────────────────────────────────────────────
+
+	/**
+	 * Return the Redirection items table name, or WP_Error if it doesn't exist.
+	 *
+	 * @return string|WP_Error
+	 */
+	private function redirection_table() {
+		global $wpdb;
+		$table = $wpdb->prefix . 'redirection_items';
+
+		// phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared
+		if ( $wpdb->get_var( $wpdb->prepare( 'SHOW TABLES LIKE %s', $table ) ) !== $table ) {
+			return new WP_Error( 'redirection_missing', 'The Redirection plugin is not installed or has not been set up yet.' );
+		}
+
+		return $table;
+	}
+
+	/**
+	 * Format a redirection_items DB row as an array.
+	 *
+	 * @param  object $row DB row.
+	 * @return array
+	 */
+	private function format_redirect( $row ) {
+		return array(
+			'id'         => (int) $row->id,
+			'source_url' => $row->url,
+			'target_url' => $row->action_data,
+			'code'       => (int) $row->action_code,
+			'status'     => $row->status,
+			'regex'      => (bool) $row->regex,
+			'group_id'   => (int) $row->group_id,
+			'title'      => $row->title,
+			'hits'       => (int) $row->hits,
+			'last_access' => $row->last_access,
+		);
+	}
+
+	/**
+	 * Bust the Redirection plugin's redirect cache after a write operation.
+	 */
+	private function flush_redirection_cache() {
+		// Use Red_Item::flush() if available (plugin is active).
+		if ( class_exists( 'Red_Item' ) && method_exists( 'Red_Item', 'flush' ) ) {
+			\Red_Item::flush();
+			return;
+		}
+
+		// Fallback: delete transients with the red_ prefix.
+		global $wpdb;
+		// phpcs:ignore WordPress.DB.PreparedSQL.NotPrepared
+		$wpdb->query( "DELETE FROM {$wpdb->options} WHERE option_name LIKE '\_transient\_red\_%' OR option_name LIKE '\_transient\_timeout\_red\_%'" );
+	}
+
+	/**
+	 * Execute callback: search redirects.
+	 *
+	 * @param  array $input Ability input.
+	 * @return array|WP_Error
+	 */
+	public function search_redirects( $input = array() ) {
+		global $wpdb;
+
+		$table = $this->redirection_table();
+		if ( is_wp_error( $table ) ) {
+			return $table;
+		}
+
+		$per_page = min( intval( $input['per_page'] ?? 50 ), 200 );
+		$page     = max( intval( $input['page'] ?? 1 ), 1 );
+		$offset   = ( $page - 1 ) * $per_page;
+
+		$where  = array( '1=1' );
+		$params = array();
+
+		if ( ! empty( $input['search'] ) ) {
+			$like     = '%' . $wpdb->esc_like( $input['search'] ) . '%';
+			$where[]  = '( url LIKE %s OR action_data LIKE %s OR title LIKE %s )';
+			$params[] = $like;
+			$params[] = $like;
+			$params[] = $like;
+		}
+
+		if ( ! empty( $input['status'] ) && in_array( $input['status'], array( 'enabled', 'disabled' ), true ) ) {
+			$where[]  = 'status = %s';
+			$params[] = $input['status'];
+		}
+
+		$where_sql = implode( ' AND ', $where );
+
+		// phpcs:disable WordPress.DB.PreparedSQL.InterpolatedNotPrepared
+		if ( $params ) {
+			$total = (int) $wpdb->get_var( $wpdb->prepare( "SELECT COUNT(*) FROM {$table} WHERE {$where_sql}", $params ) );
+			$rows  = $wpdb->get_results( $wpdb->prepare( "SELECT * FROM {$table} WHERE {$where_sql} ORDER BY id DESC LIMIT %d OFFSET %d", array_merge( $params, array( $per_page, $offset ) ) ) );
+		} else {
+			$total = (int) $wpdb->get_var( "SELECT COUNT(*) FROM {$table}" );
+			$rows  = $wpdb->get_results( $wpdb->prepare( "SELECT * FROM {$table} ORDER BY id DESC LIMIT %d OFFSET %d", array( $per_page, $offset ) ) );
+		}
+		// phpcs:enable
+
+		return array(
+			'redirects' => array_map( array( $this, 'format_redirect' ), $rows ),
+			'total'     => $total,
+			'pages'     => $per_page > 0 ? (int) ceil( $total / $per_page ) : 1,
+		);
+	}
+
+	/**
+	 * Execute callback: get a single redirect.
+	 *
+	 * @param  array $input Ability input.
+	 * @return array|WP_Error
+	 */
+	public function get_redirect( $input = array() ) {
+		global $wpdb;
+
+		$table = $this->redirection_table();
+		if ( is_wp_error( $table ) ) {
+			return $table;
+		}
+
+		$id  = intval( $input['id'] ?? 0 );
+		// phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared
+		$row = $wpdb->get_row( $wpdb->prepare( "SELECT * FROM {$table} WHERE id = %d", $id ) );
+
+		if ( ! $row ) {
+			return new WP_Error( 'not_found', "Redirect {$id} not found." );
+		}
+
+		return array( 'redirect' => $this->format_redirect( $row ) );
+	}
+
+	/**
+	 * Execute callback: create a redirect.
+	 *
+	 * @param  array $input Ability input.
+	 * @return array|WP_Error
+	 */
+	public function create_redirect( $input = array() ) {
+		global $wpdb;
+
+		$table = $this->redirection_table();
+		if ( is_wp_error( $table ) ) {
+			return $table;
+		}
+
+		$source = trim( $input['source_url'] ?? '' );
+		$target = trim( $input['target_url'] ?? '' );
+
+		if ( empty( $source ) || empty( $target ) ) {
+			return new WP_Error( 'missing_urls', 'source_url and target_url are required.' );
+		}
+
+		$code     = intval( $input['code'] ?? 301 );
+		$regex    = ! empty( $input['regex'] ) ? 1 : 0;
+		$group_id = intval( $input['group_id'] ?? 1 );
+		$title    = $input['title'] ?? '';
+
+		// phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared
+		$result = $wpdb->insert(
+			$table,
+			array(
+				'url'         => $source,
+				'action_code' => $code,
+				'action_type' => 'url',
+				'action_data' => $target,
+				'match_type'  => 'url',
+				'status'      => 'enabled',
+				'regex'       => $regex,
+				'group_id'    => $group_id,
+				'position'    => 0,
+				'hits'        => 0,
+				'title'       => $title,
+				'updated'     => current_time( 'mysql' ),
+			),
+			array( '%s', '%d', '%s', '%s', '%s', '%s', '%d', '%d', '%d', '%d', '%s', '%s' )
+		);
+
+		if ( ! $result ) {
+			return new WP_Error( 'insert_failed', 'Failed to create redirect.' );
+		}
+
+		$new_id = $wpdb->insert_id;
+		$this->flush_redirection_cache();
+
+		// phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared
+		$row = $wpdb->get_row( $wpdb->prepare( "SELECT * FROM {$table} WHERE id = %d", $new_id ) );
+
+		return array(
+			'id'       => $new_id,
+			'redirect' => $this->format_redirect( $row ),
+		);
+	}
+
+	/**
+	 * Execute callback: update a redirect.
+	 *
+	 * @param  array $input Ability input.
+	 * @return array|WP_Error
+	 */
+	public function update_redirect( $input = array() ) {
+		global $wpdb;
+
+		$table = $this->redirection_table();
+		if ( is_wp_error( $table ) ) {
+			return $table;
+		}
+
+		$id = intval( $input['id'] ?? 0 );
+
+		// phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared
+		$existing = $wpdb->get_row( $wpdb->prepare( "SELECT * FROM {$table} WHERE id = %d", $id ) );
+
+		if ( ! $existing ) {
+			return new WP_Error( 'not_found', "Redirect {$id} not found." );
+		}
+
+		$data    = array();
+		$formats = array();
+
+		if ( isset( $input['source_url'] ) ) {
+			$data['url'] = trim( $input['source_url'] );
+			$formats[]   = '%s';
+		}
+
+		if ( isset( $input['target_url'] ) ) {
+			$data['action_data'] = trim( $input['target_url'] );
+			$formats[]           = '%s';
+		}
+
+		if ( isset( $input['code'] ) ) {
+			$data['action_code'] = intval( $input['code'] );
+			$formats[]           = '%d';
+		}
+
+		if ( isset( $input['regex'] ) ) {
+			$data['regex'] = ! empty( $input['regex'] ) ? 1 : 0;
+			$formats[]     = '%d';
+		}
+
+		if ( isset( $input['title'] ) ) {
+			$data['title'] = $input['title'];
+			$formats[]     = '%s';
+		}
+
+		if ( isset( $input['status'] ) && in_array( $input['status'], array( 'enabled', 'disabled' ), true ) ) {
+			$data['status'] = $input['status'];
+			$formats[]      = '%s';
+		}
+
+		if ( empty( $data ) ) {
+			return array( 'updated' => false );
+		}
+
+		$data['updated'] = current_time( 'mysql' );
+		$formats[]       = '%s';
+
+		// phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared
+		$wpdb->update( $table, $data, array( 'id' => $id ), $formats, array( '%d' ) );
+		$this->flush_redirection_cache();
+
+		return array( 'updated' => true );
+	}
+
+	/**
+	 * Execute callback: delete a redirect.
+	 *
+	 * @param  array $input Ability input.
+	 * @return array|WP_Error
+	 */
+	public function delete_redirect( $input = array() ) {
+		global $wpdb;
+
+		$table = $this->redirection_table();
+		if ( is_wp_error( $table ) ) {
+			return $table;
+		}
+
+		$id = intval( $input['id'] ?? 0 );
+
+		// phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared
+		$existing = $wpdb->get_row( $wpdb->prepare( "SELECT id FROM {$table} WHERE id = %d", $id ) );
+
+		if ( ! $existing ) {
+			return new WP_Error( 'not_found', "Redirect {$id} not found." );
+		}
+
+		// phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared
+		$result = $wpdb->delete( $table, array( 'id' => $id ), array( '%d' ) );
+		$this->flush_redirection_cache();
+
+		return array( 'deleted' => (bool) $result );
 	}
 }
