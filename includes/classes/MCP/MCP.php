@@ -66,8 +66,8 @@ class MCP {
 		wp_register_ability_category(
 			'829-tools',
 			array(
-				'label'       => '829 Tools',
-				'description' => 'Site management abilities for 829 Studios WordPress Tools.',
+				'label'       => '829 Studios',
+				'description' => 'Abilities for managing, writing content, and configuring WordPress sites built by 829 Studios.',
 			)
 		);
 	}
@@ -580,7 +580,7 @@ class MCP {
 			array(
 				'category'            => '829-tools',
 				'label'               => 'List Allowed Blocks',
-				'description'         => 'Returns all block types permitted in the block editor on this site, with their slug, title, and category. Reflects any theme or plugin restrictions (e.g. Propel\'s block allowlist).',
+				'description'         => 'Returns all block types permitted in the block editor on this site, with their slug, title, and category. Reflects any theme or plugin restrictions',
 				'input_schema'        => array(
 					'type'       => 'object',
 					'properties' => array(),
@@ -1249,6 +1249,7 @@ class MCP {
 	 */
 	private function blocked_option_names() {
 		return array(
+			// Auth keys and salts — never expose these.
 			'auth_key',
 			'secure_auth_key',
 			'logged_in_key',
@@ -1257,6 +1258,51 @@ class MCP {
 			'secure_auth_salt',
 			'logged_in_salt',
 			'nonce_salt',
+
+			// Core site URLs — changing these breaks the entire site immediately.
+			'siteurl',
+			'home',
+
+			// Plugin and theme activation — changes take effect instantly.
+			'active_plugins',
+			'active_sitewide_plugins',
+			'template',
+			'stylesheet',
+			'current_theme',
+
+			// User roles and capabilities — security critical.
+			'wp_user_roles',
+			'default_role',
+
+			// URL routing — breaks all page URLs if changed.
+			'permalink_structure',
+			'rewrite_rules',
+
+			// Database version flags — could trigger unwanted upgrade routines.
+			'db_version',
+			'wp_db_version',
+			'initial_db_version',
+
+			// Upload configuration — breaks all media if changed.
+			'upload_path',
+			'upload_url_path',
+
+			// Admin email — receives password resets and system alerts.
+			'admin_email',
+
+			// Multisite critical.
+			'site_admins',
+		);
+	}
+
+	/**
+	 * Option name prefixes that are never readable or writable via MCP.
+	 *
+	 * @return string[]
+	 */
+	private function blocked_option_prefixes() {
+		return array(
+			'theme_mods_', // Per-theme customizer settings.
 		);
 	}
 
@@ -1267,7 +1313,17 @@ class MCP {
 	 * @return bool
 	 */
 	private function is_blocked_option( $name ) {
-		return in_array( $name, $this->blocked_option_names(), true );
+		if ( in_array( $name, $this->blocked_option_names(), true ) ) {
+			return true;
+		}
+
+		foreach ( $this->blocked_option_prefixes() as $prefix ) {
+			if ( strncmp( $name, $prefix, strlen( $prefix ) ) === 0 ) {
+				return true;
+			}
+		}
+
+		return false;
 	}
 
 	/**
