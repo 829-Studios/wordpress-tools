@@ -833,6 +833,309 @@ class MCP {
 		);
 
 		wp_register_ability(
+			'829-tools/list-posts',
+			array(
+				'category'            => '829-tools',
+				'label'               => 'List Posts',
+				'description'         => 'Returns posts of any post type. Supports filtering by status, search, taxonomy terms, and pagination.',
+				'input_schema'        => array(
+					'type'       => 'object',
+					'properties' => array(
+						'post_type' => array(
+							'type'        => 'string',
+							'description' => 'Post type slug (e.g. "post", "page", "event"). Defaults to "post".',
+						),
+						'status'    => array(
+							'type'        => 'string',
+							'description' => 'Post status filter. Accepts "publish", "draft", "pending", "private", "trash", or "any". Defaults to "any".',
+						),
+						'search'    => array(
+							'type'        => 'string',
+							'description' => 'Keyword search across title and content.',
+						),
+						'per_page'  => array(
+							'type'        => 'integer',
+							'description' => 'Number of results per page (1–100). Defaults to 20.',
+						),
+						'page'      => array(
+							'type'        => 'integer',
+							'description' => 'Page number (1-based). Defaults to 1.',
+						),
+						'orderby'   => array(
+							'type'        => 'string',
+							'description' => 'Sort field. Accepts "date", "modified", "title", "ID", "menu_order". Defaults to "date".',
+							'enum'        => array( 'date', 'modified', 'title', 'ID', 'menu_order' ),
+						),
+						'order'     => array(
+							'type'        => 'string',
+							'description' => 'Sort direction: "ASC" or "DESC". Defaults to "DESC".',
+							'enum'        => array( 'ASC', 'DESC' ),
+						),
+						'author'    => array(
+							'type'        => 'integer',
+							'description' => 'Filter by author user ID.',
+						),
+						'terms'     => array(
+							'type'        => 'object',
+							'description' => 'Filter by taxonomy terms. Keys are taxonomy slugs, values are arrays of term slugs or IDs. E.g. {"category": ["news"], "post_tag": [1, 2]}.',
+						),
+					),
+				),
+				'output_schema'       => array(
+					'type'       => 'object',
+					'properties' => array(
+						'posts' => array( 'type' => 'array' ),
+						'total' => array( 'type' => 'integer' ),
+						'pages' => array( 'type' => 'integer' ),
+					),
+				),
+				'permission_callback' => [ $this, 'check_admin_permission' ],
+				'execute_callback'    => [ $this, 'list_posts' ],
+				'meta'                => array(
+					'mcp'         => array( 'public' => true ),
+					'annotations' => array(
+						'readonly'    => true,
+						'destructive' => false,
+						'idempotent'  => true,
+					),
+				),
+			)
+		);
+
+		wp_register_ability(
+			'829-tools/get-post',
+			array(
+				'category'            => '829-tools',
+				'label'               => 'Get Post',
+				'description'         => 'Returns full detail for a single post of any post type, including all meta fields and taxonomy terms.',
+				'input_schema'        => array(
+					'type'       => 'object',
+					'properties' => array(
+						'id' => array(
+							'type'        => 'integer',
+							'description' => 'Post ID.',
+						),
+					),
+					'required' => array( 'id' ),
+				),
+				'output_schema'       => array(
+					'type'       => 'object',
+					'properties' => array(
+						'post' => array( 'type' => 'object' ),
+					),
+				),
+				'permission_callback' => [ $this, 'check_admin_permission' ],
+				'execute_callback'    => [ $this, 'get_post_item' ],
+				'meta'                => array(
+					'mcp'         => array( 'public' => true ),
+					'annotations' => array(
+						'readonly'    => true,
+						'destructive' => false,
+						'idempotent'  => true,
+					),
+				),
+			)
+		);
+
+		wp_register_ability(
+			'829-tools/create-post',
+			array(
+				'category'            => '829-tools',
+				'label'               => 'Create Post',
+				'description'         => 'Creates a new post of any post type. Supports setting title, content, excerpt, status, slug, date, author, parent, menu_order, meta fields, and taxonomy terms.',
+				'input_schema'        => array(
+					'type'       => 'object',
+					'properties' => array(
+						'post_type'  => array(
+							'type'        => 'string',
+							'description' => 'Post type slug (e.g. "post", "page"). Defaults to "post".',
+						),
+						'title'      => array(
+							'type'        => 'string',
+							'description' => 'Post title.',
+						),
+						'content'    => array(
+							'type'        => 'string',
+							'description' => 'Post content (HTML or block markup).',
+						),
+						'excerpt'    => array(
+							'type'        => 'string',
+							'description' => 'Post excerpt.',
+						),
+						'status'     => array(
+							'type'        => 'string',
+							'description' => 'Post status. Accepts "publish", "draft", "pending", "private". Defaults to "draft".',
+							'enum'        => array( 'publish', 'draft', 'pending', 'private' ),
+						),
+						'slug'       => array(
+							'type'        => 'string',
+							'description' => 'Post slug (URL-friendly name).',
+						),
+						'date'       => array(
+							'type'        => 'string',
+							'description' => 'Publish date in YYYY-MM-DD HH:MM:SS format.',
+						),
+						'author'     => array(
+							'type'        => 'integer',
+							'description' => 'Author user ID. Defaults to the current user.',
+						),
+						'parent'     => array(
+							'type'        => 'integer',
+							'description' => 'Parent post ID (used for pages and hierarchical post types).',
+						),
+						'menu_order' => array(
+							'type'        => 'integer',
+							'description' => 'Menu order for ordering posts.',
+						),
+						'meta'       => array(
+							'type'        => 'object',
+							'description' => 'Key-value pairs of post meta fields to set.',
+						),
+						'terms'      => array(
+							'type'        => 'object',
+							'description' => 'Taxonomy terms to assign. Keys are taxonomy slugs, values are arrays of term slugs or IDs. E.g. {"category": ["news"], "post_tag": ["featured"]}.',
+						),
+					),
+				),
+				'output_schema'       => array(
+					'type'       => 'object',
+					'properties' => array(
+						'post_id' => array( 'type' => 'integer' ),
+					),
+				),
+				'permission_callback' => [ $this, 'check_admin_permission' ],
+				'execute_callback'    => [ $this, 'create_post_item' ],
+				'meta'                => array(
+					'mcp'         => array( 'public' => true ),
+					'annotations' => array(
+						'readonly'    => false,
+						'destructive' => false,
+						'idempotent'  => false,
+					),
+				),
+			)
+		);
+
+		wp_register_ability(
+			'829-tools/update-post',
+			array(
+				'category'            => '829-tools',
+				'label'               => 'Update Post',
+				'description'         => 'Updates an existing post. Only provided fields are changed. Supports updating title, content, excerpt, status, slug, date, author, parent, menu_order, meta fields, and taxonomy terms.',
+				'input_schema'        => array(
+					'type'       => 'object',
+					'properties' => array(
+						'id'         => array(
+							'type'        => 'integer',
+							'description' => 'Post ID to update.',
+						),
+						'title'      => array(
+							'type'        => 'string',
+							'description' => 'New post title.',
+						),
+						'content'    => array(
+							'type'        => 'string',
+							'description' => 'New post content (HTML or block markup).',
+						),
+						'excerpt'    => array(
+							'type'        => 'string',
+							'description' => 'New post excerpt.',
+						),
+						'status'     => array(
+							'type'        => 'string',
+							'description' => 'New post status.',
+							'enum'        => array( 'publish', 'draft', 'pending', 'private', 'trash' ),
+						),
+						'slug'       => array(
+							'type'        => 'string',
+							'description' => 'New post slug.',
+						),
+						'date'       => array(
+							'type'        => 'string',
+							'description' => 'New publish date in YYYY-MM-DD HH:MM:SS format.',
+						),
+						'author'     => array(
+							'type'        => 'integer',
+							'description' => 'New author user ID.',
+						),
+						'parent'     => array(
+							'type'        => 'integer',
+							'description' => 'New parent post ID.',
+						),
+						'menu_order' => array(
+							'type'        => 'integer',
+							'description' => 'New menu order.',
+						),
+						'meta'       => array(
+							'type'        => 'object',
+							'description' => 'Meta fields to update. Only provided keys are changed.',
+						),
+						'terms'      => array(
+							'type'        => 'object',
+							'description' => 'Taxonomy terms to set. Keys are taxonomy slugs, values are arrays of term slugs or IDs. Replaces all existing terms for each provided taxonomy.',
+						),
+					),
+					'required' => array( 'id' ),
+				),
+				'output_schema'       => array(
+					'type'       => 'object',
+					'properties' => array(
+						'updated' => array( 'type' => 'boolean' ),
+					),
+				),
+				'permission_callback' => [ $this, 'check_admin_permission' ],
+				'execute_callback'    => [ $this, 'update_post_item' ],
+				'meta'                => array(
+					'mcp'         => array( 'public' => true ),
+					'annotations' => array(
+						'readonly'    => false,
+						'destructive' => true,
+						'idempotent'  => true,
+					),
+				),
+			)
+		);
+
+		wp_register_ability(
+			'829-tools/delete-post',
+			array(
+				'category'            => '829-tools',
+				'label'               => 'Delete Post',
+				'description'         => 'Deletes or trashes a post. By default moves the post to trash. Set force to true for permanent deletion.',
+				'input_schema'        => array(
+					'type'       => 'object',
+					'properties' => array(
+						'id'    => array(
+							'type'        => 'integer',
+							'description' => 'Post ID to delete.',
+						),
+						'force' => array(
+							'type'        => 'boolean',
+							'description' => 'Set to true to permanently delete. Defaults to false (moves to trash).',
+						),
+					),
+					'required' => array( 'id' ),
+				),
+				'output_schema'       => array(
+					'type'       => 'object',
+					'properties' => array(
+						'deleted' => array( 'type' => 'boolean' ),
+					),
+				),
+				'permission_callback' => [ $this, 'check_admin_permission' ],
+				'execute_callback'    => [ $this, 'delete_post_item' ],
+				'meta'                => array(
+					'mcp'         => array( 'public' => true ),
+					'annotations' => array(
+						'readonly'    => false,
+						'destructive' => true,
+						'idempotent'  => false,
+					),
+				),
+			)
+		);
+
+		wp_register_ability(
 			'829-tools/get-content-schema',
 			array(
 				'category'            => '829-tools',
@@ -2242,5 +2545,361 @@ class MCP {
 		$this->flush_redirection_cache();
 
 		return array( 'deleted' => (bool) $result );
+	}
+
+	/**
+	 * Execute callback: list posts.
+	 *
+	 * @param  array $input Ability input.
+	 * @return array
+	 */
+	public function list_posts( $input = array() ) {
+		$post_type = ! empty( $input['post_type'] ) ? sanitize_key( $input['post_type'] ) : 'post';
+		$status    = ! empty( $input['status'] ) ? $input['status'] : 'any';
+		$per_page  = min( max( intval( $input['per_page'] ?? 20 ), 1 ), 100 );
+		$page      = max( intval( $input['page'] ?? 1 ), 1 );
+		$orderby   = $input['orderby'] ?? 'date';
+		$order     = strtoupper( $input['order'] ?? 'DESC' );
+
+		$valid_orderby = array( 'date', 'modified', 'title', 'ID', 'menu_order' );
+		if ( ! in_array( $orderby, $valid_orderby, true ) ) {
+			$orderby = 'date';
+		}
+
+		if ( ! in_array( $order, array( 'ASC', 'DESC' ), true ) ) {
+			$order = 'DESC';
+		}
+
+		$args = array(
+			'post_type'      => $post_type,
+			'post_status'    => $status,
+			'posts_per_page' => $per_page,
+			'paged'          => $page,
+			'orderby'        => $orderby,
+			'order'          => $order,
+			'no_found_rows'  => false,
+		);
+
+		if ( ! empty( $input['search'] ) ) {
+			$args['s'] = sanitize_text_field( $input['search'] );
+		}
+
+		if ( ! empty( $input['author'] ) ) {
+			$args['author'] = intval( $input['author'] );
+		}
+
+		if ( ! empty( $input['terms'] ) && is_array( $input['terms'] ) ) {
+			$tax_query = array( 'relation' => 'AND' );
+			foreach ( $input['terms'] as $taxonomy => $term_values ) {
+				$taxonomy = sanitize_key( $taxonomy );
+				if ( ! taxonomy_exists( $taxonomy ) ) {
+					continue;
+				}
+				$term_ids = $this->resolve_term_ids( $taxonomy, (array) $term_values );
+				if ( ! empty( $term_ids ) ) {
+					$tax_query[] = array(
+						'taxonomy' => $taxonomy,
+						'field'    => 'term_id',
+						'terms'    => $term_ids,
+					);
+				}
+			}
+			if ( count( $tax_query ) > 1 ) {
+				$args['tax_query'] = $tax_query; // phpcs:ignore WordPress.DB.SlowDBQuery.slow_db_query_tax_query
+			}
+		}
+
+		$query = new \WP_Query( $args );
+
+		$posts = array();
+		foreach ( $query->posts as $post ) {
+			$posts[] = $this->format_post_summary( $post );
+		}
+
+		return array(
+			'posts' => $posts,
+			'total' => (int) $query->found_posts,
+			'pages' => (int) $query->max_num_pages,
+		);
+	}
+
+	/**
+	 * Execute callback: get a single post.
+	 *
+	 * @param  array $input Ability input.
+	 * @return array|WP_Error
+	 */
+	public function get_post_item( $input = array() ) {
+		$id   = intval( $input['id'] ?? 0 );
+		$post = get_post( $id );
+
+		if ( ! $post ) {
+			return new WP_Error( 'not_found', "Post {$id} not found." );
+		}
+
+		return array( 'post' => $this->format_post_detail( $post ) );
+	}
+
+	/**
+	 * Execute callback: create a post.
+	 *
+	 * @param  array $input Ability input.
+	 * @return array|WP_Error
+	 */
+	public function create_post_item( $input = array() ) {
+		$postarr = array(
+			'post_type'   => ! empty( $input['post_type'] ) ? sanitize_key( $input['post_type'] ) : 'post',
+			'post_status' => ! empty( $input['status'] ) ? $input['status'] : 'draft',
+		);
+
+		if ( isset( $input['title'] ) ) {
+			$postarr['post_title'] = $input['title'];
+		}
+
+		if ( isset( $input['content'] ) ) {
+			$postarr['post_content'] = $input['content'];
+		}
+
+		if ( isset( $input['excerpt'] ) ) {
+			$postarr['post_excerpt'] = $input['excerpt'];
+		}
+
+		if ( ! empty( $input['slug'] ) ) {
+			$postarr['post_name'] = sanitize_title( $input['slug'] );
+		}
+
+		if ( ! empty( $input['date'] ) ) {
+			$postarr['post_date'] = $input['date'];
+		}
+
+		if ( ! empty( $input['author'] ) ) {
+			$postarr['post_author'] = intval( $input['author'] );
+		}
+
+		if ( isset( $input['parent'] ) ) {
+			$postarr['post_parent'] = intval( $input['parent'] );
+		}
+
+		if ( isset( $input['menu_order'] ) ) {
+			$postarr['menu_order'] = intval( $input['menu_order'] );
+		}
+
+		$post_id = wp_insert_post( $postarr, true );
+
+		if ( is_wp_error( $post_id ) ) {
+			return $post_id;
+		}
+
+		if ( ! empty( $input['meta'] ) && is_array( $input['meta'] ) ) {
+			foreach ( $input['meta'] as $key => $value ) {
+				update_post_meta( $post_id, sanitize_key( $key ), $value );
+			}
+		}
+
+		if ( ! empty( $input['terms'] ) && is_array( $input['terms'] ) ) {
+			$this->set_post_terms( $post_id, $input['terms'] );
+		}
+
+		return array( 'post_id' => $post_id );
+	}
+
+	/**
+	 * Execute callback: update a post.
+	 *
+	 * @param  array $input Ability input.
+	 * @return array|WP_Error
+	 */
+	public function update_post_item( $input = array() ) {
+		$id   = intval( $input['id'] ?? 0 );
+		$post = get_post( $id );
+
+		if ( ! $post ) {
+			return new WP_Error( 'not_found', "Post {$id} not found." );
+		}
+
+		$postarr = array( 'ID' => $id );
+
+		if ( isset( $input['title'] ) ) {
+			$postarr['post_title'] = $input['title'];
+		}
+
+		if ( isset( $input['content'] ) ) {
+			$postarr['post_content'] = $input['content'];
+		}
+
+		if ( isset( $input['excerpt'] ) ) {
+			$postarr['post_excerpt'] = $input['excerpt'];
+		}
+
+		if ( isset( $input['status'] ) ) {
+			$postarr['post_status'] = $input['status'];
+		}
+
+		if ( isset( $input['slug'] ) ) {
+			$postarr['post_name'] = sanitize_title( $input['slug'] );
+		}
+
+		if ( isset( $input['date'] ) ) {
+			$postarr['post_date'] = $input['date'];
+		}
+
+		if ( isset( $input['author'] ) ) {
+			$postarr['post_author'] = intval( $input['author'] );
+		}
+
+		if ( isset( $input['parent'] ) ) {
+			$postarr['post_parent'] = intval( $input['parent'] );
+		}
+
+		if ( isset( $input['menu_order'] ) ) {
+			$postarr['menu_order'] = intval( $input['menu_order'] );
+		}
+
+		if ( count( $postarr ) > 1 ) {
+			$result = wp_update_post( $postarr, true );
+
+			if ( is_wp_error( $result ) ) {
+				return $result;
+			}
+		}
+
+		if ( isset( $input['meta'] ) && is_array( $input['meta'] ) ) {
+			foreach ( $input['meta'] as $key => $value ) {
+				update_post_meta( $id, sanitize_key( $key ), $value );
+			}
+		}
+
+		if ( isset( $input['terms'] ) && is_array( $input['terms'] ) ) {
+			$this->set_post_terms( $id, $input['terms'] );
+		}
+
+		return array( 'updated' => true );
+	}
+
+	/**
+	 * Execute callback: delete a post.
+	 *
+	 * @param  array $input Ability input.
+	 * @return array|WP_Error
+	 */
+	public function delete_post_item( $input = array() ) {
+		$id    = intval( $input['id'] ?? 0 );
+		$force = ! empty( $input['force'] );
+		$post  = get_post( $id );
+
+		if ( ! $post ) {
+			return new WP_Error( 'not_found', "Post {$id} not found." );
+		}
+
+		$result = wp_delete_post( $id, $force );
+
+		if ( ! $result ) {
+			return new WP_Error( 'delete_failed', "Failed to delete post {$id}." );
+		}
+
+		return array( 'deleted' => true );
+	}
+
+	/**
+	 * Format a post for summary listing.
+	 *
+	 * @param  \WP_Post $post Post object.
+	 * @return array
+	 */
+	private function format_post_summary( $post ) {
+		return array(
+			'id'         => $post->ID,
+			'post_type'  => $post->post_type,
+			'status'     => $post->post_status,
+			'title'      => $post->post_title,
+			'slug'       => $post->post_name,
+			'date'       => $post->post_date,
+			'modified'   => $post->post_modified,
+			'author'     => (int) $post->post_author,
+			'parent'     => (int) $post->post_parent,
+			'menu_order' => (int) $post->menu_order,
+			'permalink'  => get_permalink( $post->ID ),
+		);
+	}
+
+	/**
+	 * Format a post with full detail including meta and terms.
+	 *
+	 * @param  \WP_Post $post Post object.
+	 * @return array
+	 */
+	private function format_post_detail( $post ) {
+		$data            = $this->format_post_summary( $post );
+		$data['excerpt'] = $post->post_excerpt;
+		$data['content'] = $post->post_content;
+
+		// Meta.
+		$raw_meta = get_post_meta( $post->ID );
+		$meta     = array();
+		foreach ( $raw_meta as $key => $values ) {
+			$meta[ $key ] = count( $values ) === 1 ? maybe_unserialize( $values[0] ) : array_map( 'maybe_unserialize', $values );
+		}
+		$data['meta'] = $meta;
+
+		// Taxonomy terms.
+		$taxonomies = get_object_taxonomies( $post->post_type );
+		$terms      = array();
+		foreach ( $taxonomies as $taxonomy ) {
+			$post_terms = wp_get_post_terms( $post->ID, $taxonomy );
+			if ( ! is_wp_error( $post_terms ) ) {
+				$terms[ $taxonomy ] = array_map(
+					function ( $term ) {
+						return array(
+							'id'   => $term->term_id,
+							'slug' => $term->slug,
+							'name' => $term->name,
+						);
+					},
+					$post_terms
+				);
+			}
+		}
+		$data['terms'] = $terms;
+
+		return $data;
+	}
+
+	/**
+	 * Set taxonomy terms on a post.
+	 *
+	 * @param  int   $post_id Post ID.
+	 * @param  array $terms   Taxonomy => term slugs/IDs map.
+	 */
+	private function set_post_terms( $post_id, $terms ) {
+		foreach ( $terms as $taxonomy => $term_values ) {
+			$taxonomy = sanitize_key( $taxonomy );
+			if ( ! taxonomy_exists( $taxonomy ) ) {
+				continue;
+			}
+			$term_ids = $this->resolve_term_ids( $taxonomy, (array) $term_values );
+			wp_set_post_terms( $post_id, $term_ids, $taxonomy );
+		}
+	}
+
+	/**
+	 * Resolve an array of term slugs and/or IDs to term IDs.
+	 *
+	 * @param  string $taxonomy    Taxonomy slug.
+	 * @param  array  $term_values Mix of term slugs and IDs.
+	 * @return int[]
+	 */
+	private function resolve_term_ids( $taxonomy, $term_values ) {
+		$ids = array();
+		foreach ( $term_values as $value ) {
+			if ( is_numeric( $value ) ) {
+				$ids[] = intval( $value );
+			} else {
+				$term = get_term_by( 'slug', $value, $taxonomy );
+				if ( $term ) {
+					$ids[] = $term->term_id;
+				}
+			}
+		}
+		return $ids;
 	}
 }
