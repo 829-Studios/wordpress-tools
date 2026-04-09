@@ -53,6 +53,7 @@ class Settings {
 			'restrict_plugin_management' => 0,
 			'restrict_rest_api'          => 'users',
 			'limit_login'                => 1,
+			'enable_mcp'                 => 1,
 		];
 
 		// Get settings from single option
@@ -179,6 +180,7 @@ class Settings {
 					'restrict_plugin_management' => 0,
 					'restrict_rest_api'          => 'users',
 					'limit_login'                => 1,
+					'enable_mcp'                 => 1,
 				],
 			]
 		);
@@ -249,6 +251,15 @@ class Settings {
 			'wpt_limit_login',
 			esc_html__( 'Limit Login Attempts', 'wordpress-tools' ),
 			[ $this, 'limit_login_setting_callback' ],
+			'wpt-829-settings',
+			'wpt_829_general_section'
+		);
+
+		// MCP setting field
+		add_settings_field(
+			'wpt_enable_mcp',
+			esc_html__( 'Enable MCP', 'wordpress-tools' ),
+			[ $this, 'mcp_setting_callback' ],
 			'wpt-829-settings',
 			'wpt_829_general_section'
 		);
@@ -450,6 +461,28 @@ class Settings {
 	}
 
 	/**
+	 * MCP setting callback.
+	 */
+	public function mcp_setting_callback() {
+		$settings   = self::get_settings();
+		$enable_mcp = $settings['enable_mcp'];
+		?>
+		<fieldset>
+			<input id="wpt-enable-mcp-yes" name="wpt_settings[enable_mcp]" type="radio" value="1"<?php checked( 1, $enable_mcp ); ?> />
+			<label for="wpt-enable-mcp-yes">
+				<?php esc_html_e( 'Yes', 'wordpress-tools' ); ?>
+			</label><br>
+
+			<input id="wpt-enable-mcp-no" name="wpt_settings[enable_mcp]" type="radio" value="0"<?php checked( 0, $enable_mcp ); ?> />
+			<label for="wpt-enable-mcp-no">
+				<?php esc_html_e( 'No', 'wordpress-tools' ); ?>
+			</label>
+			<p class="description"><?php esc_html_e( 'Exposes site management tools (plugins, themes, users, system info) via the WordPress MCP Adapter.', 'wordpress-tools' ); ?></p>
+		</fieldset>
+		<?php
+	}
+
+	/**
 	 * API Key setting callback.
 	 */
 	public function api_key_setting_callback() {
@@ -578,6 +611,9 @@ class Settings {
 		// Sanitize limit_login
 		$sanitized['limit_login'] = isset( $input['limit_login'] ) ? intval( $input['limit_login'] ) : 1;
 
+		// Sanitize enable_mcp
+		$sanitized['enable_mcp'] = isset( $input['enable_mcp'] ) ? intval( $input['enable_mcp'] ) : 1;
+
 		return $sanitized;
 	}
 
@@ -667,6 +703,7 @@ class Settings {
 		$restrict_plugin_management = $settings['restrict_plugin_management'];
 		$restrict_rest_api          = $settings['restrict_rest_api'];
 		$limit_login                = $settings['limit_login'];
+		$enable_mcp                 = $settings['enable_mcp'];
 		$attempt_limit              = defined( 'WPT_LOGIN_ATTEMPT_LIMIT' ) ? WPT_LOGIN_ATTEMPT_LIMIT : 10;
 		$lockout_minutes            = defined( 'WPT_LOGIN_LOCKOUT_DURATION' ) ? ceil( WPT_LOGIN_LOCKOUT_DURATION / 60 ) : 15;
 		$is_disabled                = defined( 'WPT_DISABLE_COMMENTS' ) || has_filter( 'wpt_disable_comments' );
@@ -841,6 +878,25 @@ class Settings {
 											);
 										?>
 									</p>
+								</fieldset>
+							</td>
+						</tr>
+						<tr>
+							<th scope="row">
+								<?php esc_html_e( 'Enable MCP', 'wordpress-tools' ); ?>
+							</th>
+							<td>
+								<fieldset>
+									<input id="wpt-enable-mcp-yes" name="wpt_settings[enable_mcp]" type="radio" value="1"<?php checked( 1, $enable_mcp ); ?> />
+									<label for="wpt-enable-mcp-yes">
+										<?php esc_html_e( 'Yes', 'wordpress-tools' ); ?>
+									</label><br>
+
+									<input id="wpt-enable-mcp-no" name="wpt_settings[enable_mcp]" type="radio" value="0"<?php checked( 0, $enable_mcp ); ?> />
+									<label for="wpt-enable-mcp-no">
+										<?php esc_html_e( 'No', 'wordpress-tools' ); ?>
+									</label>
+									<p class="description"><?php esc_html_e( 'Exposes site management tools (plugins, themes, users, system info) via the WordPress MCP Adapter.', 'wordpress-tools' ); ?></p>
 								</fieldset>
 							</td>
 						</tr>
