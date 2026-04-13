@@ -50,7 +50,7 @@ class Settings {
 			'disable_comments'           => 0,
 			'require_strong_passwords'   => 1,
 			'password_protect'           => 0,
-			'restrict_plugin_management' => 0,
+			'restrict_plugin_management' => 1,
 			'restrict_rest_api'          => 'users',
 			'limit_login'                => 1,
 			'enable_mcp'                 => 1,
