@@ -134,9 +134,9 @@ class TwoFactor {
 	 * @param array  $args    Additional arguments passed to the capability check.
 	 * @return array
 	 */
-	public function restrict_capabilities_without_2fa( array $caps, string $cap, int $user_id, array $args ): array {
-		// Skip if no user ID.
-		if ( ! $user_id ) {
+	public function restrict_capabilities_without_2fa( $caps, $cap, $user_id, $args ) {
+		// Skip if no user ID or capability.
+		if ( ! $user_id || ! is_string( $cap ) ) {
 			return $caps;
 		}
 
