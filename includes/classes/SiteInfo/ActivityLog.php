@@ -8,6 +8,7 @@
 namespace WordPressTools\SiteInfo;
 
 use WordPressTools\Singleton;
+use function WordPressTools\Utils\is_829_user;
 
 if ( ! defined( 'ABSPATH' ) ) {
 	exit;
@@ -51,7 +52,7 @@ class ActivityLog {
 		add_action( 'profile_update', [ $this, 'on_profile_update' ] );
 		add_action( 'set_user_role', [ $this, 'on_set_user_role' ], 10, 3 );
 		add_action( 'deleted_user', [ $this, 'on_deleted_user' ], 10, 3 );
-		add_action( 'wp_login', [ $this, 'on_wp_login' ] );
+		add_action( 'wp_login', [ $this, 'on_wp_login' ], 10, 2 );
 
 		// Plugin hooks.
 		add_action( 'activated_plugin', [ $this, 'on_activated_plugin' ] );
@@ -183,6 +184,23 @@ class ActivityLog {
 	}
 
 	/**
+	 * Format a user for display in the activity log.
+	 *
+	 * Internal (829llc.com) users are shown as "Name (email)".
+	 * All other users are shown as "User #ID" to protect PII.
+	 *
+	 * @param \WP_User $user User object.
+	 * @return string
+	 */
+	private function format_user_for_log( $user ) {
+		if ( is_829_user( $user ) ) {
+			return sprintf( '%s (%s)', $user->display_name, $user->user_email );
+		}
+
+		return sprintf( 'User #%d', $user->ID );
+	}
+
+	/**
 	 * Insert a log entry scoped to the current site.
 	 *
 	 * @param string $action   Action identifier.
@@ -243,7 +261,7 @@ class ActivityLog {
 
 		$this->log(
 			'user_register',
-			sprintf( 'New user registered: %s (%s)', $user->display_name, $user->user_email ),
+			sprintf( 'New user registered: %s', $this->format_user_for_log( $user ) ),
 			'users'
 		);
 	}
@@ -262,7 +280,7 @@ class ActivityLog {
 
 		$this->log(
 			'profile_update',
-			sprintf( 'User profile updated: %s', $user->display_name ),
+			sprintf( 'User profile updated: %s', $this->format_user_for_log( $user ) ),
 			'users'
 		);
 	}
@@ -285,7 +303,7 @@ class ActivityLog {
 
 		$this->log(
 			'set_user_role',
-			sprintf( 'User role changed for %s: %s -> %s', $user->display_name, $old_role, $role ),
+			sprintf( 'User role changed for %s: %s -> %s', $this->format_user_for_log( $user ), $old_role, $role ),
 			'users'
 		);
 	}
@@ -298,12 +316,11 @@ class ActivityLog {
 	 * @param \WP_User $user     User object.
 	 */
 	public function on_deleted_user( $user_id, $reassign, $user ) {
-		$name  = $user instanceof \WP_User ? $user->display_name : "ID {$user_id}";
-		$email = $user instanceof \WP_User ? $user->user_email : 'unknown';
+		$display = $user instanceof \WP_User ? $this->format_user_for_log( $user ) : "User #{$user_id}";
 
 		$this->log(
 			'deleted_user',
-			sprintf( 'User deleted: %s (%s)', $name, $email ),
+			sprintf( 'User deleted: %s', $display ),
 			'users'
 		);
 	}
@@ -313,10 +330,16 @@ class ActivityLog {
 	 *
 	 * @param string $user_login Username.
 	 */
-	public function on_wp_login( $user_login ) {
+	public function on_wp_login( $user_login, $user ) {
+		if ( ! $user instanceof \WP_User ) {
+			$user = get_user_by( 'login', $user_login );
+		}
+
+		$display = $user instanceof \WP_User ? $this->format_user_for_log( $user ) : $user_login;
+
 		$this->log(
 			'wp_login',
-			sprintf( 'User logged in: %s', $user_login ),
+			sprintf( 'User logged in: %s', $display ),
 			'users'
 		);
 	}
