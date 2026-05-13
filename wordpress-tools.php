@@ -3,7 +3,7 @@
  * Plugin Name: 829 Studios - WordPress Tools
  * Plugin URI: https://www.829studios.com/
  * Description: WordPress tools for 829 Studios.
- * Version: 1.6.2
+ * Version: 1.6.3
  * Author: 829 Studios
  * Author URI: https://www.829studios.com/
  * Text Domain: 829-wordpress-tools
@@ -29,6 +29,7 @@ use WordPressTools\API\API;
 use WordPressTools\SiteInfo\ActivityLog;
 use WordPressTools\SiteInfo\SiteInfo;
 use WordPressTools\MCP\MCP;
+use WordPressTools\RoleManagement\RoleManagement;
 use WP_CLI;
 
 // Prevent direct access.
@@ -163,6 +164,7 @@ add_action(
 		SiteInfo::instance();
 		API::instance();
 		MCP::instance();
+		RoleManagement::instance();
 	}
 );
 
