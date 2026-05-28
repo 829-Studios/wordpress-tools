@@ -726,8 +726,8 @@ class Settings {
 		wp_enqueue_script(
 			'wpt-settings-user-search',
 			WPT_PLUGIN_URL . 'assets/js/settings-user-search.js',
-			[ 'jquery', 'jquery-ui-autocomplete' ],
-			WPT_VERSION,
+			[],
+			filemtime( WPT_PLUGIN_DIR . 'assets/js/settings-user-search.js' ),
 			true
 		);
 
@@ -735,7 +735,7 @@ class Settings {
 			'wpt-settings-user-search',
 			WPT_PLUGIN_URL . 'assets/css/settings-user-search.css',
 			[],
-			WPT_VERSION
+			filemtime( WPT_PLUGIN_DIR . 'assets/css/settings-user-search.css' )
 		);
 
 		wp_localize_script(
