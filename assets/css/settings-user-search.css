@@ -2,6 +2,12 @@
 	max-width: 500px;
 }
 
+.wpt-user-search-input-wrap {
+	position: relative;
+	display: inline-block;
+	width: 100%;
+}
+
 .wpt-user-tags {
 	display: flex;
 	flex-wrap: wrap;
@@ -49,13 +55,16 @@
 	border-top: 1px solid #f0f0f0;
 }
 
-/* jQuery UI autocomplete dropdown */
-.ui-autocomplete {
+.wpt-autocomplete-list {
+	position: absolute;
+	top: 100%;
+	left: 0;
+	right: 0;
 	background: #fff;
 	border: 1px solid #8c8f94;
 	border-radius: 3px;
 	box-shadow: 0 2px 6px rgba(0, 0, 0, 0.12);
-	z-index: 999999 !important;
+	z-index: 999999;
 	max-height: 280px;
 	overflow-y: auto;
 	overflow-x: hidden;
@@ -64,7 +73,7 @@
 	margin: 0;
 }
 
-.ui-menu-item-wrapper {
+.wpt-autocomplete-item {
 	display: block;
 	padding: 6px 12px;
 	cursor: pointer;
@@ -73,9 +82,7 @@
 	color: #1d2327;
 }
 
-.ui-menu-item-wrapper.ui-state-active {
+.wpt-autocomplete-item.is-active {
 	background: #2271b1;
 	color: #fff;
-	border: none;
-	margin: 0;
 }
