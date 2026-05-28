@@ -137,11 +137,12 @@ class SiteInfo {
 	 */
 	private function get_single_site_info() {
 		return [
-			'system'        => $this->get_system_info(),
-			'plugins'       => $this->get_plugins_info(),
-			'themes'        => $this->get_themes_info(),
-			'users'         => $this->get_users_info(),
-			'activity_logs' => $this->get_activity_logs(),
+			'system'               => $this->get_system_info(),
+			'plugins'              => $this->get_plugins_info(),
+			'themes'               => $this->get_themes_info(),
+			'users'                => $this->get_users_info(),
+			'activity_logs'        => $this->get_activity_logs(),
+			'smart_plugin_manager' => $this->get_smart_plugin_manager_info(),
 		];
 	}
 
@@ -243,6 +244,112 @@ class SiteInfo {
 	 */
 	private function get_activity_logs() {
 		return ActivityLog::instance()->get_recent_logs();
+	}
+
+	/**
+	 * Get Smart Plugin Manager (AutoUpdater) settings.
+	 *
+	 * Mirrors `wp autoupdater settings get`: fetches the full settings from the
+	 * remote SPM API and merges in the locally-stored options.
+	 *
+	 * @return array
+	 */
+	private function get_smart_plugin_manager_info() {
+		if ( ! class_exists( 'AutoUpdater_Config' ) || ! class_exists( 'AutoUpdater_Request' ) ) {
+			return [ 'active' => false ];
+		}
+
+		if ( ! \AutoUpdater_Config::get( 'site_id' ) ) {
+			return [
+				'active'    => true,
+				'connected' => false,
+			];
+		}
+
+		$api_options = [
+			'frontend_url', 'backend_url', 'autoupdater_enabled', 'autoupdate_at',
+			'autoupdate_days', 'autoupdate_frequency', 'autoupdate_scheduled_at',
+			'update_plugins', 'update_themes', 'plugins', 'themes', 'notification_emails',
+			'notification_on_success', 'notification_on_failure', 'auto_rollback',
+			'maintenance_mode', 'sitemap_url', 'vrt_css_exclusions', 'vrt_urls_limit',
+			'vrt_asynchronous', 'worker_token', 'aes_key',
+		];
+
+		try {
+			$response = \AutoUpdater_Request::api(
+				'GET',
+				'sites/{ID}',
+				[ 'read_mask' => implode( ',', $api_options ) ]
+			)->send();
+		} catch ( \Exception $e ) {
+			return [
+				'active'    => true,
+				'connected' => false,
+				'error'     => $e->getMessage(),
+			];
+		}
+
+		if ( $response->code !== 200 || empty( $response->body->site ) ) {
+			return [
+				'active'    => true,
+				'connected' => false,
+				'error'     => sprintf( 'API responded with HTTP %d', $response->code ),
+			];
+		}
+
+		$remote = $response->body->site;
+
+		// Expand plugins into excluded lists (same logic as WP-CLI command).
+		$excluded_plugins        = [];
+		$excluded_plugin_updates = [];
+		if ( isset( $remote->plugins ) ) {
+			foreach ( $remote->plugins as $plugin ) {
+				if ( isset( $plugin->updates_enabled ) && ! $plugin->updates_enabled ) {
+					$excluded_plugins[] = $plugin->slug;
+				} elseif ( isset( $plugin->update->excluded ) && $plugin->update->excluded ) {
+					$excluded_plugin_updates[] = $plugin->slug;
+				}
+			}
+			unset( $remote->plugins );
+		}
+
+		// Expand themes into excluded lists.
+		$excluded_themes        = [];
+		$excluded_theme_updates = [];
+		if ( isset( $remote->themes ) ) {
+			foreach ( $remote->themes as $theme ) {
+				if ( isset( $theme->updates_enabled ) && ! $theme->updates_enabled ) {
+					$excluded_themes[] = $theme->slug;
+				} elseif ( isset( $theme->update->excluded ) && $theme->update->excluded ) {
+					$excluded_theme_updates[] = $theme->slug;
+				}
+			}
+			unset( $remote->themes );
+		}
+
+		$settings = (array) $remote;
+
+		$settings['excluded_plugins']        = $excluded_plugins;
+		$settings['excluded_plugin_updates'] = $excluded_plugin_updates;
+		$settings['excluded_themes']         = $excluded_themes;
+		$settings['excluded_theme_updates']  = $excluded_theme_updates;
+
+		// Merge local-only options (use API value for worker_token/aes_key when present).
+		if ( empty( $settings['worker_token'] ) ) {
+			$settings['worker_token'] = \AutoUpdater_Config::get( 'worker_token' );
+		}
+		if ( empty( $settings['aes_key'] ) ) {
+			$settings['aes_key'] = \AutoUpdater_Config::get( 'aes_key' );
+		}
+		$settings['site_id']          = (int) \AutoUpdater_Config::get( 'site_id' );
+		$settings['encrypt_response'] = (bool) \AutoUpdater_Config::get( 'encrypt_response' );
+		$settings['debug_response']   = (bool) \AutoUpdater_Config::get( 'debug' );
+		$settings['trace_hooks']      = (bool) \AutoUpdater_Config::get( 'trace_hooks' );
+
+		$settings['active']    = true;
+		$settings['connected'] = true;
+
+		return $settings;
 	}
 
 	/**

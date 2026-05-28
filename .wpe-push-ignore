@@ -1,0 +1,12 @@
+.git
+.github
+.claude
+.env
+.nvmrc
+.editorconfig
+node_modules
+npm-scripts
+phpcs.xml
+package.json
+package-lock.json
+*.zip
