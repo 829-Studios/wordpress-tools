@@ -25,12 +25,11 @@ class PluginManagement {
 	use Singleton;
 
 	/**
-	 * Capabilities to restrict for plugin/theme management.
+	 * Capabilities to restrict for plugin management.
 	 *
 	 * @var array
 	 */
-	protected $restricted_caps = [
-		// Plugin capabilities
+	protected $plugin_caps = [
 		'install_plugins',
 		'activate_plugins',
 		'delete_plugins',
@@ -41,7 +40,15 @@ class PluginManagement {
 		'deactivate_plugin',
 		'delete_plugin',
 		'update_plugin',
-		// Theme capabilities
+		'manage_network_plugins',
+	];
+
+	/**
+	 * Capabilities to restrict for theme management.
+	 *
+	 * @var array
+	 */
+	protected $theme_caps = [
 		'install_themes',
 		'switch_themes',
 		'delete_themes',
@@ -50,8 +57,6 @@ class PluginManagement {
 		'upload_themes',
 		'delete_theme',
 		'update_theme',
-		// Multisite network capabilities
-		'manage_network_plugins',
 		'manage_network_themes',
 		'enable_theme',
 		'disable_theme',
@@ -71,19 +76,56 @@ class PluginManagement {
 	}
 
 	/**
-	 * Check if restrictions should be applied.
+	 * Check if plugin management restrictions should be applied.
 	 *
+	 * @param int|null $user_id Optional user ID; defaults to current user.
 	 * @return bool
 	 */
-	protected function should_restrict() {
+	protected function should_restrict_plugins( $user_id = null ) {
 		$settings = Settings::get_settings();
 
 		if ( ! $settings['restrict_plugin_management'] ) {
 			return false;
 		}
 
-		if ( is_829_admin() ) {
+		if ( is_829_admin( $user_id ) ) {
 			return false;
+		}
+
+		$whitelist = ! empty( $settings['plugin_management_whitelist'] ) ? array_map( 'intval', (array) $settings['plugin_management_whitelist'] ) : [];
+		if ( ! empty( $whitelist ) ) {
+			$uid = $user_id ? (int) $user_id : get_current_user_id();
+			if ( in_array( $uid, $whitelist, true ) ) {
+				return false;
+			}
+		}
+
+		return true;
+	}
+
+	/**
+	 * Check if theme management restrictions should be applied.
+	 *
+	 * @param int|null $user_id Optional user ID; defaults to current user.
+	 * @return bool
+	 */
+	protected function should_restrict_themes( $user_id = null ) {
+		$settings = Settings::get_settings();
+
+		if ( ! $settings['restrict_theme_management'] ) {
+			return false;
+		}
+
+		if ( is_829_admin( $user_id ) ) {
+			return false;
+		}
+
+		$whitelist = ! empty( $settings['theme_management_whitelist'] ) ? array_map( 'intval', (array) $settings['theme_management_whitelist'] ) : [];
+		if ( ! empty( $whitelist ) ) {
+			$uid = $user_id ? (int) $user_id : get_current_user_id();
+			if ( in_array( $uid, $whitelist, true ) ) {
+				return false;
+			}
 		}
 
 		return true;
@@ -99,7 +141,7 @@ class PluginManagement {
 	 * @return array
 	 */
 	public function filter_theme_action_links( $actions, $theme, $context = '', $status = '' ) {
-		if ( ! $this->should_restrict() ) {
+		if ( ! $this->should_restrict_themes() ) {
 			return $actions;
 		}
 
@@ -122,7 +164,7 @@ class PluginManagement {
 	 * @return array
 	 */
 	public function filter_plugin_action_links( $actions, $plugin_file, $plugin_data = [], $context = '' ) {
-		if ( ! $this->should_restrict() ) {
+		if ( ! $this->should_restrict_plugins() ) {
 			return $actions;
 		}
 
@@ -145,24 +187,32 @@ class PluginManagement {
 	 * @return array
 	 */
 	public function restrict_plugin_caps( $caps, $cap, $user_id, $args ) {
-		// Check if this is a restricted capability
-		if ( ! in_array( $cap, $this->restricted_caps, true ) ) {
+		$is_plugin_cap = in_array( $cap, $this->plugin_caps, true );
+		$is_theme_cap  = ! $is_plugin_cap && in_array( $cap, $this->theme_caps, true );
+
+		if ( ! $is_plugin_cap && ! $is_theme_cap ) {
 			return $caps;
 		}
 
-		$settings = Settings::get_settings();
+		$settings  = Settings::get_settings();
+		$restricted = $is_plugin_cap ? $settings['restrict_plugin_management'] : $settings['restrict_theme_management'];
 
-		// If restriction is not enabled, return early
-		if ( ! $settings['restrict_plugin_management'] ) {
+		if ( ! $restricted ) {
 			return $caps;
 		}
 
-		// Check if user is an 829 admin
 		if ( is_829_admin( $user_id ) ) {
 			return $caps;
 		}
 
-		// Deny the capability by requiring 'do_not_allow'
+		$whitelist_key = $is_plugin_cap ? 'plugin_management_whitelist' : 'theme_management_whitelist';
+		$whitelist     = ! empty( $settings[ $whitelist_key ] ) ? array_map( 'intval', (array) $settings[ $whitelist_key ] ) : [];
+		$uid           = $user_id ? (int) $user_id : get_current_user_id();
+
+		if ( ! empty( $whitelist ) && in_array( $uid, $whitelist, true ) ) {
+			return []; // Empty caps array grants access regardless of user role.
+		}
+
 		return [ 'do_not_allow' ];
 	}
 }
