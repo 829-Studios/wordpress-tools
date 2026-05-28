@@ -21,7 +21,7 @@ jobs:
       - name: Install Composer dependencies
         run: composer install --no-dev --optimize-autoloader
 
-      - name: Deploy to WP Engine Staging
+      - name: Deploy to WP Engine Staging env
         uses: wpengine/github-action-wpe-site-deploy@v3
         with:
           WPE_ENV_NAME: x829x2025xstg
