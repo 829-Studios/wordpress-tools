@@ -727,7 +727,7 @@ class Settings {
 			'wpt-settings-user-search',
 			WPT_PLUGIN_URL . 'assets/js/settings-user-search.js',
 			[],
-			filemtime( WPT_PLUGIN_DIR . 'assets/js/settings-user-search.js' ),
+			file_exists( WPT_PLUGIN_DIR . 'assets/js/settings-user-search.js' ) ? filemtime( WPT_PLUGIN_DIR . 'assets/js/settings-user-search.js' ) : WPT_VERSION,
 			true
 		);
 
@@ -735,7 +735,7 @@ class Settings {
 			'wpt-settings-user-search',
 			WPT_PLUGIN_URL . 'assets/css/settings-user-search.css',
 			[],
-			filemtime( WPT_PLUGIN_DIR . 'assets/css/settings-user-search.css' )
+			file_exists( WPT_PLUGIN_DIR . 'assets/css/settings-user-search.css' ) ? filemtime( WPT_PLUGIN_DIR . 'assets/css/settings-user-search.css' ) : WPT_VERSION
 		);
 
 		wp_localize_script(
