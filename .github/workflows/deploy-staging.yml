@@ -24,9 +24,9 @@ jobs:
       - name: Deploy to WP Engine Staging env
         uses: wpengine/github-action-wpe-site-deploy@v3
         with:
-          WPE_ENV_NAME: x829x2025xstg
+          STG_ENV: x829x2025xstg
           WPE_SSHG_KEY_PRIVATE: ${{ secrets.WPE_SSHG_KEY_PRIVATE }}
           SRC_PATH: "."
-          WPE_PATH: "wp-content/plugins/wordpress-tools"
+          REMOTE_PATH: "wp-content/plugins/wordpress-tools"
           CACHE_CLEAR: true
           PHP_LINT: false
