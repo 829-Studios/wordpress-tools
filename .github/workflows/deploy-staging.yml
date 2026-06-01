@@ -12,7 +12,7 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v4
 
-      - name: Set up PHP & Composer
+      - name: Set up PHP & Composerr
         uses: shivammathur/setup-php@v2
         with:
           php-version: 8.2
