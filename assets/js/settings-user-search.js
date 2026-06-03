@@ -212,7 +212,7 @@
 
 		function updateVisibility( value ) {
 			document.querySelectorAll( '[data-restriction="' + name + '"]' ).forEach( function ( el ) {
-				el.style.display = '1' === value ? '' : 'none';
+				el.classList.toggle( 'wpt-hidden', '1' !== value );
 			} );
 		}
 

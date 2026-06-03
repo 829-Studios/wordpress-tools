@@ -49,6 +49,10 @@
 	display: none;
 }
 
+.wpt-hidden {
+	display: none;
+}
+
 .wpt-whitelist-container {
 	margin-top: 12px;
 	padding-top: 12px;

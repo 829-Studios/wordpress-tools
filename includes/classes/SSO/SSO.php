@@ -33,6 +33,8 @@ class SSO {
 	 * Setup SSO
 	 */
 	public function __construct() {
+		// Always enforce domain-based credential restriction regardless of SSO state.
+		add_filter( 'authenticate', [ $this, 'block_829_domain_credential_login' ], 30 );
 
 		if ( defined( 'WPT_SSO_DISABLE' ) && WPT_SSO_DISABLE ) {
 			return;
@@ -366,6 +368,53 @@ class SSO {
 			<?php endif; ?>
 		</style>
 		<?php
+	}
+
+	/**
+	 * Block credential login for @829llc.com and @829studios.com accounts.
+	 *
+	 * Runs at authenticate priority 30 (after core credential check at 20).
+	 * Fires regardless of SSO enabled/disabled state.
+	 *
+	 * @param WP_User|WP_Error|null $user Result from credential check.
+	 * @return WP_User|WP_Error
+	 */
+	public function block_829_domain_credential_login( $user ) {
+		if ( is_wp_error( $user ) || ! ( $user instanceof \WP_User ) ) {
+			return $user;
+		}
+
+		// When SSO itself is disabled there is no alternative login path, so
+		// enforcing the credential restriction would permanently lock 829 users out.
+		if ( defined( 'WPT_SSO_DISABLE' ) && WPT_SSO_DISABLE ) {
+			return $user;
+		}
+
+		$settings = Settings::get_settings();
+
+		if ( empty( $settings['restrict_829_credential_login'] ) ) {
+			return $user;
+		}
+
+		$restricted_domains = [ '829llc.com', '829studios.com' ];
+		$email_domain       = strtolower( substr( strrchr( $user->user_email, '@' ), 1 ) );
+
+		if ( ! in_array( $email_domain, $restricted_domains, true ) ) {
+			return $user;
+		}
+
+		$whitelist = ! empty( $settings['credential_login_whitelist'] )
+			? array_map( 'intval', (array) $settings['credential_login_whitelist'] )
+			: [];
+
+		if ( ! empty( $whitelist ) && in_array( (int) $user->ID, $whitelist, true ) ) {
+			return $user;
+		}
+
+		return new WP_Error(
+			'wpt-829-domain-login',
+			esc_html__( 'Users with @829llc.com or @829studios.com email addresses must sign in using Okta.', 'wordpress-tools' )
+		);
 	}
 
 	/**
