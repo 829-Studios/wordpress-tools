@@ -403,11 +403,11 @@ class SSO {
 			return $user;
 		}
 
-		$whitelist = ! empty( $settings['credential_login_whitelist'] )
-			? array_map( 'intval', (array) $settings['credential_login_whitelist'] )
+		$allow_list = ! empty( $settings['credential_login_allow_list'] )
+			? array_map( 'intval', (array) $settings['credential_login_allow_list'] )
 			: [];
 
-		if ( ! empty( $whitelist ) && in_array( (int) $user->ID, $whitelist, true ) ) {
+		if ( ! empty( $allow_list ) && in_array( (int) $user->ID, $allow_list, true ) ) {
 			return $user;
 		}
 

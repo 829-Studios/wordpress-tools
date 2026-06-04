@@ -125,7 +125,7 @@ class TwoFactor {
 	/**
 	 * Restrict capabilities for non-SSO users without 2FA using map_meta_cap.
 	 *
-	 * Uses a whitelist approach: only allowed capabilities pass through,
+	 * Uses an allow-list approach: only allowed capabilities pass through,
 	 * everything else is blocked.
 	 *
 	 * @param array  $caps    The required primitive capabilities.
@@ -150,7 +150,7 @@ class TwoFactor {
 			return $caps;
 		}
 
-		// Only allow whitelisted capabilities, block everything else.
+		// Only allow listed capabilities, block everything else.
 		if ( ! in_array( $cap, self::ALLOWED_CAPABILITIES, true ) ) {
 			return [ 'do_not_allow' ];
 		}

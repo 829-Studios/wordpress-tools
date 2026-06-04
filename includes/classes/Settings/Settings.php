@@ -51,14 +51,14 @@ class Settings {
 		$defaults = [
 			'allow_sso'                      => 1,
 			'restrict_829_credential_login'  => 1,
-			'credential_login_whitelist'     => [],
+			'credential_login_allow_list'     => [],
 			'disable_comments'               => 0,
 			'require_strong_passwords'       => 1,
 			'password_protect'               => 0,
 			'restrict_plugin_management'     => 1,
-			'plugin_management_whitelist'    => [],
+			'plugin_management_allow_list'    => [],
 			'restrict_theme_management'      => 1,
-			'theme_management_whitelist'     => [],
+			'theme_management_allow_list'     => [],
 			'restrict_rest_api'              => 'users',
 			'limit_login'                    => 1,
 			'enable_mcp'                     => 1,
@@ -69,6 +69,28 @@ class Settings {
 			$settings = get_site_option( 'wpt_settings', [] );
 		} else {
 			$settings = get_option( 'wpt_settings', [] );
+		}
+
+		// One-time migration: rename legacy *_whitelist keys to *_allow_list.
+		$legacy_keys = [
+			'credential_login_whitelist'  => 'credential_login_allow_list',
+			'plugin_management_whitelist' => 'plugin_management_allow_list',
+			'theme_management_whitelist'  => 'theme_management_allow_list',
+		];
+		$migrated = false;
+		foreach ( $legacy_keys as $old => $new ) {
+			if ( array_key_exists( $old, $settings ) ) {
+				$settings[ $new ] = $settings[ $old ];
+				unset( $settings[ $old ] );
+				$migrated = true;
+			}
+		}
+		if ( $migrated ) {
+			if ( WPT_IS_NETWORK ) {
+				update_site_option( 'wpt_settings', $settings );
+			} else {
+				update_option( 'wpt_settings', $settings );
+			}
 		}
 
 		// Merge with defaults to ensure all keys exist
@@ -183,14 +205,14 @@ class Settings {
 				'default'           => [
 					'allow_sso'                     => 1,
 					'restrict_829_credential_login' => 1,
-					'credential_login_whitelist'    => [],
+					'credential_login_allow_list'    => [],
 					'disable_comments'              => 0,
 					'require_strong_passwords'      => 1,
 					'password_protect'              => 0,
 					'restrict_plugin_management'    => 1,
-					'plugin_management_whitelist'   => [],
+					'plugin_management_allow_list'   => [],
 					'restrict_theme_management'     => 1,
-					'theme_management_whitelist'    => [],
+					'theme_management_allow_list'    => [],
 					'restrict_rest_api'             => 'users',
 					'limit_login'                   => 1,
 					'enable_mcp'                    => 1,
@@ -340,17 +362,17 @@ class Settings {
 	public function restrict_829_credential_login_setting_callback() {
 		$settings  = self::get_settings();
 		$restrict  = $settings['restrict_829_credential_login'];
-		$whitelist = $settings['credential_login_whitelist'] ?? [];
-		$this->render_credential_login_restriction_field( $restrict, $whitelist );
+		$allow_list = $settings['credential_login_allow_list'] ?? [];
+		$this->render_credential_login_restriction_field( $restrict, $allow_list);
 	}
 
 	/**
 	 * Shared fieldset for the Restrict 829 Credential Login setting.
 	 *
 	 * @param int   $restrict  1 if restriction is enabled.
-	 * @param array $whitelist Currently saved user IDs.
+	 * @param array $allow_list Currently saved user IDs.
 	 */
-	private function render_credential_login_restriction_field( int $restrict, array $whitelist ): void {
+	private function render_credential_login_restriction_field( int $restrict, array $allow_list ): void {
 		?>
 		<fieldset>
 			<input id="wpt-restrict-829-credential-login-yes" name="wpt_settings[restrict_829_credential_login]" type="radio" value="1"<?php checked( 1, $restrict ); ?> />
@@ -367,10 +389,10 @@ class Settings {
 				<p class="description" style="color:#d63638;margin-top:4px;"><?php esc_html_e( 'Warning: SSO is currently disabled (WPT_SSO_DISABLE). This restriction will not be enforced until SSO is re-enabled, to prevent lockout.', 'wordpress-tools' ); ?></p>
 			<?php endif; ?>
 
-			<div class="wpt-whitelist-container<?php echo $restrict ? '' : ' wpt-hidden'; ?>" data-restriction="restrict_829_credential_login">
+			<div class="wpt-allow-list-container<?php echo $restrict ? '' : ' wpt-hidden'; ?>" data-restriction="restrict_829_credential_login">
 				<p class="description" style="margin: 0 0 4px;"><strong><?php esc_html_e( 'Credential Login Exceptions', 'wordpress-tools' ); ?></strong></p>
 				<p class="description" style="margin: 0 0 8px;"><?php esc_html_e( 'These users can still log in with credentials even when restriction is enabled.', 'wordpress-tools' ); ?></p>
-				<?php $this->render_user_search_field( 'credential_login_whitelist', $whitelist ); ?>
+				<?php $this->render_user_search_field( 'credential_login_allow_list', $allow_list); ?>
 			</div>
 		</fieldset>
 		<?php
@@ -379,7 +401,7 @@ class Settings {
 	/**
 	 * Render a user search field with tag-style selected users.
 	 *
-	 * @param string $setting_key Settings key for the whitelist array.
+	 * @param string $setting_key Settings key for the allow list array.
 	 * @param array  $user_ids    Currently saved user IDs.
 	 */
 	protected function render_user_search_field( $setting_key, $user_ids ) {
@@ -473,17 +495,17 @@ class Settings {
 	public function restrict_plugin_management_setting_callback() {
 		$settings = self::get_settings();
 		$restrict  = $settings['restrict_plugin_management'];
-		$whitelist = $settings['plugin_management_whitelist'] ?? [];
-		$this->render_plugin_management_restriction_field( $restrict, $whitelist );
+		$allow_list = $settings['plugin_management_allow_list'] ?? [];
+		$this->render_plugin_management_restriction_field( $restrict, $allow_list);
 	}
 
 	/**
 	 * Shared fieldset for the Restrict Plugin Management setting.
 	 *
 	 * @param int   $restrict  1 if restriction is enabled.
-	 * @param array $whitelist Currently saved user IDs.
+	 * @param array $allow_list Currently saved user IDs.
 	 */
-	private function render_plugin_management_restriction_field( int $restrict, array $whitelist ): void {
+	private function render_plugin_management_restriction_field( int $restrict, array $allow_list ): void {
 		?>
 		<fieldset>
 			<input id="wpt-restrict-plugin-management-yes" name="wpt_settings[restrict_plugin_management]" type="radio" value="1"<?php checked( 1, $restrict ); ?> />
@@ -497,10 +519,10 @@ class Settings {
 			</label>
 			<p class="description"><?php esc_html_e( 'Only allows administrators with @829llc.com emails to install, update, or delete plugins.', 'wordpress-tools' ); ?></p>
 
-			<div class="wpt-whitelist-container<?php echo $restrict ? '' : ' wpt-hidden'; ?>" data-restriction="restrict_plugin_management">
-				<p class="description" style="margin: 0 0 4px;"><strong><?php esc_html_e( 'Whitelisted Users', 'wordpress-tools' ); ?></strong></p>
+			<div class="wpt-allow-list-container<?php echo $restrict ? '' : ' wpt-hidden'; ?>" data-restriction="restrict_plugin_management">
+				<p class="description" style="margin: 0 0 4px;"><strong><?php esc_html_e( 'Allowed Users', 'wordpress-tools' ); ?></strong></p>
 				<p class="description" style="margin: 0 0 8px;"><?php esc_html_e( 'These users can manage plugins even when restriction is enabled.', 'wordpress-tools' ); ?></p>
-				<?php $this->render_user_search_field( 'plugin_management_whitelist', $whitelist ); ?>
+				<?php $this->render_user_search_field( 'plugin_management_allow_list', $allow_list); ?>
 			</div>
 		</fieldset>
 		<?php
@@ -512,17 +534,17 @@ class Settings {
 	public function restrict_theme_management_setting_callback() {
 		$settings  = self::get_settings();
 		$restrict  = $settings['restrict_theme_management'];
-		$whitelist = $settings['theme_management_whitelist'] ?? [];
-		$this->render_theme_management_restriction_field( $restrict, $whitelist );
+		$allow_list = $settings['theme_management_allow_list'] ?? [];
+		$this->render_theme_management_restriction_field( $restrict, $allow_list);
 	}
 
 	/**
 	 * Shared fieldset for the Restrict Theme Management setting.
 	 *
 	 * @param int   $restrict  1 if restriction is enabled.
-	 * @param array $whitelist Currently saved user IDs.
+	 * @param array $allow_list Currently saved user IDs.
 	 */
-	private function render_theme_management_restriction_field( int $restrict, array $whitelist ): void {
+	private function render_theme_management_restriction_field( int $restrict, array $allow_list ): void {
 		?>
 		<fieldset>
 			<input id="wpt-restrict-theme-management-yes" name="wpt_settings[restrict_theme_management]" type="radio" value="1"<?php checked( 1, $restrict ); ?> />
@@ -536,10 +558,10 @@ class Settings {
 			</label>
 			<p class="description"><?php esc_html_e( 'Only allows administrators with @829llc.com emails to install, update, or delete themes.', 'wordpress-tools' ); ?></p>
 
-			<div class="wpt-whitelist-container<?php echo $restrict ? '' : ' wpt-hidden'; ?>" data-restriction="restrict_theme_management">
-				<p class="description" style="margin: 0 0 4px;"><strong><?php esc_html_e( 'Whitelisted Users', 'wordpress-tools' ); ?></strong></p>
+			<div class="wpt-allow-list-container<?php echo $restrict ? '' : ' wpt-hidden'; ?>" data-restriction="restrict_theme_management">
+				<p class="description" style="margin: 0 0 4px;"><strong><?php esc_html_e( 'Allowed Users', 'wordpress-tools' ); ?></strong></p>
 				<p class="description" style="margin: 0 0 8px;"><?php esc_html_e( 'These users can manage themes even when restriction is enabled.', 'wordpress-tools' ); ?></p>
-				<?php $this->render_user_search_field( 'theme_management_whitelist', $whitelist ); ?>
+				<?php $this->render_user_search_field( 'theme_management_allow_list', $allow_list); ?>
 			</div>
 		</fieldset>
 		<?php
@@ -548,7 +570,7 @@ class Settings {
 	/**
 	 * Render a user search field with tag-style selected users.
 	 *
-	 * @param string $setting_key Settings key for the whitelist array.
+	 * @param string $setting_key Settings key for the allow list array.
 	 * @param array  $user_ids    Currently saved user IDs.
 	 */
 	/**
@@ -771,9 +793,9 @@ class Settings {
 		// Sanitize restrict_829_credential_login (defaults to 1/on when missing)
 		$sanitized['restrict_829_credential_login'] = isset( $input['restrict_829_credential_login'] ) ? intval( $input['restrict_829_credential_login'] ) : 1;
 
-		// Sanitize credential_login_whitelist — drops IDs for deleted users
-		$sanitized['credential_login_whitelist'] = isset( $input['credential_login_whitelist'] )
-			? $this->sanitize_user_id_list( $input['credential_login_whitelist'] )
+		// Sanitize credential_login_allow_list — drops IDs for deleted users
+		$sanitized['credential_login_allow_list'] = isset( $input['credential_login_allow_list'] )
+			? $this->sanitize_user_id_list( $input['credential_login_allow_list'] )
 			: [];
 
 		// Sanitize disable_comments
@@ -788,17 +810,17 @@ class Settings {
 		// Sanitize restrict_plugin_management
 		$sanitized['restrict_plugin_management'] = isset( $input['restrict_plugin_management'] ) ? intval( $input['restrict_plugin_management'] ) : 0;
 
-		// Sanitize plugin_management_whitelist — drops IDs for deleted users
-		$sanitized['plugin_management_whitelist'] = isset( $input['plugin_management_whitelist'] )
-			? $this->sanitize_user_id_list( $input['plugin_management_whitelist'] )
+		// Sanitize plugin_management_allow_list — drops IDs for deleted users
+		$sanitized['plugin_management_allow_list'] = isset( $input['plugin_management_allow_list'] )
+			? $this->sanitize_user_id_list( $input['plugin_management_allow_list'] )
 			: [];
 
 		// Sanitize restrict_theme_management
 		$sanitized['restrict_theme_management'] = isset( $input['restrict_theme_management'] ) ? intval( $input['restrict_theme_management'] ) : 0;
 
-		// Sanitize theme_management_whitelist — drops IDs for deleted users
-		$sanitized['theme_management_whitelist'] = isset( $input['theme_management_whitelist'] )
-			? $this->sanitize_user_id_list( $input['theme_management_whitelist'] )
+		// Sanitize theme_management_allow_list — drops IDs for deleted users
+		$sanitized['theme_management_allow_list'] = isset( $input['theme_management_allow_list'] )
+			? $this->sanitize_user_id_list( $input['theme_management_allow_list'] )
 			: [];
 
 		// Sanitize restrict_rest_api
@@ -973,14 +995,14 @@ class Settings {
 		$settings                        = self::get_settings();
 		$allow_sso                       = $settings['allow_sso'];
 		$restrict_829_credential_login   = $settings['restrict_829_credential_login'];
-		$credential_login_whitelist      = isset( $settings['credential_login_whitelist'] ) ? $settings['credential_login_whitelist'] : [];
+		$credential_login_allow_list      = isset( $settings['credential_login_allow_list'] ) ? $settings['credential_login_allow_list'] : [];
 		$disable_comments                = $settings['disable_comments'];
 		$require_strong_passwords        = $settings['require_strong_passwords'];
 		$password_protect                = $settings['password_protect'];
 		$restrict_plugin_management      = $settings['restrict_plugin_management'];
-		$plugin_management_whitelist     = isset( $settings['plugin_management_whitelist'] ) ? $settings['plugin_management_whitelist'] : [];
+		$plugin_management_allow_list     = isset( $settings['plugin_management_allow_list'] ) ? $settings['plugin_management_allow_list'] : [];
 		$restrict_theme_management       = $settings['restrict_theme_management'];
-		$theme_management_whitelist      = isset( $settings['theme_management_whitelist'] ) ? $settings['theme_management_whitelist'] : [];
+		$theme_management_allow_list      = isset( $settings['theme_management_allow_list'] ) ? $settings['theme_management_allow_list'] : [];
 		$restrict_rest_api               = $settings['restrict_rest_api'];
 		$limit_login                     = $settings['limit_login'];
 		$enable_mcp                      = $settings['enable_mcp'];
@@ -1030,7 +1052,7 @@ class Settings {
 								<?php esc_html_e( 'Restrict 829 Credential Login', 'wordpress-tools' ); ?>
 							</th>
 							<td>
-								<?php $this->render_credential_login_restriction_field( $restrict_829_credential_login, $credential_login_whitelist ); ?>
+								<?php $this->render_credential_login_restriction_field( $restrict_829_credential_login, $credential_login_allow_list ); ?>
 							</td>
 						</tr>
 						<tr>
@@ -1090,7 +1112,7 @@ class Settings {
 								<?php esc_html_e( 'Restrict Plugin Management', 'wordpress-tools' ); ?>
 							</th>
 							<td>
-								<?php $this->render_plugin_management_restriction_field( $restrict_plugin_management, $plugin_management_whitelist ); ?>
+								<?php $this->render_plugin_management_restriction_field( $restrict_plugin_management, $plugin_management_allow_list ); ?>
 							</td>
 						</tr>
 						<tr>
@@ -1098,7 +1120,7 @@ class Settings {
 								<?php esc_html_e( 'Restrict Theme Management', 'wordpress-tools' ); ?>
 							</th>
 							<td>
-								<?php $this->render_theme_management_restriction_field( $restrict_theme_management, $theme_management_whitelist ); ?>
+								<?php $this->render_theme_management_restriction_field( $restrict_theme_management, $theme_management_allow_list ); ?>
 							</td>
 						</tr>
 						<tr>
