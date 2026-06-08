@@ -1,0 +1,88 @@
+.wpt-user-search {
+	max-width: 500px;
+}
+
+.wpt-user-search-input-wrap {
+	position: relative;
+	display: inline-block;
+	width: 100%;
+}
+
+.wpt-user-tags {
+	display: flex;
+	flex-wrap: wrap;
+	gap: 6px;
+	margin-bottom: 8px;
+	min-height: 24px;
+}
+
+.wpt-user-tag {
+	display: inline-flex;
+	align-items: center;
+	gap: 4px;
+	background: #e1f0ff;
+	border: 1px solid #72aee6;
+	border-radius: 3px;
+	padding: 2px 8px;
+	font-size: 13px;
+	line-height: 1.5;
+}
+
+.wpt-user-tag-remove {
+	background: none;
+	border: none;
+	cursor: pointer;
+	padding: 0 0 0 2px;
+	margin: 0;
+	line-height: 1;
+	color: #2271b1;
+	font-size: 16px;
+	display: flex;
+	align-items: center;
+}
+
+.wpt-user-tag-remove:hover {
+	color: #d63638;
+}
+
+.wpt-user-ids {
+	display: none;
+}
+
+.wpt-whitelist-container {
+	margin-top: 12px;
+	padding-top: 12px;
+	border-top: 1px solid #f0f0f0;
+}
+
+.wpt-autocomplete-list {
+	position: absolute;
+	top: 100%;
+	left: 0;
+	right: 0;
+	background: #fff;
+	border: 1px solid #8c8f94;
+	border-radius: 3px;
+	box-shadow: 0 2px 6px rgba(0, 0, 0, 0.12);
+	z-index: 999999;
+	max-height: 280px;
+	overflow-y: auto;
+	overflow-x: hidden;
+	list-style: none;
+	padding: 4px 0;
+	margin: 0;
+}
+
+.wpt-autocomplete-item {
+	display: block;
+	padding: 6px 12px;
+	cursor: pointer;
+	font-size: 13px;
+	line-height: 1.5;
+	color: #1d2327;
+}
+
+.wpt-autocomplete-item.is-active {
+	background: #2271b1;
+	color: #fff;
+}

@@ -36,6 +36,9 @@ class Settings {
 		}
 
 		add_action( 'admin_post_wpt_regenerate_api_key', [ $this, 'handle_api_key_regenerate' ] );
+		add_action( 'admin_enqueue_scripts', [ $this, 'enqueue_settings_assets' ] );
+		add_action( 'network_admin_enqueue_scripts', [ $this, 'enqueue_settings_assets' ] );
+		add_action( 'wp_ajax_wpt_search_users', [ $this, 'ajax_search_users' ] );
 	}
 
 	/**
@@ -46,14 +49,17 @@ class Settings {
 	 */
 	public static function get_settings() {
 		$defaults = [
-			'allow_sso'                  => 1,
-			'disable_comments'           => 0,
-			'require_strong_passwords'   => 1,
-			'password_protect'           => 0,
-			'restrict_plugin_management' => 1,
-			'restrict_rest_api'          => 'users',
-			'limit_login'                => 1,
-			'enable_mcp'                 => 1,
+			'allow_sso'                    => 1,
+			'disable_comments'             => 0,
+			'require_strong_passwords'     => 1,
+			'password_protect'             => 0,
+			'restrict_plugin_management'   => 1,
+			'plugin_management_whitelist'  => [],
+			'restrict_theme_management'    => 1,
+			'theme_management_whitelist'   => [],
+			'restrict_rest_api'            => 'users',
+			'limit_login'                  => 1,
+			'enable_mcp'                   => 1,
 		];
 
 		// Get settings from single option
@@ -173,14 +179,17 @@ class Settings {
 				'type'              => 'array',
 				'sanitize_callback' => [ $this, 'sanitize_settings' ],
 				'default'           => [
-					'allow_sso'                  => 1,
-					'disable_comments'           => 0,
-					'require_strong_passwords'   => 1,
-					'password_protect'           => 0,
-					'restrict_plugin_management' => 0,
-					'restrict_rest_api'          => 'users',
-					'limit_login'                => 1,
-					'enable_mcp'                 => 1,
+					'allow_sso'                   => 1,
+					'disable_comments'            => 0,
+					'require_strong_passwords'    => 1,
+					'password_protect'            => 0,
+					'restrict_plugin_management'  => 0,
+					'plugin_management_whitelist' => [],
+					'restrict_theme_management'   => 0,
+					'theme_management_whitelist'  => [],
+					'restrict_rest_api'           => 'users',
+					'limit_login'                 => 1,
+					'enable_mcp'                  => 1,
 				],
 			]
 		);
@@ -231,8 +240,17 @@ class Settings {
 		// Restrict Plugin Management setting field
 		add_settings_field(
 			'wpt_restrict_plugin_management',
-			esc_html__( 'Restrict Plugin/Theme Management', 'wordpress-tools' ),
+			esc_html__( 'Restrict Plugin Management', 'wordpress-tools' ),
 			[ $this, 'restrict_plugin_management_setting_callback' ],
+			'wpt-829-settings',
+			'wpt_829_general_section'
+		);
+
+		// Restrict Theme Management setting field
+		add_settings_field(
+			'wpt_restrict_theme_management',
+			esc_html__( 'Restrict Theme Management', 'wordpress-tools' ),
+			[ $this, 'restrict_theme_management_setting_callback' ],
 			'wpt-829-settings',
 			'wpt_829_general_section'
 		);
@@ -371,6 +389,7 @@ class Settings {
 	public function restrict_plugin_management_setting_callback() {
 		$settings                   = self::get_settings();
 		$restrict_plugin_management = $settings['restrict_plugin_management'];
+		$whitelist                  = isset( $settings['plugin_management_whitelist'] ) ? $settings['plugin_management_whitelist'] : [];
 		?>
 		<fieldset>
 			<input id="wpt-restrict-plugin-management-yes" name="wpt_settings[restrict_plugin_management]" type="radio" value="1"<?php checked( 1, $restrict_plugin_management ); ?> />
@@ -382,8 +401,72 @@ class Settings {
 			<label for="wpt-restrict-plugin-management-no">
 				<?php esc_html_e( 'No', 'wordpress-tools' ); ?>
 			</label>
-			<p class="description"><?php esc_html_e( 'Only allows administrators with @829llc.com emails to install, update, or delete plugins and themes.', 'wordpress-tools' ); ?></p>
+			<p class="description"><?php esc_html_e( 'Only allows administrators with @829llc.com emails to install, update, or delete plugins.', 'wordpress-tools' ); ?></p>
+
+			<div class="wpt-whitelist-container" data-restriction="restrict_plugin_management"<?php echo $restrict_plugin_management ? '' : ' style="display:none"'; ?>>
+				<p class="description" style="margin: 0 0 4px;"><strong><?php esc_html_e( 'Whitelisted Users', 'wordpress-tools' ); ?></strong></p>
+				<p class="description" style="margin: 0 0 8px;"><?php esc_html_e( 'These users can manage plugins even when restriction is enabled.', 'wordpress-tools' ); ?></p>
+				<?php $this->render_user_search_field( 'plugin_management_whitelist', $whitelist ); ?>
+			</div>
 		</fieldset>
+		<?php
+	}
+
+	/**
+	 * Restrict Theme Management setting callback.
+	 */
+	public function restrict_theme_management_setting_callback() {
+		$settings                  = self::get_settings();
+		$restrict_theme_management = $settings['restrict_theme_management'];
+		$whitelist                 = isset( $settings['theme_management_whitelist'] ) ? $settings['theme_management_whitelist'] : [];
+		?>
+		<fieldset>
+			<input id="wpt-restrict-theme-management-yes" name="wpt_settings[restrict_theme_management]" type="radio" value="1"<?php checked( 1, $restrict_theme_management ); ?> />
+			<label for="wpt-restrict-theme-management-yes">
+				<?php esc_html_e( 'Yes', 'wordpress-tools' ); ?>
+			</label><br>
+
+			<input id="wpt-restrict-theme-management-no" name="wpt_settings[restrict_theme_management]" type="radio" value="0"<?php checked( 0, $restrict_theme_management ); ?> />
+			<label for="wpt-restrict-theme-management-no">
+				<?php esc_html_e( 'No', 'wordpress-tools' ); ?>
+			</label>
+			<p class="description"><?php esc_html_e( 'Only allows administrators with @829llc.com emails to install, update, or delete themes.', 'wordpress-tools' ); ?></p>
+
+			<div class="wpt-whitelist-container" data-restriction="restrict_theme_management"<?php echo $restrict_theme_management ? '' : ' style="display:none"'; ?>>
+				<p class="description" style="margin: 0 0 4px;"><strong><?php esc_html_e( 'Whitelisted Users', 'wordpress-tools' ); ?></strong></p>
+				<p class="description" style="margin: 0 0 8px;"><?php esc_html_e( 'These users can manage themes even when restriction is enabled.', 'wordpress-tools' ); ?></p>
+				<?php $this->render_user_search_field( 'theme_management_whitelist', $whitelist ); ?>
+			</div>
+		</fieldset>
+		<?php
+	}
+
+	/**
+	 * Render a user search field with tag-style selected users.
+	 *
+	 * @param string $setting_key Settings key for the whitelist array.
+	 * @param array  $user_ids    Currently saved user IDs.
+	 */
+	protected function render_user_search_field( $setting_key, $user_ids ) {
+		$user_ids = array_filter( array_map( 'intval', (array) $user_ids ) );
+		$users    = ! empty( $user_ids ) ? get_users( [ 'include' => $user_ids ] ) : [];
+		?>
+		<div class="wpt-user-search" data-setting-key="<?php echo esc_attr( $setting_key ); ?>">
+			<div class="wpt-user-tags">
+				<?php foreach ( $users as $user ) : ?>
+					<span class="wpt-user-tag">
+						<span class="wpt-user-tag-label"><?php echo esc_html( $user->display_name . ' (' . $user->user_email . ')' ); ?></span>
+						<button type="button" class="wpt-user-tag-remove" data-user-id="<?php echo esc_attr( $user->ID ); ?>" aria-label="<?php echo esc_attr( sprintf( __( 'Remove %s', 'wordpress-tools' ), $user->display_name ) ); ?>">&times;</button>
+					</span>
+				<?php endforeach; ?>
+			</div>
+			<div class="wpt-user-ids">
+				<?php foreach ( $user_ids as $uid ) : ?>
+					<input type="hidden" name="wpt_settings[<?php echo esc_attr( $setting_key ); ?>][]" value="<?php echo esc_attr( $uid ); ?>" />
+				<?php endforeach; ?>
+			</div>
+			<input type="text" class="wpt-user-search-input regular-text" placeholder="<?php esc_attr_e( 'Search users…', 'wordpress-tools' ); ?>" autocomplete="off" />
+		</div>
 		<?php
 	}
 
@@ -601,6 +684,19 @@ class Settings {
 		// Sanitize restrict_plugin_management
 		$sanitized['restrict_plugin_management'] = isset( $input['restrict_plugin_management'] ) ? intval( $input['restrict_plugin_management'] ) : 0;
 
+		// Sanitize plugin_management_whitelist
+		$sanitized['plugin_management_whitelist'] = isset( $input['plugin_management_whitelist'] )
+			? array_values( array_filter( array_map( 'intval', (array) $input['plugin_management_whitelist'] ) ) )
+			: [];
+
+		// Sanitize restrict_theme_management
+		$sanitized['restrict_theme_management'] = isset( $input['restrict_theme_management'] ) ? intval( $input['restrict_theme_management'] ) : 0;
+
+		// Sanitize theme_management_whitelist
+		$sanitized['theme_management_whitelist'] = isset( $input['theme_management_whitelist'] )
+			? array_values( array_filter( array_map( 'intval', (array) $input['theme_management_whitelist'] ) ) )
+			: [];
+
 		// Sanitize restrict_rest_api
 		if ( isset( $input['restrict_rest_api'] ) && in_array( $input['restrict_rest_api'], [ 'all', 'users', 'none' ], true ) ) {
 			$sanitized['restrict_rest_api'] = $input['restrict_rest_api'];
@@ -615,6 +711,81 @@ class Settings {
 		$sanitized['enable_mcp'] = isset( $input['enable_mcp'] ) ? intval( $input['enable_mcp'] ) : 1;
 
 		return $sanitized;
+	}
+
+	/**
+	 * Enqueue assets on the settings page.
+	 *
+	 * @param string $hook Current admin page hook.
+	 */
+	public function enqueue_settings_assets( $hook ) {
+		if ( false === strpos( $hook, 'wpt-829-settings' ) ) {
+			return;
+		}
+
+		wp_enqueue_script(
+			'wpt-settings-user-search',
+			WPT_PLUGIN_URL . 'assets/js/settings-user-search.js',
+			[],
+			file_exists( WPT_PLUGIN_DIR . 'assets/js/settings-user-search.js' ) ? filemtime( WPT_PLUGIN_DIR . 'assets/js/settings-user-search.js' ) : WPT_VERSION,
+			true
+		);
+
+		wp_enqueue_style(
+			'wpt-settings-user-search',
+			WPT_PLUGIN_URL . 'assets/css/settings-user-search.css',
+			[],
+			file_exists( WPT_PLUGIN_DIR . 'assets/css/settings-user-search.css' ) ? filemtime( WPT_PLUGIN_DIR . 'assets/css/settings-user-search.css' ) : WPT_VERSION
+		);
+
+		wp_localize_script(
+			'wpt-settings-user-search',
+			'wptUserSearch',
+			[
+				'ajaxUrl'     => admin_url( 'admin-ajax.php' ),
+				'nonce'       => wp_create_nonce( 'wpt_search_users' ),
+				'removeLabel' => __( 'Remove', 'wordpress-tools' ),
+			]
+		);
+	}
+
+	/**
+	 * AJAX handler: search users by name or email.
+	 */
+	public function ajax_search_users() {
+		check_ajax_referer( 'wpt_search_users', 'nonce' );
+
+		if ( ! $this->can_access_settings() ) {
+			wp_send_json_error( 'Unauthorized' );
+			return;
+		}
+
+		$search  = isset( $_POST['search'] ) ? sanitize_text_field( wp_unslash( $_POST['search'] ) ) : '';
+		$exclude = isset( $_POST['exclude'] ) ? array_filter( array_map( 'intval', (array) wp_unslash( $_POST['exclude'] ) ) ) : [];
+
+		$users = get_users(
+			[
+				'search'         => '*' . $search . '*',
+				'search_columns' => [ 'user_login', 'user_email', 'display_name', 'user_nicename' ],
+				'exclude'        => $exclude,
+				'number'         => 10,
+			]
+		);
+
+		$results = array_values(
+			array_map(
+				function ( $user ) {
+					return [
+						'id'    => $user->ID,
+						'label' => $user->display_name . ' (' . $user->user_email . ')',
+						'value' => $user->display_name,
+					];
+				},
+				$users
+			)
+		);
+
+		wp_send_json_success( $results );
 	}
 
 	/**
@@ -695,13 +866,16 @@ class Settings {
 			wp_die( esc_html__( 'You do not have permission to access this page.', 'wordpress-tools' ) );
 		}
 
-		$settings                   = self::get_settings();
-		$allow_sso                  = $settings['allow_sso'];
-		$disable_comments           = $settings['disable_comments'];
-		$require_strong_passwords   = $settings['require_strong_passwords'];
-		$password_protect           = $settings['password_protect'];
-		$restrict_plugin_management = $settings['restrict_plugin_management'];
-		$restrict_rest_api          = $settings['restrict_rest_api'];
+		$settings                    = self::get_settings();
+		$allow_sso                   = $settings['allow_sso'];
+		$disable_comments            = $settings['disable_comments'];
+		$require_strong_passwords    = $settings['require_strong_passwords'];
+		$password_protect            = $settings['password_protect'];
+		$restrict_plugin_management  = $settings['restrict_plugin_management'];
+		$plugin_management_whitelist = isset( $settings['plugin_management_whitelist'] ) ? $settings['plugin_management_whitelist'] : [];
+		$restrict_theme_management   = $settings['restrict_theme_management'];
+		$theme_management_whitelist  = isset( $settings['theme_management_whitelist'] ) ? $settings['theme_management_whitelist'] : [];
+		$restrict_rest_api           = $settings['restrict_rest_api'];
 		$limit_login                = $settings['limit_login'];
 		$enable_mcp                 = $settings['enable_mcp'];
 		$attempt_limit              = defined( 'WPT_LOGIN_ATTEMPT_LIMIT' ) ? WPT_LOGIN_ATTEMPT_LIMIT : 10;
@@ -799,7 +973,7 @@ class Settings {
 						</tr>
 						<tr>
 							<th scope="row">
-								<?php esc_html_e( 'Restrict Plugin/Theme Management', 'wordpress-tools' ); ?>
+								<?php esc_html_e( 'Restrict Plugin Management', 'wordpress-tools' ); ?>
 							</th>
 							<td>
 								<fieldset>
@@ -812,7 +986,38 @@ class Settings {
 									<label for="wpt-restrict-plugin-management-no">
 										<?php esc_html_e( 'No', 'wordpress-tools' ); ?>
 									</label>
-									<p class="description"><?php esc_html_e( 'Only allows administrators with @829llc.com emails to install, update, or delete plugins and themes.', 'wordpress-tools' ); ?></p>
+									<p class="description"><?php esc_html_e( 'Only allows administrators with @829llc.com emails to install, update, or delete plugins.', 'wordpress-tools' ); ?></p>
+
+									<div class="wpt-whitelist-container" data-restriction="restrict_plugin_management"<?php echo $restrict_plugin_management ? '' : ' style="display:none"'; ?>>
+										<p class="description" style="margin: 0 0 4px;"><strong><?php esc_html_e( 'Whitelisted Users', 'wordpress-tools' ); ?></strong></p>
+										<p class="description" style="margin: 0 0 8px;"><?php esc_html_e( 'These users can manage plugins even when restriction is enabled.', 'wordpress-tools' ); ?></p>
+										<?php $this->render_user_search_field( 'plugin_management_whitelist', $plugin_management_whitelist ); ?>
+									</div>
+								</fieldset>
+							</td>
+						</tr>
+						<tr>
+							<th scope="row">
+								<?php esc_html_e( 'Restrict Theme Management', 'wordpress-tools' ); ?>
+							</th>
+							<td>
+								<fieldset>
+									<input id="wpt-restrict-theme-management-yes" name="wpt_settings[restrict_theme_management]" type="radio" value="1"<?php checked( 1, $restrict_theme_management ); ?> />
+									<label for="wpt-restrict-theme-management-yes">
+										<?php esc_html_e( 'Yes', 'wordpress-tools' ); ?>
+									</label><br>
+
+									<input id="wpt-restrict-theme-management-no" name="wpt_settings[restrict_theme_management]" type="radio" value="0"<?php checked( 0, $restrict_theme_management ); ?> />
+									<label for="wpt-restrict-theme-management-no">
+										<?php esc_html_e( 'No', 'wordpress-tools' ); ?>
+									</label>
+									<p class="description"><?php esc_html_e( 'Only allows administrators with @829llc.com emails to install, update, or delete themes.', 'wordpress-tools' ); ?></p>
+
+									<div class="wpt-whitelist-container" data-restriction="restrict_theme_management"<?php echo $restrict_theme_management ? '' : ' style="display:none"'; ?>>
+										<p class="description" style="margin: 0 0 4px;"><strong><?php esc_html_e( 'Whitelisted Users', 'wordpress-tools' ); ?></strong></p>
+										<p class="description" style="margin: 0 0 8px;"><?php esc_html_e( 'These users can manage themes even when restriction is enabled.', 'wordpress-tools' ); ?></p>
+										<?php $this->render_user_search_field( 'theme_management_whitelist', $theme_management_whitelist ); ?>
+									</div>
 								</fieldset>
 							</td>
 						</tr>
