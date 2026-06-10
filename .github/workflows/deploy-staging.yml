@@ -1,0 +1,32 @@
+name: Deploy to WP Engine Staging
+
+on:
+  push:
+    branches:
+      - staging
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up PHP & Composerr
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: 8.2
+          tools: composer:v2
+
+      - name: Install Composer dependencies
+        run: composer install --no-dev --optimize-autoloader
+
+      - name: Deploy to WP Engine Staging env
+        uses: wpengine/github-action-wpe-site-deploy@v3
+        with:
+          STG_ENV: mcptest5
+          WPE_SSHG_KEY_PRIVATE: ${{ secrets.WPE_SSHG_KEY_PRIVATE }}
+          SRC_PATH: "."
+          REMOTE_PATH: "wp-content/plugins/wordpress-tools"
+          CACHE_CLEAR: true
+          PHP_LINT: false
