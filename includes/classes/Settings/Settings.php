@@ -8,6 +8,7 @@
 namespace WordPressTools\Settings;
 
 use WordPressTools\Singleton;
+use WordPressTools\NoIndex\NoIndex;
 use function WordPressTools\Utils\is_local_environment;
 
 if ( ! defined( 'ABSPATH' ) ) {
@@ -39,6 +40,8 @@ class Settings {
 		add_action( 'admin_enqueue_scripts', [ $this, 'enqueue_settings_assets' ] );
 		add_action( 'network_admin_enqueue_scripts', [ $this, 'enqueue_settings_assets' ] );
 		add_action( 'wp_ajax_wpt_search_users', [ $this, 'ajax_search_users' ] );
+		add_action( 'wp_ajax_wpt_noindex_disable', [ $this, 'ajax_noindex_disable' ] );
+		add_action( 'wp_ajax_wpt_noindex_enable', [ $this, 'ajax_noindex_enable' ] );
 	}
 
 	/**
@@ -313,6 +316,15 @@ class Settings {
 			'wpt_enable_mcp',
 			esc_html__( 'Enable MCP', 'wordpress-tools' ),
 			[ $this, 'mcp_setting_callback' ],
+			'wpt-829-settings',
+			'wpt_829_general_section'
+		);
+
+		// Force No-Index on Staging/Dev setting field
+		add_settings_field(
+			'wpt_noindex_status',
+			esc_html__( 'Force No-Index on Staging/Dev', 'wordpress-tools' ),
+			[ $this, 'noindex_status_setting_callback' ],
 			'wpt-829-settings',
 			'wpt_829_general_section'
 		);
@@ -669,6 +681,109 @@ class Settings {
 	}
 
 	/**
+	 * Force No-Index on Staging/Dev setting callback.
+	 */
+	public function noindex_status_setting_callback() {
+		$this->render_noindex_status_field();
+	}
+
+	/**
+	 * Shared fieldset for the Force No-Index status setting.
+	 */
+	private function render_noindex_status_field(): void {
+		$is_applicable  = NoIndex::is_staging_or_dev();
+		$disabled_until = $is_applicable ? NoIndex::get_disabled_until() : 0;
+		$is_disabled    = $disabled_until > 0;
+		?>
+		<fieldset>
+			<?php if ( ! $is_applicable ) : ?>
+				<p class="description"><?php esc_html_e( 'Not applicable — this site is running in a production environment.', 'wordpress-tools' ); ?></p>
+			<?php elseif ( $is_disabled ) : ?>
+				<?php
+				$remaining_seconds = max( 0, $disabled_until - time() );
+				$remaining_minutes = (int) ceil( $remaining_seconds / 60 );
+				?>
+				<p><span class="wpt-status-badge wpt-status-disabled"><?php esc_html_e( 'Temporarily Disabled', 'wordpress-tools' ); ?></span></p>
+				<p class="description">
+					<?php
+					echo wp_kses(
+						sprintf(
+							/* translators: %s: number of minutes remaining */
+							_n(
+								'noindex enforcement is suspended. Resumes in %s minute.',
+								'noindex enforcement is suspended. Resumes in %s minutes.',
+								$remaining_minutes,
+								'wordpress-tools'
+							),
+							'<strong>' . esc_html( $remaining_minutes ) . '</strong>'
+						),
+						[ 'strong' => [] ]
+					);
+					?>
+				</p>
+				<button type="button" id="wpt-noindex-enable-btn" class="button button-secondary"
+					data-label="<?php esc_attr_e( 'Re-enable now', 'wordpress-tools' ); ?>"
+					data-loading="<?php esc_attr_e( 'Re-enabling…', 'wordpress-tools' ); ?>">
+					<?php esc_html_e( 'Re-enable now', 'wordpress-tools' ); ?>
+				</button>
+			<?php else : ?>
+				<p><span class="wpt-status-badge wpt-status-active"><?php esc_html_e( 'Active', 'wordpress-tools' ); ?></span></p>
+				<p class="description"><?php esc_html_e( 'noindex, nofollow is being injected on all frontend requests to this environment.', 'wordpress-tools' ); ?></p>
+				<p style="margin-top:8px;display:flex;align-items:center;gap:6px;">
+					<select id="wpt-noindex-duration">
+						<option value="300"><?php esc_html_e( '5 minutes', 'wordpress-tools' ); ?></option>
+						<option value="900"><?php esc_html_e( '15 minutes', 'wordpress-tools' ); ?></option>
+						<option value="1800"><?php esc_html_e( '30 minutes', 'wordpress-tools' ); ?></option>
+						<option value="3600"><?php esc_html_e( '1 hour', 'wordpress-tools' ); ?></option>
+					</select>
+					<button type="button" id="wpt-noindex-disable-btn" class="button button-secondary"
+						data-label="<?php esc_attr_e( 'Temporarily Disable', 'wordpress-tools' ); ?>"
+						data-loading="<?php esc_attr_e( 'Disabling…', 'wordpress-tools' ); ?>">
+						<?php esc_html_e( 'Temporarily Disable', 'wordpress-tools' ); ?>
+					</button>
+				</p>
+			<?php endif; ?>
+		</fieldset>
+		<?php
+	}
+
+	/**
+	 * AJAX handler: temporarily disable noindex enforcement.
+	 */
+	public function ajax_noindex_disable() {
+		check_ajax_referer( 'wpt_noindex_toggle', 'nonce' );
+
+		if ( ! $this->can_access_settings() ) {
+			wp_send_json_error( 'Unauthorized' );
+			return;
+		}
+
+		$allowed_durations = [ 300, 900, 1800, 3600 ];
+		$duration          = isset( $_POST['duration'] ) ? intval( $_POST['duration'] ) : 300;
+		if ( ! in_array( $duration, $allowed_durations, true ) ) {
+			$duration = 300;
+		}
+
+		$disabled_until = NoIndex::set_timed_disable( $duration );
+		wp_send_json_success( [ 'disabled_until' => $disabled_until ] );
+	}
+
+	/**
+	 * AJAX handler: re-enable noindex enforcement immediately.
+	 */
+	public function ajax_noindex_enable() {
+		check_ajax_referer( 'wpt_noindex_toggle', 'nonce' );
+
+		if ( ! $this->can_access_settings() ) {
+			wp_send_json_error( 'Unauthorized' );
+			return;
+		}
+
+		NoIndex::clear_timed_disable();
+		wp_send_json_success();
+	}
+
+	/**
 	 * API Key setting callback.
 	 */
 	public function api_key_setting_callback() {
@@ -871,6 +986,23 @@ class Settings {
 				'ajaxUrl'     => admin_url( 'admin-ajax.php' ),
 				'nonce'       => wp_create_nonce( 'wpt_search_users' ),
 				'removeLabel' => __( 'Remove', 'wordpress-tools' ),
+			]
+		);
+
+		wp_enqueue_script(
+			'wpt-settings-noindex',
+			WPT_PLUGIN_URL . 'assets/js/settings-noindex.js',
+			[],
+			file_exists( WPT_PLUGIN_DIR . 'assets/js/settings-noindex.js' ) ? filemtime( WPT_PLUGIN_DIR . 'assets/js/settings-noindex.js' ) : WPT_VERSION,
+			true
+		);
+
+		wp_localize_script(
+			'wpt-settings-noindex',
+			'wptNoIndex',
+			[
+				'ajaxUrl' => admin_url( 'admin-ajax.php' ),
+				'nonce'   => wp_create_nonce( 'wpt_noindex_toggle' ),
 			]
 		);
 	}
@@ -1205,6 +1337,14 @@ class Settings {
 									</label>
 									<p class="description"><?php esc_html_e( 'Exposes site management tools (plugins, themes, users, system info) via the WordPress MCP Adapter.', 'wordpress-tools' ); ?></p>
 								</fieldset>
+							</td>
+						</tr>
+						<tr>
+							<th scope="row">
+								<?php esc_html_e( 'Force No-Index on Staging/Dev', 'wordpress-tools' ); ?>
+							</th>
+							<td>
+								<?php $this->render_noindex_status_field(); ?>
 							</td>
 						</tr>
 						<tr>
