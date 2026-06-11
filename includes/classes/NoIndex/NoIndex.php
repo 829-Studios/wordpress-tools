@@ -152,7 +152,7 @@ class NoIndex {
 	}
 
 	/**
-	 * Send X-Robots-Tag HTTP header.
+	 * Send X-Robots-Tag HTTP header on frontend requests only.
 	 *
 	 * @return void
 	 */
@@ -160,6 +160,12 @@ class NoIndex {
 		if ( self::is_temporarily_disabled() ) {
 			return;
 		}
+
+		// Skip admin screens, AJAX, and REST API endpoints.
+		if ( is_admin() || ( defined( 'REST_REQUEST' ) && REST_REQUEST ) ) {
+			return;
+		}
+
 		header( 'X-Robots-Tag: noindex, nofollow' );
 	}
 }
