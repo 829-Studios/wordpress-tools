@@ -754,7 +754,7 @@ class Settings {
 		check_ajax_referer( 'wpt_noindex_toggle', 'nonce' );
 
 		if ( ! $this->can_access_settings() ) {
-			wp_send_json_error( 'Unauthorized' );
+			wp_send_json_error( esc_html__( 'Unauthorized.', 'wordpress-tools' ), 403 );
 			return;
 		}
 
@@ -775,7 +775,7 @@ class Settings {
 		check_ajax_referer( 'wpt_noindex_toggle', 'nonce' );
 
 		if ( ! $this->can_access_settings() ) {
-			wp_send_json_error( 'Unauthorized' );
+			wp_send_json_error( esc_html__( 'Unauthorized.', 'wordpress-tools' ), 403 );
 			return;
 		}
 
