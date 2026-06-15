@@ -116,7 +116,7 @@ class SSO {
 		$redirect_to = filter_input( INPUT_GET, 'redirect_to' );
 
 		if ( empty( $redirect_to ) ) {
-			$redirect_to = home_url();
+			$redirect_to = admin_url();
 		}
 
 		$site_url  = home_url();
