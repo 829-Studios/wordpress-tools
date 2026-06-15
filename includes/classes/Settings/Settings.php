@@ -1143,7 +1143,7 @@ class Settings {
 		$is_disabled                = defined( 'WPT_DISABLE_COMMENTS' ) || has_filter( 'wpt_disable_comments' );
 		?>
 		<div class="wrap">
-			<h1><?php echo esc_html( get_admin_page_title() ); ?></h1>
+			<h1><?php echo esc_html( get_admin_page_title() . ' — v' . WPT_VERSION ); ?></h1>
 
 			<?php
 			// phpcs:ignore WordPress.Security.NonceVerification.Recommended
@@ -1378,7 +1378,7 @@ class Settings {
 		}
 		?>
 		<div class="wrap">
-			<h1><?php echo esc_html( get_admin_page_title() ); ?></h1>
+			<h1><?php echo esc_html( get_admin_page_title() . ' — v' . WPT_VERSION ); ?></h1>
 			<form action="options.php" method="post">
 				<?php
 				settings_fields( 'wpt_829_settings' );
