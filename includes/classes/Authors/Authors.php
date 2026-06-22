@@ -38,12 +38,12 @@ class Authors {
 		$author             = get_queried_object();
 		$current_domain     = wp_parse_url( get_site_url(), PHP_URL_HOST );
 
-		// Domain names that are whitelisted allowed to index 829 Studios users to be indexed
-		$whitelisted_domains = [];
+		// Domain names allowed to index 829 Studios users
+		$allowed_domains = [];
 
 		// Perform partial match on domains to catch subdomains or variation of domain name
 		$filtered_domains = array_filter(
-			$whitelisted_domains,
+			$allowed_domains,
 			function ( $domain ) use ( $current_domain ) {
 				return false !== stripos( $current_domain, $domain );
 			}

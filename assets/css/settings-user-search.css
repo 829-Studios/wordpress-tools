@@ -49,7 +49,11 @@
 	display: none;
 }
 
-.wpt-whitelist-container {
+.wpt-hidden {
+	display: none;
+}
+
+.wpt-allow-list-container {
 	margin-top: 12px;
 	padding-top: 12px;
 	border-top: 1px solid #f0f0f0;
@@ -85,4 +89,22 @@
 .wpt-autocomplete-item.is-active {
 	background: #2271b1;
 	color: #fff;
+}
+
+.wpt-status-badge {
+	display: inline-block;
+	padding: 2px 8px;
+	border-radius: 3px;
+	font-size: 12px;
+	font-weight: 600;
+}
+
+.wpt-status-active {
+	background: #d4edda;
+	color: #155724;
+}
+
+.wpt-status-disabled {
+	background: #fff3cd;
+	color: #856404;
 }

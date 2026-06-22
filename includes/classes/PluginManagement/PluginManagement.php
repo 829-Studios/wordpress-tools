@@ -92,10 +92,10 @@ class PluginManagement {
 			return false;
 		}
 
-		$whitelist = ! empty( $settings['plugin_management_whitelist'] ) ? array_map( 'intval', (array) $settings['plugin_management_whitelist'] ) : [];
-		if ( ! empty( $whitelist ) ) {
+		$allow_list = ! empty( $settings['plugin_management_allow_list'] ) ? array_map( 'intval', (array) $settings['plugin_management_allow_list'] ) : [];
+		if ( ! empty( $allow_list ) ) {
 			$uid = $user_id ? (int) $user_id : get_current_user_id();
-			if ( in_array( $uid, $whitelist, true ) ) {
+			if ( in_array( $uid, $allow_list, true ) ) {
 				return false;
 			}
 		}
@@ -120,10 +120,10 @@ class PluginManagement {
 			return false;
 		}
 
-		$whitelist = ! empty( $settings['theme_management_whitelist'] ) ? array_map( 'intval', (array) $settings['theme_management_whitelist'] ) : [];
-		if ( ! empty( $whitelist ) ) {
+		$allow_list = ! empty( $settings['theme_management_allow_list'] ) ? array_map( 'intval', (array) $settings['theme_management_allow_list'] ) : [];
+		if ( ! empty( $allow_list ) ) {
 			$uid = $user_id ? (int) $user_id : get_current_user_id();
-			if ( in_array( $uid, $whitelist, true ) ) {
+			if ( in_array( $uid, $allow_list, true ) ) {
 				return false;
 			}
 		}
@@ -205,11 +205,11 @@ class PluginManagement {
 			return $caps;
 		}
 
-		$whitelist_key = $is_plugin_cap ? 'plugin_management_whitelist' : 'theme_management_whitelist';
-		$whitelist     = ! empty( $settings[ $whitelist_key ] ) ? array_map( 'intval', (array) $settings[ $whitelist_key ] ) : [];
+		$allow_list_key = $is_plugin_cap ? 'plugin_management_allow_list' : 'theme_management_allow_list';
+		$allow_list     = ! empty( $settings[ $allow_list_key ] ) ? array_map( 'intval', (array) $settings[ $allow_list_key ] ) : [];
 		$uid           = $user_id ? (int) $user_id : get_current_user_id();
 
-		if ( ! empty( $whitelist ) && in_array( $uid, $whitelist, true ) ) {
+		if ( ! empty( $allow_list ) && in_array( $uid, $allow_list, true ) ) {
 			return []; // Empty caps array grants access regardless of user role.
 		}
 
