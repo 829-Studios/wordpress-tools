@@ -57,6 +57,40 @@ class RoleManagement {
 	 */
 	public function setup() {
 		add_filter( 'user_has_cap', [ $this, 'grant_editor_caps' ], 10, 4 );
+		add_filter( 'map_meta_cap', [ $this, 'allow_editors_to_edit_privacy_policy' ], 10, 4 );
+	}
+
+	/**
+	 * Allow editors to edit and delete the privacy policy page.
+	 *
+	 * Core requires `manage_options` (or `manage_network` on multisite) to
+	 * edit or delete the privacy policy page. Strip those requirements so
+	 * users with the standard edit/delete page caps can manage it.
+	 *
+	 * @param array  $caps    The user's required primitive capabilities.
+	 * @param string $cap     Capability being checked.
+	 * @param int    $user_id The user ID.
+	 * @param array  $args    Context: [0] => object ID.
+	 * @return array
+	 */
+	public function allow_editors_to_edit_privacy_policy( $caps, $cap, $user_id, $args ) {
+		if ( ! in_array( $cap, [ 'edit_post', 'delete_post' ], true ) ) {
+			return $caps;
+		}
+
+		if ( empty( $args[0] ) ) {
+			return $caps;
+		}
+
+		$policy_id = (int) get_option( 'wp_page_for_privacy_policy' );
+
+		if ( 0 === $policy_id || (int) $args[0] !== $policy_id ) {
+			return $caps;
+		}
+
+		return array_values(
+			array_diff( $caps, [ 'manage_options', 'manage_network' ] )
+		);
 	}
 
 	/**

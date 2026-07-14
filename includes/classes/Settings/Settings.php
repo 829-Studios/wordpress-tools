@@ -65,6 +65,8 @@ class Settings {
 			'restrict_rest_api'              => 'users',
 			'limit_login'                    => 1,
 			'enable_mcp'                     => 1,
+			'noindex_banner_enabled'         => 1,
+			'noindex_banner_excluded_domains' => [],
 		];
 
 		// Get settings from single option
@@ -217,8 +219,10 @@ class Settings {
 					'restrict_theme_management'     => 1,
 					'theme_management_allow_list'    => [],
 					'restrict_rest_api'             => 'users',
-					'limit_login'                   => 1,
-					'enable_mcp'                    => 1,
+					'limit_login'                    => 1,
+					'enable_mcp'                     => 1,
+					'noindex_banner_enabled'         => 1,
+					'noindex_banner_excluded_domains' => [],
 				],
 			]
 		);
@@ -325,6 +329,15 @@ class Settings {
 			'wpt_noindex_status',
 			esc_html__( 'Force No-Index on Staging/Dev', 'wordpress-tools' ),
 			[ $this, 'noindex_status_setting_callback' ],
+			'wpt-829-settings',
+			'wpt_829_general_section'
+		);
+
+		// No-Index Banner setting field
+		add_settings_field(
+			'wpt_noindex_banner',
+			esc_html__( 'No-Index Banner', 'wordpress-tools' ),
+			[ $this, 'noindex_banner_setting_callback' ],
 			'wpt-829-settings',
 			'wpt_829_general_section'
 		);
@@ -748,6 +761,31 @@ class Settings {
 	}
 
 	/**
+	 * No-Index Banner setting callback.
+	 */
+	public function noindex_banner_setting_callback() {
+		$settings         = self::get_settings();
+		$enabled          = $settings['noindex_banner_enabled'];
+		$excluded_domains = $settings['noindex_banner_excluded_domains'] ?? [];
+		$domains_text     = implode( "\n", $excluded_domains );
+		?>
+		<fieldset>
+			<input id="wpt-noindex-banner-yes" name="wpt_settings[noindex_banner_enabled]" type="radio" value="1"<?php checked( 1, $enabled ); ?> />
+			<label for="wpt-noindex-banner-yes"><?php esc_html_e( 'Yes', 'wordpress-tools' ); ?></label><br>
+
+			<input id="wpt-noindex-banner-no" name="wpt_settings[noindex_banner_enabled]" type="radio" value="0"<?php checked( 0, $enabled ); ?> />
+			<label for="wpt-noindex-banner-no"><?php esc_html_e( 'No', 'wordpress-tools' ); ?></label>
+
+			<p class="description"><?php esc_html_e( 'Show a warning banner to logged-in 829 users when a page is set to no-index on a production domain.', 'wordpress-tools' ); ?></p>
+
+			<p class="description" style="margin: 12px 0 4px;"><strong><?php esc_html_e( 'Additional Excluded Domains', 'wordpress-tools' ); ?></strong></p>
+			<p class="description" style="margin: 0 0 6px;"><?php esc_html_e( 'One domain per line. The banner will not appear on these domains or their subdomains.', 'wordpress-tools' ); ?></p>
+			<textarea name="wpt_settings[noindex_banner_excluded_domains]" rows="4" class="large-text" style="max-width:400px;"><?php echo esc_textarea( $domains_text ); ?></textarea>
+		</fieldset>
+		<?php
+	}
+
+	/**
 	 * AJAX handler: temporarily disable noindex enforcement.
 	 */
 	public function ajax_noindex_disable() {
@@ -950,6 +988,20 @@ class Settings {
 
 		// Sanitize enable_mcp
 		$sanitized['enable_mcp'] = isset( $input['enable_mcp'] ) ? intval( $input['enable_mcp'] ) : 1;
+
+		// Sanitize noindex_banner_enabled
+		$sanitized['noindex_banner_enabled'] = isset( $input['noindex_banner_enabled'] ) ? intval( $input['noindex_banner_enabled'] ) : 1;
+
+		// Sanitize noindex_banner_excluded_domains — split textarea by newlines, trim, drop empties
+		if ( isset( $input['noindex_banner_excluded_domains'] ) && is_string( $input['noindex_banner_excluded_domains'] ) ) {
+			$sanitized['noindex_banner_excluded_domains'] = array_values(
+				array_filter(
+					array_map( 'sanitize_text_field', array_map( 'trim', explode( "\n", $input['noindex_banner_excluded_domains'] ) ) )
+				)
+			);
+		} else {
+			$sanitized['noindex_banner_excluded_domains'] = [];
+		}
 
 		return $sanitized;
 	}
@@ -1345,6 +1397,14 @@ class Settings {
 							</th>
 							<td>
 								<?php $this->render_noindex_status_field(); ?>
+							</td>
+						</tr>
+						<tr>
+							<th scope="row">
+								<?php esc_html_e( 'No-Index Banner', 'wordpress-tools' ); ?>
+							</th>
+							<td>
+								<?php $this->noindex_banner_setting_callback(); ?>
 							</td>
 						</tr>
 						<tr>
