@@ -2141,7 +2141,9 @@ class MCP {
 			 * @param array              $entry      slug, title, category, description, icon, keywords.
 			 * @param WP_Block_Type|null $block_type The registered block type, or null if unregistered.
 			 */
-			$blocks[] = apply_filters( 'wpt_mcp_block_list_entry', $entry, $block_type );
+			$filtered = apply_filters( 'wpt_mcp_block_list_entry', $entry, $block_type );
+
+			$blocks[] = is_array( $filtered ) ? $filtered : $entry;
 		}
 
 		usort(
@@ -2171,9 +2173,20 @@ class MCP {
 			return new WP_Error( 'missing_slug', 'slug is required.' );
 		}
 
-		$block_type = \WP_Block_Type_Registry::get_instance()->get_registered( $slug );
+		$registry   = \WP_Block_Type_Registry::get_instance();
+		$block_type = $registry->get_registered( $slug );
 
 		if ( ! $block_type ) {
+			return new WP_Error( 'not_found', "Block '{$slug}' is not registered." );
+		}
+
+		// Respect the same allowed_block_types_all restrictions as list_allowed_blocks(),
+		// so this ability can't be used to read detail on a block a theme has hidden.
+		$all_slugs = array_keys( $registry->get_all_registered() );
+		$allowed   = apply_filters( 'allowed_block_types_all', $all_slugs, null );
+		$allowed   = is_array( $allowed ) ? $allowed : $all_slugs;
+
+		if ( ! in_array( $slug, $allowed, true ) ) {
 			return new WP_Error( 'not_found', "Block '{$slug}' is not registered." );
 		}
 
