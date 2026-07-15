@@ -580,7 +580,7 @@ class MCP {
 			array(
 				'category'            => '829-tools',
 				'label'               => 'List Allowed Blocks',
-				'description'         => 'Returns all block types permitted in the block editor on this site, with their slug, title, and category. Reflects any theme or plugin restrictions',
+				'description'         => 'Returns all block types permitted in the block editor on this site, with their slug, title, category, description, icon, and keywords. Reflects any theme or plugin restrictions. Use get-block-info for full attributes/supports detail on a specific block.',
 				'input_schema'        => array(
 					'type'       => 'object',
 					'properties' => array(),
@@ -594,6 +594,38 @@ class MCP {
 				),
 				'permission_callback' => [ $this, 'check_admin_permission' ],
 				'execute_callback'    => [ $this, 'list_allowed_blocks' ],
+				'meta'                => array(
+					'mcp'         => array( 'public' => true ),
+					'annotations' => array(
+						'readonly'    => true,
+						'destructive' => false,
+						'idempotent'  => true,
+					),
+				),
+			)
+		);
+
+		wp_register_ability(
+			'829-tools/get-block-info',
+			array(
+				'category'            => '829-tools',
+				'label'               => 'Get Block Info',
+				'description'         => 'Returns full registration detail for a single block type (description, icon, keywords, supports, attributes, styles, example, etc). Use list-allowed-blocks first to find the slug.',
+				'input_schema'        => array(
+					'type'       => 'object',
+					'properties' => array(
+						'slug' => array( 'type' => 'string', 'description' => 'Block name/slug, e.g. "core/paragraph".' ),
+					),
+					'required'   => array( 'slug' ),
+				),
+				'output_schema'       => array(
+					'type'       => 'object',
+					'properties' => array(
+						'block' => array( 'type' => 'object' ),
+					),
+				),
+				'permission_callback' => [ $this, 'check_admin_permission' ],
+				'execute_callback'    => [ $this, 'get_block_info' ],
 				'meta'                => array(
 					'mcp'         => array( 'public' => true ),
 					'annotations' => array(
@@ -2124,6 +2156,57 @@ class MCP {
 			'blocks' => $blocks,
 			'total'  => count( $blocks ),
 		);
+	}
+
+	/**
+	 * Execute callback: get full detail for a single registered block type.
+	 *
+	 * @param  array $input Ability input.
+	 * @return array|WP_Error
+	 */
+	public function get_block_info( $input = array() ) {
+		$slug = sanitize_text_field( $input['slug'] ?? '' );
+
+		if ( empty( $slug ) ) {
+			return new WP_Error( 'missing_slug', 'slug is required.' );
+		}
+
+		$block_type = \WP_Block_Type_Registry::get_instance()->get_registered( $slug );
+
+		if ( ! $block_type ) {
+			return new WP_Error( 'not_found', "Block '{$slug}' is not registered." );
+		}
+
+		$block = array(
+			'name'                => $block_type->name,
+			'title'               => $block_type->title ?? '',
+			'description'         => $block_type->description ?? '',
+			'category'            => $block_type->category ?? '',
+			'icon'                => is_string( $block_type->icon ?? null ) ? $block_type->icon : '',
+			'keywords'            => $block_type->keywords ?? array(),
+			'parent'              => $block_type->parent ?? array(),
+			'ancestor'            => $block_type->ancestor ?? array(),
+			'api_version'         => $block_type->api_version ?? 1,
+			'textdomain'          => $block_type->textdomain ?? '',
+			'attributes'          => $block_type->attributes ?? array(),
+			'supports'            => $block_type->supports ?? array(),
+			'styles'              => $block_type->styles ?? array(),
+			'variations'          => $block_type->variations ?? array(),
+			'example'             => $block_type->example ?? null,
+			'provides_context'    => $block_type->provides_context ?? array(),
+			'uses_context'        => $block_type->uses_context ?? array(),
+			'has_render_callback' => is_callable( $block_type->render_callback ?? null ),
+		);
+
+		/**
+		 * Filters the detailed data returned for a single block via the get-block-info MCP ability.
+		 *
+		 * @param array         $block      The serialized block detail.
+		 * @param WP_Block_Type $block_type The raw registered block type object.
+		 */
+		$block = apply_filters( 'wpt_mcp_block_info_data', $block, $block_type );
+
+		return array( 'block' => $block );
 	}
 
 	// ── ACF ──────────────────────────────────────────────────────────────────
