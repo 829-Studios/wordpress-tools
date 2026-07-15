@@ -2175,6 +2175,17 @@ class MCP {
 				}
 			}
 
+			/**
+			 * Filters the data returned for a single ACF block via the list-acf-blocks MCP ability.
+			 *
+			 * Allows a theme or plugin to append additional information (e.g. usage notes,
+			 * example markup, or custom metadata) to each block entry before it's returned.
+			 *
+			 * @param array $entry The block entry (name, title, description, category, icon, keywords, fields).
+			 * @param array $block The raw ACF block type definition from acf_get_block_types().
+			 */
+			$entry = apply_filters( 'wpt_mcp_acf_block_data', $entry, $block );
+
 			$blocks[] = $entry;
 		}
 
