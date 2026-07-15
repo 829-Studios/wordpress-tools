@@ -2094,11 +2094,22 @@ class MCP {
 
 		foreach ( $allowed as $slug ) {
 			$block_type = $all_registered[ $slug ] ?? $registry->get_registered( $slug );
-			$blocks[]   = array(
-				'slug'     => $slug,
-				'title'    => $block_type ? ( $block_type->title ?? $slug ) : $slug,
-				'category' => $block_type ? ( $block_type->category ?? '' ) : '',
+			$entry      = array(
+				'slug'        => $slug,
+				'title'       => $block_type ? ( $block_type->title ?? $slug ) : $slug,
+				'category'    => $block_type ? ( $block_type->category ?? '' ) : '',
+				'description' => $block_type ? ( $block_type->description ?? '' ) : '',
+				'icon'        => $block_type && is_string( $block_type->icon ?? null ) ? $block_type->icon : '',
+				'keywords'    => $block_type ? ( $block_type->keywords ?? array() ) : array(),
 			);
+
+			/**
+			 * Filters the lightweight entry returned for a single block via list-allowed-blocks.
+			 *
+			 * @param array              $entry      slug, title, category, description, icon, keywords.
+			 * @param WP_Block_Type|null $block_type The registered block type, or null if unregistered.
+			 */
+			$blocks[] = apply_filters( 'wpt_mcp_block_list_entry', $entry, $block_type );
 		}
 
 		usort(
