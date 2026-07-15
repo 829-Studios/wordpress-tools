@@ -208,7 +208,10 @@ class MCP {
 				'category'            => '829-tools',
 				'label'               => 'List Menus',
 				'description'         => 'Returns all registered WordPress menus with their assigned theme locations.',
-				'input_schema'        => array( 'type' => 'object', 'properties' => array() ),
+				'input_schema'        => array(
+					'type'       => 'object',
+					'properties' => array(),
+				),
 				'output_schema'       => array(
 					'type'       => 'object',
 					'properties' => array( 'menus' => array( 'type' => 'array' ) ),
@@ -217,7 +220,11 @@ class MCP {
 				'execute_callback'    => [ $this, 'list_menus' ],
 				'meta'                => array(
 					'mcp'         => array( 'public' => true ),
-					'annotations' => array( 'readonly' => true, 'destructive' => false, 'idempotent' => true ),
+					'annotations' => array(
+						'readonly'    => true,
+						'destructive' => false,
+						'idempotent'  => true,
+					),
 				),
 			)
 		);
@@ -231,9 +238,12 @@ class MCP {
 				'input_schema'        => array(
 					'type'       => 'object',
 					'properties' => array(
-						'id' => array( 'type' => 'integer', 'description' => 'The menu term ID.' ),
+						'id' => array(
+							'type'        => 'integer',
+							'description' => 'The menu term ID.',
+						),
 					),
-					'required' => array( 'id' ),
+					'required'   => array( 'id' ),
 				),
 				'output_schema'       => array(
 					'type'       => 'object',
@@ -243,7 +253,11 @@ class MCP {
 				'execute_callback'    => [ $this, 'get_menu' ],
 				'meta'                => array(
 					'mcp'         => array( 'public' => true ),
-					'annotations' => array( 'readonly' => true, 'destructive' => false, 'idempotent' => true ),
+					'annotations' => array(
+						'readonly'    => true,
+						'destructive' => false,
+						'idempotent'  => true,
+					),
 				),
 			)
 		);
@@ -257,15 +271,21 @@ class MCP {
 				'input_schema'        => array(
 					'type'       => 'object',
 					'properties' => array(
-						'name'     => array( 'type' => 'string', 'description' => 'The menu name.' ),
-						'location' => array( 'type' => 'string', 'description' => 'Theme location slug to assign this menu to (e.g. "primary", "footer").' ),
+						'name'     => array(
+							'type'        => 'string',
+							'description' => 'The menu name.',
+						),
+						'location' => array(
+							'type'        => 'string',
+							'description' => 'Theme location slug to assign this menu to (e.g. "primary", "footer").',
+						),
 						'items'    => array(
 							'type'        => 'array',
 							'description' => 'Menu items to add.',
 							'items'       => array( 'type' => 'object' ),
 						),
 					),
-					'required' => array( 'name' ),
+					'required'   => array( 'name' ),
 				),
 				'output_schema'       => array(
 					'type'       => 'object',
@@ -275,7 +295,10 @@ class MCP {
 				'execute_callback'    => [ $this, 'create_menu' ],
 				'meta'                => array(
 					'mcp'         => array( 'public' => true ),
-					'annotations' => array( 'destructive' => false, 'idempotent' => false ),
+					'annotations' => array(
+						'destructive' => false,
+						'idempotent'  => false,
+					),
 				),
 			)
 		);
@@ -289,16 +312,25 @@ class MCP {
 				'input_schema'        => array(
 					'type'       => 'object',
 					'properties' => array(
-						'id'       => array( 'type' => 'integer', 'description' => 'The menu term ID.' ),
-						'name'     => array( 'type' => 'string', 'description' => 'New menu name.' ),
-						'location' => array( 'type' => 'string', 'description' => 'Theme location slug to assign this menu to.' ),
+						'id'       => array(
+							'type'        => 'integer',
+							'description' => 'The menu term ID.',
+						),
+						'name'     => array(
+							'type'        => 'string',
+							'description' => 'New menu name.',
+						),
+						'location' => array(
+							'type'        => 'string',
+							'description' => 'Theme location slug to assign this menu to.',
+						),
 						'items'    => array(
 							'type'        => 'array',
 							'description' => 'Full replacement item list. Each item: title, url, type (custom/post_type/taxonomy), object, object_id, parent_id, position, target, classes.',
 							'items'       => array( 'type' => 'object' ),
 						),
 					),
-					'required' => array( 'id' ),
+					'required'   => array( 'id' ),
 				),
 				'output_schema'       => array(
 					'type'       => 'object',
@@ -308,7 +340,10 @@ class MCP {
 				'execute_callback'    => [ $this, 'update_menu' ],
 				'meta'                => array(
 					'mcp'         => array( 'public' => true ),
-					'annotations' => array( 'destructive' => true, 'idempotent' => true ),
+					'annotations' => array(
+						'destructive' => true,
+						'idempotent'  => true,
+					),
 				),
 			)
 		);
@@ -322,9 +357,12 @@ class MCP {
 				'input_schema'        => array(
 					'type'       => 'object',
 					'properties' => array(
-						'id' => array( 'type' => 'integer', 'description' => 'The menu term ID.' ),
+						'id' => array(
+							'type'        => 'integer',
+							'description' => 'The menu term ID.',
+						),
 					),
-					'required' => array( 'id' ),
+					'required'   => array( 'id' ),
 				),
 				'output_schema'       => array(
 					'type'       => 'object',
@@ -334,7 +372,10 @@ class MCP {
 				'execute_callback'    => [ $this, 'delete_menu' ],
 				'meta'                => array(
 					'mcp'         => array( 'public' => true ),
-					'annotations' => array( 'destructive' => true, 'idempotent' => false ),
+					'annotations' => array(
+						'destructive' => true,
+						'idempotent'  => false,
+					),
 				),
 			)
 		);
@@ -348,11 +389,29 @@ class MCP {
 				'input_schema'        => array(
 					'type'       => 'object',
 					'properties' => array(
-						'search'            => array( 'type' => 'string', 'description' => 'Option name pattern to search for. Supports % as wildcard (e.g. "wpt_%").' ),
-						'autoload'          => array( 'type' => 'string', 'description' => 'Filter by autoload: "yes", "no", or omit for all.' ),
-						'include_transients' => array( 'type' => 'boolean', 'description' => 'Include transient options (those prefixed with _transient_ or _site_transient_). Default false.', 'default' => false ),
-						'per_page'          => array( 'type' => 'integer', 'description' => 'Results per page. Default 50, max 200.', 'default' => 50 ),
-						'page'              => array( 'type' => 'integer', 'description' => 'Page number. Default 1.', 'default' => 1 ),
+						'search'             => array(
+							'type'        => 'string',
+							'description' => 'Option name pattern to search for. Supports % as wildcard (e.g. "wpt_%").',
+						),
+						'autoload'           => array(
+							'type'        => 'string',
+							'description' => 'Filter by autoload: "yes", "no", or omit for all.',
+						),
+						'include_transients' => array(
+							'type'        => 'boolean',
+							'description' => 'Include transient options (those prefixed with _transient_ or _site_transient_). Default false.',
+							'default'     => false,
+						),
+						'per_page'           => array(
+							'type'        => 'integer',
+							'description' => 'Results per page. Default 50, max 200.',
+							'default'     => 50,
+						),
+						'page'               => array(
+							'type'        => 'integer',
+							'description' => 'Page number. Default 1.',
+							'default'     => 1,
+						),
 					),
 				),
 				'output_schema'       => array(
@@ -385,9 +444,12 @@ class MCP {
 				'input_schema'        => array(
 					'type'       => 'object',
 					'properties' => array(
-						'name' => array( 'type' => 'string', 'description' => 'The option name.' ),
+						'name' => array(
+							'type'        => 'string',
+							'description' => 'The option name.',
+						),
 					),
-					'required' => array( 'name' ),
+					'required'   => array( 'name' ),
 				),
 				'output_schema'       => array(
 					'type'       => 'object',
@@ -417,11 +479,18 @@ class MCP {
 				'input_schema'        => array(
 					'type'       => 'object',
 					'properties' => array(
-						'name'     => array( 'type' => 'string', 'description' => 'The option name.' ),
+						'name'     => array(
+							'type'        => 'string',
+							'description' => 'The option name.',
+						),
 						'value'    => array( 'description' => 'The option value. Objects and arrays will be serialized automatically.' ),
-						'autoload' => array( 'type' => 'string', 'description' => 'Whether to autoload on every page load: "yes" or "no". Default "yes".', 'default' => 'yes' ),
+						'autoload' => array(
+							'type'        => 'string',
+							'description' => 'Whether to autoload on every page load: "yes" or "no". Default "yes".',
+							'default'     => 'yes',
+						),
 					),
-					'required' => array( 'name', 'value' ),
+					'required'   => array( 'name', 'value' ),
 				),
 				'output_schema'       => array(
 					'type'       => 'object',
@@ -450,11 +519,17 @@ class MCP {
 				'input_schema'        => array(
 					'type'       => 'object',
 					'properties' => array(
-						'name'     => array( 'type' => 'string', 'description' => 'The option name.' ),
+						'name'     => array(
+							'type'        => 'string',
+							'description' => 'The option name.',
+						),
 						'value'    => array( 'description' => 'The new option value. Objects and arrays will be serialized automatically.' ),
-						'autoload' => array( 'type' => 'string', 'description' => 'Whether to autoload: "yes" or "no". Omit to keep the existing autoload value.' ),
+						'autoload' => array(
+							'type'        => 'string',
+							'description' => 'Whether to autoload: "yes" or "no". Omit to keep the existing autoload value.',
+						),
 					),
-					'required' => array( 'name', 'value' ),
+					'required'   => array( 'name', 'value' ),
 				),
 				'output_schema'       => array(
 					'type'       => 'object',
@@ -483,9 +558,12 @@ class MCP {
 				'input_schema'        => array(
 					'type'       => 'object',
 					'properties' => array(
-						'name' => array( 'type' => 'string', 'description' => 'The option name to delete.' ),
+						'name' => array(
+							'type'        => 'string',
+							'description' => 'The option name to delete.',
+						),
 					),
-					'required' => array( 'name' ),
+					'required'   => array( 'name' ),
 				),
 				'output_schema'       => array(
 					'type'       => 'object',
@@ -514,12 +592,32 @@ class MCP {
 				'input_schema'        => array(
 					'type'       => 'object',
 					'properties' => array(
-						'search'     => array( 'type' => 'string', 'description' => 'Keyword to search across title, caption, alt text, description, and filename.' ),
-						'mime_type'  => array( 'type' => 'string', 'description' => 'Filter by MIME type or prefix: "image", "image/jpeg", "image/png", "image/gif", "image/webp", "image/svg+xml", "video", "application/pdf", etc.' ),
-						'after'      => array( 'type' => 'string', 'description' => 'Return items uploaded after this date (YYYY-MM-DD).' ),
-						'before'     => array( 'type' => 'string', 'description' => 'Return items uploaded before this date (YYYY-MM-DD).' ),
-						'per_page'   => array( 'type' => 'integer', 'description' => 'Results per page. Default 20, max 100.', 'default' => 20 ),
-						'page'       => array( 'type' => 'integer', 'description' => 'Page number. Default 1.', 'default' => 1 ),
+						'search'    => array(
+							'type'        => 'string',
+							'description' => 'Keyword to search across title, caption, alt text, description, and filename.',
+						),
+						'mime_type' => array(
+							'type'        => 'string',
+							'description' => 'Filter by MIME type or prefix: "image", "image/jpeg", "image/png", "image/gif", "image/webp", "image/svg+xml", "video", "application/pdf", etc.',
+						),
+						'after'     => array(
+							'type'        => 'string',
+							'description' => 'Return items uploaded after this date (YYYY-MM-DD).',
+						),
+						'before'    => array(
+							'type'        => 'string',
+							'description' => 'Return items uploaded before this date (YYYY-MM-DD).',
+						),
+						'per_page'  => array(
+							'type'        => 'integer',
+							'description' => 'Results per page. Default 20, max 100.',
+							'default'     => 20,
+						),
+						'page'      => array(
+							'type'        => 'integer',
+							'description' => 'Page number. Default 1.',
+							'default'     => 1,
+						),
 					),
 				),
 				'output_schema'       => array(
@@ -552,9 +650,12 @@ class MCP {
 				'input_schema'        => array(
 					'type'       => 'object',
 					'properties' => array(
-						'id' => array( 'type' => 'integer', 'description' => 'The attachment post ID.' ),
+						'id' => array(
+							'type'        => 'integer',
+							'description' => 'The attachment post ID.',
+						),
 					),
-					'required' => array( 'id' ),
+					'required'   => array( 'id' ),
 				),
 				'output_schema'       => array(
 					'type'       => 'object',
@@ -614,7 +715,10 @@ class MCP {
 				'input_schema'        => array(
 					'type'       => 'object',
 					'properties' => array(
-						'slug' => array( 'type' => 'string', 'description' => 'Block name/slug, e.g. "core/paragraph".' ),
+						'slug' => array(
+							'type'        => 'string',
+							'description' => 'Block name/slug, e.g. "core/paragraph".',
+						),
 					),
 					'required'   => array( 'slug' ),
 				),
@@ -645,7 +749,10 @@ class MCP {
 				'category'            => '829-tools',
 				'label'               => 'List ACF Blocks',
 				'description'         => 'Returns all registered ACF block types with their field definitions. Use this to understand what blocks are available and what data they accept before inserting block markup into post content.',
-				'input_schema'        => array( 'type' => 'object', 'properties' => array() ),
+				'input_schema'        => array(
+					'type'       => 'object',
+					'properties' => array(),
+				),
 				'output_schema'       => array(
 					'type'       => 'object',
 					'properties' => array( 'blocks' => array( 'type' => 'array' ) ),
@@ -654,7 +761,11 @@ class MCP {
 				'execute_callback'    => [ $this, 'list_acf_blocks' ],
 				'meta'                => array(
 					'mcp'         => array( 'public' => true ),
-					'annotations' => array( 'readonly' => true, 'destructive' => false, 'idempotent' => true ),
+					'annotations' => array(
+						'readonly'    => true,
+						'destructive' => false,
+						'idempotent'  => true,
+					),
 				),
 			)
 		);
@@ -668,9 +779,12 @@ class MCP {
 				'input_schema'        => array(
 					'type'       => 'object',
 					'properties' => array(
-						'post_id' => array( 'type' => array( 'integer', 'string' ), 'description' => 'Post ID, or "options" for the ACF options page.' ),
+						'post_id' => array(
+							'type'        => array( 'integer', 'string' ),
+							'description' => 'Post ID, or "options" for the ACF options page.',
+						),
 					),
-					'required' => array( 'post_id' ),
+					'required'   => array( 'post_id' ),
 				),
 				'output_schema'       => array(
 					'type'       => 'object',
@@ -680,7 +794,11 @@ class MCP {
 				'execute_callback'    => [ $this, 'get_acf_fields' ],
 				'meta'                => array(
 					'mcp'         => array( 'public' => true ),
-					'annotations' => array( 'readonly' => true, 'destructive' => false, 'idempotent' => true ),
+					'annotations' => array(
+						'readonly'    => true,
+						'destructive' => false,
+						'idempotent'  => true,
+					),
 				),
 			)
 		);
@@ -694,10 +812,16 @@ class MCP {
 				'input_schema'        => array(
 					'type'       => 'object',
 					'properties' => array(
-						'post_id' => array( 'type' => array( 'integer', 'string' ), 'description' => 'Post ID, or "options" for the ACF options page.' ),
-						'fields'  => array( 'type' => 'object', 'description' => 'Key/value map of field names to their new values.' ),
+						'post_id' => array(
+							'type'        => array( 'integer', 'string' ),
+							'description' => 'Post ID, or "options" for the ACF options page.',
+						),
+						'fields'  => array(
+							'type'        => 'object',
+							'description' => 'Key/value map of field names to their new values.',
+						),
 					),
-					'required' => array( 'post_id', 'fields' ),
+					'required'   => array( 'post_id', 'fields' ),
 				),
 				'output_schema'       => array(
 					'type'       => 'object',
@@ -707,7 +831,10 @@ class MCP {
 				'execute_callback'    => [ $this, 'update_acf_fields' ],
 				'meta'                => array(
 					'mcp'         => array( 'public' => true ),
-					'annotations' => array( 'destructive' => true, 'idempotent' => true ),
+					'annotations' => array(
+						'destructive' => true,
+						'idempotent'  => true,
+					),
 				),
 			)
 		);
@@ -723,10 +850,24 @@ class MCP {
 				'input_schema'        => array(
 					'type'       => 'object',
 					'properties' => array(
-						'search'   => array( 'type' => 'string', 'description' => 'Filter by source URL, target URL, or title.' ),
-						'status'   => array( 'type' => 'string', 'description' => 'Filter by status: "enabled" or "disabled". Omit for all.' ),
-						'per_page' => array( 'type' => 'integer', 'description' => 'Results per page. Default 50, max 200.', 'default' => 50 ),
-						'page'     => array( 'type' => 'integer', 'description' => 'Page number. Default 1.', 'default' => 1 ),
+						'search'   => array(
+							'type'        => 'string',
+							'description' => 'Filter by source URL, target URL, or title.',
+						),
+						'status'   => array(
+							'type'        => 'string',
+							'description' => 'Filter by status: "enabled" or "disabled". Omit for all.',
+						),
+						'per_page' => array(
+							'type'        => 'integer',
+							'description' => 'Results per page. Default 50, max 200.',
+							'default'     => 50,
+						),
+						'page'     => array(
+							'type'        => 'integer',
+							'description' => 'Page number. Default 1.',
+							'default'     => 1,
+						),
 					),
 				),
 				'output_schema'       => array(
@@ -741,7 +882,11 @@ class MCP {
 				'execute_callback'    => [ $this, 'search_redirects' ],
 				'meta'                => array(
 					'mcp'         => array( 'public' => true ),
-					'annotations' => array( 'readonly' => true, 'destructive' => false, 'idempotent' => true ),
+					'annotations' => array(
+						'readonly'    => true,
+						'destructive' => false,
+						'idempotent'  => true,
+					),
 				),
 			)
 		);
@@ -755,9 +900,12 @@ class MCP {
 				'input_schema'        => array(
 					'type'       => 'object',
 					'properties' => array(
-						'id' => array( 'type' => 'integer', 'description' => 'Redirect ID.' ),
+						'id' => array(
+							'type'        => 'integer',
+							'description' => 'Redirect ID.',
+						),
 					),
-					'required' => array( 'id' ),
+					'required'   => array( 'id' ),
 				),
 				'output_schema'       => array(
 					'type'       => 'object',
@@ -767,7 +915,11 @@ class MCP {
 				'execute_callback'    => [ $this, 'get_redirect' ],
 				'meta'                => array(
 					'mcp'         => array( 'public' => true ),
-					'annotations' => array( 'readonly' => true, 'destructive' => false, 'idempotent' => true ),
+					'annotations' => array(
+						'readonly'    => true,
+						'destructive' => false,
+						'idempotent'  => true,
+					),
 				),
 			)
 		);
@@ -781,14 +933,35 @@ class MCP {
 				'input_schema'        => array(
 					'type'       => 'object',
 					'properties' => array(
-						'source_url' => array( 'type' => 'string', 'description' => 'Source URL path (e.g. "/old-page").' ),
-						'target_url' => array( 'type' => 'string', 'description' => 'Target URL or path the redirect points to.' ),
-						'code'       => array( 'type' => 'integer', 'description' => 'HTTP status code: 301, 302, 307, 308, 410, 404. Default 301.', 'default' => 301 ),
-						'regex'      => array( 'type' => 'boolean', 'description' => 'Whether source_url is a regular expression. Default false.', 'default' => false ),
-						'title'      => array( 'type' => 'string', 'description' => 'Optional label for this redirect.' ),
-						'group_id'   => array( 'type' => 'integer', 'description' => 'Redirection group ID. Default 1.', 'default' => 1 ),
+						'source_url' => array(
+							'type'        => 'string',
+							'description' => 'Source URL path (e.g. "/old-page").',
+						),
+						'target_url' => array(
+							'type'        => 'string',
+							'description' => 'Target URL or path the redirect points to.',
+						),
+						'code'       => array(
+							'type'        => 'integer',
+							'description' => 'HTTP status code: 301, 302, 307, 308, 410, 404. Default 301.',
+							'default'     => 301,
+						),
+						'regex'      => array(
+							'type'        => 'boolean',
+							'description' => 'Whether source_url is a regular expression. Default false.',
+							'default'     => false,
+						),
+						'title'      => array(
+							'type'        => 'string',
+							'description' => 'Optional label for this redirect.',
+						),
+						'group_id'   => array(
+							'type'        => 'integer',
+							'description' => 'Redirection group ID. Default 1.',
+							'default'     => 1,
+						),
 					),
-					'required' => array( 'source_url', 'target_url' ),
+					'required'   => array( 'source_url', 'target_url' ),
 				),
 				'output_schema'       => array(
 					'type'       => 'object',
@@ -801,7 +974,10 @@ class MCP {
 				'execute_callback'    => [ $this, 'create_redirect' ],
 				'meta'                => array(
 					'mcp'         => array( 'public' => true ),
-					'annotations' => array( 'destructive' => false, 'idempotent' => false ),
+					'annotations' => array(
+						'destructive' => false,
+						'idempotent'  => false,
+					),
 				),
 			)
 		);
@@ -815,15 +991,36 @@ class MCP {
 				'input_schema'        => array(
 					'type'       => 'object',
 					'properties' => array(
-						'id'         => array( 'type' => 'integer', 'description' => 'Redirect ID.' ),
-						'source_url' => array( 'type' => 'string', 'description' => 'New source URL.' ),
-						'target_url' => array( 'type' => 'string', 'description' => 'New target URL.' ),
-						'code'       => array( 'type' => 'integer', 'description' => 'New HTTP status code.' ),
-						'regex'      => array( 'type' => 'boolean', 'description' => 'Whether source_url is a regex.' ),
-						'title'      => array( 'type' => 'string', 'description' => 'New title/label.' ),
-						'status'     => array( 'type' => 'string', 'description' => '"enabled" or "disabled".' ),
+						'id'         => array(
+							'type'        => 'integer',
+							'description' => 'Redirect ID.',
+						),
+						'source_url' => array(
+							'type'        => 'string',
+							'description' => 'New source URL.',
+						),
+						'target_url' => array(
+							'type'        => 'string',
+							'description' => 'New target URL.',
+						),
+						'code'       => array(
+							'type'        => 'integer',
+							'description' => 'New HTTP status code.',
+						),
+						'regex'      => array(
+							'type'        => 'boolean',
+							'description' => 'Whether source_url is a regex.',
+						),
+						'title'      => array(
+							'type'        => 'string',
+							'description' => 'New title/label.',
+						),
+						'status'     => array(
+							'type'        => 'string',
+							'description' => '"enabled" or "disabled".',
+						),
 					),
-					'required' => array( 'id' ),
+					'required'   => array( 'id' ),
 				),
 				'output_schema'       => array(
 					'type'       => 'object',
@@ -833,7 +1030,10 @@ class MCP {
 				'execute_callback'    => [ $this, 'update_redirect' ],
 				'meta'                => array(
 					'mcp'         => array( 'public' => true ),
-					'annotations' => array( 'destructive' => true, 'idempotent' => true ),
+					'annotations' => array(
+						'destructive' => true,
+						'idempotent'  => true,
+					),
 				),
 			)
 		);
@@ -847,9 +1047,12 @@ class MCP {
 				'input_schema'        => array(
 					'type'       => 'object',
 					'properties' => array(
-						'id' => array( 'type' => 'integer', 'description' => 'Redirect ID.' ),
+						'id' => array(
+							'type'        => 'integer',
+							'description' => 'Redirect ID.',
+						),
 					),
-					'required' => array( 'id' ),
+					'required'   => array( 'id' ),
 				),
 				'output_schema'       => array(
 					'type'       => 'object',
@@ -859,7 +1062,10 @@ class MCP {
 				'execute_callback'    => [ $this, 'delete_redirect' ],
 				'meta'                => array(
 					'mcp'         => array( 'public' => true ),
-					'annotations' => array( 'destructive' => true, 'idempotent' => false ),
+					'annotations' => array(
+						'destructive' => true,
+						'idempotent'  => false,
+					),
 				),
 			)
 		);
@@ -948,7 +1154,7 @@ class MCP {
 							'description' => 'Post ID.',
 						),
 					),
-					'required' => array( 'id' ),
+					'required'   => array( 'id' ),
 				),
 				'output_schema'       => array(
 					'type'       => 'object',
@@ -1107,7 +1313,7 @@ class MCP {
 							'description' => 'Taxonomy terms to set. Keys are taxonomy slugs, values are arrays of term slugs or IDs. Replaces all existing terms for each provided taxonomy.',
 						),
 					),
-					'required' => array( 'id' ),
+					'required'   => array( 'id' ),
 				),
 				'output_schema'       => array(
 					'type'       => 'object',
@@ -1146,7 +1352,7 @@ class MCP {
 							'description' => 'Set to true to permanently delete. Defaults to false (moves to trash).',
 						),
 					),
-					'required' => array( 'id' ),
+					'required'   => array( 'id' ),
 				),
 				'output_schema'       => array(
 					'type'       => 'object',
@@ -1176,7 +1382,10 @@ class MCP {
 				'input_schema'        => array(
 					'type'       => 'object',
 					'properties' => array(
-						'post_type' => array( 'type' => 'string', 'description' => 'Limit the response to a single post type slug (e.g. "post", "page", "event"). Omit for all public post types.' ),
+						'post_type' => array(
+							'type'        => 'string',
+							'description' => 'Limit the response to a single post type slug (e.g. "post", "page", "event"). Omit for all public post types.',
+						),
 					),
 				),
 				'output_schema'       => array(
@@ -1540,7 +1749,7 @@ class MCP {
 	 * @param string $location_slug Theme location slug.
 	 */
 	private function assign_menu_location( $menu_id, $location_slug ) {
-		$locations                  = get_nav_menu_locations();
+		$locations                   = get_nav_menu_locations();
 		$locations[ $location_slug ] = $menu_id;
 		set_theme_mod( 'nav_menu_locations', $locations );
 	}
@@ -1560,18 +1769,18 @@ class MCP {
 				$menu_id,
 				0,
 				array(
-					'menu-item-title'     => $item['title'] ?? '',
-					'menu-item-url'       => $item['url'] ?? '',
-					'menu-item-type'      => $item['type'] ?? 'custom',
-					'menu-item-object'    => $item['object'] ?? '',
-					'menu-item-object-id' => intval( $item['object_id'] ?? 0 ),
-					'menu-item-parent-id' => intval( $item['parent_id'] ?? 0 ),
-					'menu-item-position'  => intval( $item['position'] ?? ( $index + 1 ) ),
-					'menu-item-target'    => $item['target'] ?? '',
-					'menu-item-classes'   => $item['classes'] ?? '',
+					'menu-item-title'       => $item['title'] ?? '',
+					'menu-item-url'         => $item['url'] ?? '',
+					'menu-item-type'        => $item['type'] ?? 'custom',
+					'menu-item-object'      => $item['object'] ?? '',
+					'menu-item-object-id'   => intval( $item['object_id'] ?? 0 ),
+					'menu-item-parent-id'   => intval( $item['parent_id'] ?? 0 ),
+					'menu-item-position'    => intval( $item['position'] ?? ( $index + 1 ) ),
+					'menu-item-target'      => $item['target'] ?? '',
+					'menu-item-classes'     => $item['classes'] ?? '',
 					'menu-item-description' => $item['description'] ?? '',
 					'menu-item-attr-title'  => $item['attr_title'] ?? '',
-					'menu-item-status'    => 'publish',
+					'menu-item-status'      => 'publish',
 				)
 			);
 		}
@@ -2085,13 +2294,13 @@ class MCP {
 
 		// Block markup guidance.
 		$block_markup = array(
-			'description'   => 'WordPress block content is stored as HTML with special block comment delimiters. Attributes are JSON encoded in the opening comment.',
-			'block_format'  => '<!-- wp:block-slug {"attr":"value"} --> optional inner HTML <!-- /wp:block-slug -->',
-			'self_closing'  => '<!-- wp:block-slug {"attr":"value"} /-->',
-			'core_example'  => '<!-- wp:paragraph --><p>Hello world</p><!-- /wp:paragraph -->',
-			'acf_example'   => '<!-- wp:acf/my-block {"name":"acf/my-block","data":{"field_key":"value"},"mode":"preview"} /-->',
+			'description'     => 'WordPress block content is stored as HTML with special block comment delimiters. Attributes are JSON encoded in the opening comment.',
+			'block_format'    => '<!-- wp:block-slug {"attr":"value"} --> optional inner HTML <!-- /wp:block-slug -->',
+			'self_closing'    => '<!-- wp:block-slug {"attr":"value"} /-->',
+			'core_example'    => '<!-- wp:paragraph --><p>Hello world</p><!-- /wp:paragraph -->',
+			'acf_example'     => '<!-- wp:acf/my-block {"name":"acf/my-block","data":{"field_key":"value"},"mode":"preview"} /-->',
 			'heading_example' => '<!-- wp:heading {"level":2} --><h2 class="wp-block-heading">My Heading</h2><!-- /wp:heading -->',
-			'note'          => 'Use the list-allowed-blocks ability to see all blocks available on this site.',
+			'note'            => 'Use the list-allowed-blocks ability to see all blocks available on this site.',
 		);
 
 		return array(
@@ -2131,7 +2340,6 @@ class MCP {
 				'title'       => $block_type ? ( $block_type->title ?? $slug ) : $slug,
 				'category'    => $block_type ? ( $block_type->category ?? '' ) : '',
 				'description' => $block_type ? ( $block_type->description ?? '' ) : '',
-				'icon'        => $block_type && is_string( $block_type->icon ?? null ) ? $block_type->icon : '',
 				'keywords'    => $block_type ? ( $block_type->keywords ?? array() ) : array(),
 			);
 
@@ -2296,7 +2504,12 @@ class MCP {
 			$blocks[] = $entry;
 		}
 
-		usort( $blocks, function ( $a, $b ) { return strcmp( $a['name'], $b['name'] ); } );
+		usort(
+			$blocks,
+			function ( $a, $b ) {
+				return strcmp( $a['name'], $b['name'] );
+			}
+		);
 
 		return array( 'blocks' => $blocks );
 	}
@@ -2396,15 +2609,15 @@ class MCP {
 	 */
 	private function format_redirect( $row ) {
 		return array(
-			'id'         => (int) $row->id,
-			'source_url' => $row->url,
-			'target_url' => $row->action_data,
-			'code'       => (int) $row->action_code,
-			'status'     => $row->status,
-			'regex'      => (bool) $row->regex,
-			'group_id'   => (int) $row->group_id,
-			'title'      => $row->title,
-			'hits'       => (int) $row->hits,
+			'id'          => (int) $row->id,
+			'source_url'  => $row->url,
+			'target_url'  => $row->action_data,
+			'code'        => (int) $row->action_code,
+			'status'      => $row->status,
+			'regex'       => (bool) $row->regex,
+			'group_id'    => (int) $row->group_id,
+			'title'       => $row->title,
+			'hits'        => (int) $row->hits,
 			'last_access' => $row->last_access,
 		);
 	}
@@ -2492,7 +2705,7 @@ class MCP {
 			return $table;
 		}
 
-		$id  = intval( $input['id'] ?? 0 );
+		$id = intval( $input['id'] ?? 0 );
 		// phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared
 		$row = $wpdb->get_row( $wpdb->prepare( "SELECT * FROM {$table} WHERE id = %d", $id ) );
 
