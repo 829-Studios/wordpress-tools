@@ -1905,33 +1905,42 @@ class MCP {
 
 		$where_sql = 'WHERE ' . implode( ' AND ', $where );
 
-		// phpcs:disable WordPress.DB.PreparedSQL.InterpolatedNotPrepared
-		$total = (int) $wpdb->get_var(
-			$wpdb->prepare( "SELECT COUNT(*) FROM {$wpdb->options} {$where_sql}", $params )
-		);
+		$cache_key = 'wpt_mcp_search_options_' . md5( wp_json_encode( array( $where_sql, $params, $per_page, $offset ) ) );
+		$result    = wp_cache_get( $cache_key, 'options' );
 
-		$rows = $wpdb->get_results(
-			$wpdb->prepare(
-				"SELECT option_name, option_value, autoload FROM {$wpdb->options} {$where_sql} ORDER BY option_name ASC LIMIT %d OFFSET %d",
-				array_merge( $params, array( $per_page, $offset ) )
-			)
-		);
-		// phpcs:enable
-
-		$options = array();
-		foreach ( $rows as $row ) {
-			$options[] = array(
-				'name'     => $row->option_name,
-				'value'    => maybe_unserialize( $row->option_value ),
-				'autoload' => $row->autoload,
+		if ( false === $result ) {
+			// phpcs:disable WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.PreparedSQL.InterpolatedNotPrepared, WordPress.DB.PreparedSQLPlaceholders.UnfinishedPrepare, WordPress.DB.PreparedSQLPlaceholders.ReplacementsWrongNumber -- no core API for pattern search; $where_sql is already prepared correctly.
+			$total = (int) $wpdb->get_var(
+				$wpdb->prepare( "SELECT COUNT(*) FROM {$wpdb->options} {$where_sql}", $params )
 			);
+
+			$rows = $wpdb->get_results(
+				$wpdb->prepare(
+					"SELECT option_name, option_value, autoload FROM {$wpdb->options} {$where_sql} ORDER BY option_name ASC LIMIT %d OFFSET %d",
+					array_merge( $params, array( $per_page, $offset ) )
+				)
+			);
+			// phpcs:enable
+
+			$options = array();
+			foreach ( $rows as $row ) {
+				$options[] = array(
+					'name'     => $row->option_name,
+					'value'    => maybe_unserialize( $row->option_value ),
+					'autoload' => $row->autoload,
+				);
+			}
+
+			$result = array(
+				'options' => $options,
+				'total'   => $total,
+				'pages'   => $per_page > 0 ? (int) ceil( $total / $per_page ) : 1,
+			);
+
+			wp_cache_set( $cache_key, $result, 'options', MINUTE_IN_SECONDS );
 		}
 
-		return array(
-			'options' => $options,
-			'total'   => $total,
-			'pages'   => $per_page > 0 ? (int) ceil( $total / $per_page ) : 1,
-		);
+		return $result;
 	}
 
 	/**
@@ -1957,8 +1966,15 @@ class MCP {
 			return new WP_Error( 'not_found', "Option '{$name}' does not exist." );
 		}
 
-		global $wpdb;
-		$autoload = $wpdb->get_var( $wpdb->prepare( "SELECT autoload FROM {$wpdb->options} WHERE option_name = %s", $name ) );
+		$cache_key = 'wpt_mcp_option_autoload_' . $name;
+		$autoload  = wp_cache_get( $cache_key, 'options' );
+
+		if ( false === $autoload ) {
+			global $wpdb;
+			// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery -- no core API for the autoload column.
+			$autoload = $wpdb->get_var( $wpdb->prepare( "SELECT autoload FROM {$wpdb->options} WHERE option_name = %s", $name ) );
+			wp_cache_set( $cache_key, $autoload, 'options', 5 * MINUTE_IN_SECONDS );
+		}
 
 		return array(
 			'option' => array(
@@ -1993,6 +2009,10 @@ class MCP {
 		$autoload = isset( $input['autoload'] ) && 'no' === $input['autoload'] ? 'no' : 'yes';
 		$result   = add_option( $name, $input['value'] ?? '', '', $autoload );
 
+		if ( $result ) {
+			wp_cache_delete( 'wpt_mcp_option_autoload_' . $name, 'options' );
+		}
+
 		return array( 'created' => (bool) $result );
 	}
 
@@ -2021,6 +2041,8 @@ class MCP {
 
 		$result = update_option( ...$args );
 
+		wp_cache_delete( 'wpt_mcp_option_autoload_' . $name, 'options' );
+
 		return array( 'updated' => (bool) $result );
 	}
 
@@ -2046,6 +2068,10 @@ class MCP {
 		}
 
 		$result = delete_option( $name );
+
+		if ( $result ) {
+			wp_cache_delete( 'wpt_mcp_option_autoload_' . $name, 'options' );
+		}
 
 		return array( 'deleted' => (bool) $result );
 	}
@@ -2359,7 +2385,7 @@ class MCP {
 			$blocks,
 			function ( $a, $b ) {
 				$cat = strcmp( $a['category'], $b['category'] );
-				return $cat !== 0 ? $cat : strcmp( $a['slug'], $b['slug'] );
+				return 0 !== $cat ? $cat : strcmp( $a['slug'], $b['slug'] );
 			}
 		);
 
@@ -2595,8 +2621,15 @@ class MCP {
 		global $wpdb;
 		$table = $wpdb->prefix . 'redirection_items';
 
-		// phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared
-		if ( $wpdb->get_var( $wpdb->prepare( 'SHOW TABLES LIKE %s', $table ) ) !== $table ) {
+		$exists = wp_cache_get( 'wpt_mcp_redirection_table_exists', 'wpt_mcp', false, $found );
+
+		if ( ! $found ) {
+			// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery -- third-party table, no core API.
+			$exists = ( $wpdb->get_var( $wpdb->prepare( 'SHOW TABLES LIKE %s', $table ) ) === $table );
+			wp_cache_set( 'wpt_mcp_redirection_table_exists', $exists, 'wpt_mcp', HOUR_IN_SECONDS );
+		}
+
+		if ( ! $exists ) {
 			return new WP_Error( 'redirection_missing', 'The Redirection plugin is not installed or has not been set up yet.' );
 		}
 
@@ -2625,19 +2658,31 @@ class MCP {
 	}
 
 	/**
-	 * Bust the Redirection plugin's redirect cache after a write operation.
+	 * Bust the Redirection plugin's redirect cache after a write operation, and our own
+	 * per-redirect cache entry if an $id is given.
+	 *
+	 * @param int|null $id Redirect ID whose cached get_redirect() entry should be cleared.
 	 */
-	private function flush_redirection_cache() {
+	private function flush_redirection_cache( $id = null ) {
 		// Use Red_Item::flush() if available (plugin is active).
 		if ( class_exists( 'Red_Item' ) && method_exists( 'Red_Item', 'flush' ) ) {
 			\Red_Item::flush();
-			return;
+		} else {
+			// Fallback: delete transients with the red_ prefix.
+			global $wpdb;
+			// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching -- write, nothing to cache.
+			$wpdb->query(
+				$wpdb->prepare(
+					"DELETE FROM {$wpdb->options} WHERE option_name LIKE %s OR option_name LIKE %s",
+					'\_transient\_red\_%',
+					'\_transient\_timeout\_red\_%'
+				)
+			);
 		}
 
-		// Fallback: delete transients with the red_ prefix.
-		global $wpdb;
-		// phpcs:ignore WordPress.DB.PreparedSQL.NotPrepared
-		$wpdb->query( "DELETE FROM {$wpdb->options} WHERE option_name LIKE '\_transient\_red\_%' OR option_name LIKE '\_transient\_timeout\_red\_%'" );
+		if ( null !== $id ) {
+			wp_cache_delete( 'wpt_mcp_redirect_' . $id, 'wpt_mcp' );
+		}
 	}
 
 	/**
@@ -2676,21 +2721,30 @@ class MCP {
 
 		$where_sql = implode( ' AND ', $where );
 
-		// phpcs:disable WordPress.DB.PreparedSQL.InterpolatedNotPrepared
-		if ( $params ) {
-			$total = (int) $wpdb->get_var( $wpdb->prepare( "SELECT COUNT(*) FROM {$table} WHERE {$where_sql}", $params ) );
-			$rows  = $wpdb->get_results( $wpdb->prepare( "SELECT * FROM {$table} WHERE {$where_sql} ORDER BY id DESC LIMIT %d OFFSET %d", array_merge( $params, array( $per_page, $offset ) ) ) );
-		} else {
-			$total = (int) $wpdb->get_var( "SELECT COUNT(*) FROM {$table}" );
-			$rows  = $wpdb->get_results( $wpdb->prepare( "SELECT * FROM {$table} ORDER BY id DESC LIMIT %d OFFSET %d", array( $per_page, $offset ) ) );
-		}
-		// phpcs:enable
+		$cache_key = 'wpt_mcp_search_redirects_' . md5( wp_json_encode( array( $where_sql, $params, $per_page, $offset ) ) );
+		$result    = wp_cache_get( $cache_key, 'wpt_mcp' );
 
-		return array(
-			'redirects' => array_map( array( $this, 'format_redirect' ), $rows ),
-			'total'     => $total,
-			'pages'     => $per_page > 0 ? (int) ceil( $total / $per_page ) : 1,
-		);
+		if ( false === $result ) {
+			// phpcs:disable WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.PreparedSQL.InterpolatedNotPrepared, WordPress.DB.PreparedSQLPlaceholders.UnfinishedPrepare, WordPress.DB.PreparedSQLPlaceholders.ReplacementsWrongNumber -- third-party table, no core API; $where_sql is already prepared correctly.
+			if ( $params ) {
+				$total = (int) $wpdb->get_var( $wpdb->prepare( "SELECT COUNT(*) FROM {$table} WHERE {$where_sql}", $params ) );
+				$rows  = $wpdb->get_results( $wpdb->prepare( "SELECT * FROM {$table} WHERE {$where_sql} ORDER BY id DESC LIMIT %d OFFSET %d", array_merge( $params, array( $per_page, $offset ) ) ) );
+			} else {
+				$total = (int) $wpdb->get_var( "SELECT COUNT(*) FROM {$table}" );
+				$rows  = $wpdb->get_results( $wpdb->prepare( "SELECT * FROM {$table} ORDER BY id DESC LIMIT %d OFFSET %d", array( $per_page, $offset ) ) );
+			}
+			// phpcs:enable
+
+			$result = array(
+				'redirects' => array_map( array( $this, 'format_redirect' ), $rows ),
+				'total'     => $total,
+				'pages'     => $per_page > 0 ? (int) ceil( $total / $per_page ) : 1,
+			);
+
+			wp_cache_set( $cache_key, $result, 'wpt_mcp', MINUTE_IN_SECONDS );
+		}
+
+		return $result;
 	}
 
 	/**
@@ -2707,9 +2761,18 @@ class MCP {
 			return $table;
 		}
 
-		$id = intval( $input['id'] ?? 0 );
-		// phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared
-		$row = $wpdb->get_row( $wpdb->prepare( "SELECT * FROM {$table} WHERE id = %d", $id ) );
+		$id        = intval( $input['id'] ?? 0 );
+		$cache_key = 'wpt_mcp_redirect_' . $id;
+		$row       = wp_cache_get( $cache_key, 'wpt_mcp' );
+
+		if ( false === $row ) {
+			// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.PreparedSQL.InterpolatedNotPrepared -- third-party table, no core API.
+			$row = $wpdb->get_row( $wpdb->prepare( "SELECT * FROM {$table} WHERE id = %d", $id ) );
+
+			if ( $row ) {
+				wp_cache_set( $cache_key, $row, 'wpt_mcp', 5 * MINUTE_IN_SECONDS );
+			}
+		}
 
 		if ( ! $row ) {
 			return new WP_Error( 'not_found', "Redirect {$id} not found." );
@@ -2744,7 +2807,7 @@ class MCP {
 		$group_id = intval( $input['group_id'] ?? 1 );
 		$title    = $input['title'] ?? '';
 
-		// phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared
+		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery -- third-party table, no core API.
 		$result = $wpdb->insert(
 			$table,
 			array(
@@ -2769,10 +2832,12 @@ class MCP {
 		}
 
 		$new_id = $wpdb->insert_id;
-		$this->flush_redirection_cache();
+		$this->flush_redirection_cache( $new_id );
 
-		// phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared
+		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, WordPress.DB.PreparedSQL.InterpolatedNotPrepared -- just inserted, nothing to cache yet.
 		$row = $wpdb->get_row( $wpdb->prepare( "SELECT * FROM {$table} WHERE id = %d", $new_id ) );
+
+		wp_cache_set( 'wpt_mcp_redirect_' . $new_id, $row, 'wpt_mcp', 5 * MINUTE_IN_SECONDS );
 
 		return array(
 			'id'       => $new_id,
@@ -2794,10 +2859,18 @@ class MCP {
 			return $table;
 		}
 
-		$id = intval( $input['id'] ?? 0 );
+		$id        = intval( $input['id'] ?? 0 );
+		$cache_key = 'wpt_mcp_redirect_' . $id;
+		$existing  = wp_cache_get( $cache_key, 'wpt_mcp' );
 
-		// phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared
-		$existing = $wpdb->get_row( $wpdb->prepare( "SELECT * FROM {$table} WHERE id = %d", $id ) );
+		if ( false === $existing ) {
+			// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.PreparedSQL.InterpolatedNotPrepared -- third-party table, no core API.
+			$existing = $wpdb->get_row( $wpdb->prepare( "SELECT * FROM {$table} WHERE id = %d", $id ) );
+
+			if ( $existing ) {
+				wp_cache_set( $cache_key, $existing, 'wpt_mcp', 5 * MINUTE_IN_SECONDS );
+			}
+		}
 
 		if ( ! $existing ) {
 			return new WP_Error( 'not_found', "Redirect {$id} not found." );
@@ -2843,9 +2916,9 @@ class MCP {
 		$data['updated'] = current_time( 'mysql' );
 		$formats[]       = '%s';
 
-		// phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared
+		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching -- write, nothing to cache.
 		$wpdb->update( $table, $data, array( 'id' => $id ), $formats, array( '%d' ) );
-		$this->flush_redirection_cache();
+		$this->flush_redirection_cache( $id );
 
 		return array( 'updated' => true );
 	}
@@ -2864,18 +2937,22 @@ class MCP {
 			return $table;
 		}
 
-		$id = intval( $input['id'] ?? 0 );
+		$id        = intval( $input['id'] ?? 0 );
+		$cache_key = 'wpt_mcp_redirect_' . $id;
+		$existing  = wp_cache_get( $cache_key, 'wpt_mcp' );
 
-		// phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared
-		$existing = $wpdb->get_row( $wpdb->prepare( "SELECT id FROM {$table} WHERE id = %d", $id ) );
+		if ( false === $existing ) {
+			// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, WordPress.DB.PreparedSQL.InterpolatedNotPrepared -- id-only row, about to be deleted; don't cache it.
+			$existing = $wpdb->get_row( $wpdb->prepare( "SELECT id FROM {$table} WHERE id = %d", $id ) );
+		}
 
 		if ( ! $existing ) {
 			return new WP_Error( 'not_found', "Redirect {$id} not found." );
 		}
 
-		// phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared
+		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching -- write, nothing to cache.
 		$result = $wpdb->delete( $table, array( 'id' => $id ), array( '%d' ) );
-		$this->flush_redirection_cache();
+		$this->flush_redirection_cache( $id );
 
 		return array( 'deleted' => (bool) $result );
 	}
