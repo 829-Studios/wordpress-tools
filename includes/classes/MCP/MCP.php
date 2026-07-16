@@ -2336,11 +2336,12 @@ class MCP {
 		foreach ( $allowed as $slug ) {
 			$block_type = $all_registered[ $slug ] ?? $registry->get_registered( $slug );
 			$entry      = array(
-				'slug'        => $slug,
-				'title'       => $block_type ? ( $block_type->title ?? $slug ) : $slug,
-				'category'    => $block_type ? ( $block_type->category ?? '' ) : '',
-				'description' => $block_type ? ( $block_type->description ?? '' ) : '',
-				'keywords'    => $block_type ? ( $block_type->keywords ?? array() ) : array(),
+				'slug'           => $slug,
+				'title'          => $block_type ? ( $block_type->title ?? $slug ) : $slug,
+				'category'       => $block_type ? ( $block_type->category ?? '' ) : '',
+				'description'    => $block_type ? ( $block_type->description ?? '' ) : '',
+				'keywords'       => $block_type ? ( $block_type->keywords ?? array() ) : array(),
+				'allowed_blocks' => $block_type ? ( $block_type->allowed_blocks ?? array() ) : array(),
 			);
 
 			/**
@@ -2405,6 +2406,7 @@ class MCP {
 			'category'            => $block_type->category ?? '',
 			'icon'                => is_string( $block_type->icon ?? null ) ? $block_type->icon : '',
 			'keywords'            => $block_type->keywords ?? array(),
+			'allowed_blocks'      => $block_type->allowed_blocks ?? array(),
 			'parent'              => $block_type->parent ?? array(),
 			'ancestor'            => $block_type->ancestor ?? array(),
 			'api_version'         => $block_type->api_version ?? 1,
@@ -2447,13 +2449,13 @@ class MCP {
 
 		foreach ( $block_types as $block ) {
 			$entry = array(
-				'name'        => $block['name'],
-				'title'       => $block['title'],
-				'description' => $block['description'] ?? '',
-				'category'    => $block['category'] ?? '',
-				'icon'        => is_string( $block['icon'] ?? null ) ? $block['icon'] : '',
-				'keywords'    => $block['keywords'] ?? array(),
-				'fields'      => array(),
+				'name'           => $block['name'],
+				'title'          => $block['title'],
+				'description'    => $block['description'] ?? '',
+				'category'       => $block['category'] ?? '',
+				'keywords'       => $block['keywords'] ?? array(),
+				'allowed_blocks' => $block['allowed_blocks'] ?? array(),
+				'fields'         => array(),
 			);
 
 			// Fetch the field group attached to this block.
