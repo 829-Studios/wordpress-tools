@@ -208,7 +208,10 @@ class MCP {
 				'category'            => '829-tools',
 				'label'               => 'List Menus',
 				'description'         => 'Returns all registered WordPress menus with their assigned theme locations.',
-				'input_schema'        => array( 'type' => 'object', 'properties' => array() ),
+				'input_schema'        => array(
+					'type'       => 'object',
+					'properties' => array(),
+				),
 				'output_schema'       => array(
 					'type'       => 'object',
 					'properties' => array( 'menus' => array( 'type' => 'array' ) ),
@@ -217,7 +220,11 @@ class MCP {
 				'execute_callback'    => [ $this, 'list_menus' ],
 				'meta'                => array(
 					'mcp'         => array( 'public' => true ),
-					'annotations' => array( 'readonly' => true, 'destructive' => false, 'idempotent' => true ),
+					'annotations' => array(
+						'readonly'    => true,
+						'destructive' => false,
+						'idempotent'  => true,
+					),
 				),
 			)
 		);
@@ -231,9 +238,12 @@ class MCP {
 				'input_schema'        => array(
 					'type'       => 'object',
 					'properties' => array(
-						'id' => array( 'type' => 'integer', 'description' => 'The menu term ID.' ),
+						'id' => array(
+							'type'        => 'integer',
+							'description' => 'The menu term ID.',
+						),
 					),
-					'required' => array( 'id' ),
+					'required'   => array( 'id' ),
 				),
 				'output_schema'       => array(
 					'type'       => 'object',
@@ -243,7 +253,11 @@ class MCP {
 				'execute_callback'    => [ $this, 'get_menu' ],
 				'meta'                => array(
 					'mcp'         => array( 'public' => true ),
-					'annotations' => array( 'readonly' => true, 'destructive' => false, 'idempotent' => true ),
+					'annotations' => array(
+						'readonly'    => true,
+						'destructive' => false,
+						'idempotent'  => true,
+					),
 				),
 			)
 		);
@@ -257,15 +271,21 @@ class MCP {
 				'input_schema'        => array(
 					'type'       => 'object',
 					'properties' => array(
-						'name'     => array( 'type' => 'string', 'description' => 'The menu name.' ),
-						'location' => array( 'type' => 'string', 'description' => 'Theme location slug to assign this menu to (e.g. "primary", "footer").' ),
+						'name'     => array(
+							'type'        => 'string',
+							'description' => 'The menu name.',
+						),
+						'location' => array(
+							'type'        => 'string',
+							'description' => 'Theme location slug to assign this menu to (e.g. "primary", "footer").',
+						),
 						'items'    => array(
 							'type'        => 'array',
 							'description' => 'Menu items to add.',
 							'items'       => array( 'type' => 'object' ),
 						),
 					),
-					'required' => array( 'name' ),
+					'required'   => array( 'name' ),
 				),
 				'output_schema'       => array(
 					'type'       => 'object',
@@ -275,7 +295,10 @@ class MCP {
 				'execute_callback'    => [ $this, 'create_menu' ],
 				'meta'                => array(
 					'mcp'         => array( 'public' => true ),
-					'annotations' => array( 'destructive' => false, 'idempotent' => false ),
+					'annotations' => array(
+						'destructive' => false,
+						'idempotent'  => false,
+					),
 				),
 			)
 		);
@@ -289,16 +312,25 @@ class MCP {
 				'input_schema'        => array(
 					'type'       => 'object',
 					'properties' => array(
-						'id'       => array( 'type' => 'integer', 'description' => 'The menu term ID.' ),
-						'name'     => array( 'type' => 'string', 'description' => 'New menu name.' ),
-						'location' => array( 'type' => 'string', 'description' => 'Theme location slug to assign this menu to.' ),
+						'id'       => array(
+							'type'        => 'integer',
+							'description' => 'The menu term ID.',
+						),
+						'name'     => array(
+							'type'        => 'string',
+							'description' => 'New menu name.',
+						),
+						'location' => array(
+							'type'        => 'string',
+							'description' => 'Theme location slug to assign this menu to.',
+						),
 						'items'    => array(
 							'type'        => 'array',
 							'description' => 'Full replacement item list. Each item: title, url, type (custom/post_type/taxonomy), object, object_id, parent_id, position, target, classes.',
 							'items'       => array( 'type' => 'object' ),
 						),
 					),
-					'required' => array( 'id' ),
+					'required'   => array( 'id' ),
 				),
 				'output_schema'       => array(
 					'type'       => 'object',
@@ -308,7 +340,10 @@ class MCP {
 				'execute_callback'    => [ $this, 'update_menu' ],
 				'meta'                => array(
 					'mcp'         => array( 'public' => true ),
-					'annotations' => array( 'destructive' => true, 'idempotent' => true ),
+					'annotations' => array(
+						'destructive' => true,
+						'idempotent'  => true,
+					),
 				),
 			)
 		);
@@ -322,9 +357,12 @@ class MCP {
 				'input_schema'        => array(
 					'type'       => 'object',
 					'properties' => array(
-						'id' => array( 'type' => 'integer', 'description' => 'The menu term ID.' ),
+						'id' => array(
+							'type'        => 'integer',
+							'description' => 'The menu term ID.',
+						),
 					),
-					'required' => array( 'id' ),
+					'required'   => array( 'id' ),
 				),
 				'output_schema'       => array(
 					'type'       => 'object',
@@ -334,7 +372,10 @@ class MCP {
 				'execute_callback'    => [ $this, 'delete_menu' ],
 				'meta'                => array(
 					'mcp'         => array( 'public' => true ),
-					'annotations' => array( 'destructive' => true, 'idempotent' => false ),
+					'annotations' => array(
+						'destructive' => true,
+						'idempotent'  => false,
+					),
 				),
 			)
 		);
@@ -348,11 +389,29 @@ class MCP {
 				'input_schema'        => array(
 					'type'       => 'object',
 					'properties' => array(
-						'search'            => array( 'type' => 'string', 'description' => 'Option name pattern to search for. Supports % as wildcard (e.g. "wpt_%").' ),
-						'autoload'          => array( 'type' => 'string', 'description' => 'Filter by autoload: "yes", "no", or omit for all.' ),
-						'include_transients' => array( 'type' => 'boolean', 'description' => 'Include transient options (those prefixed with _transient_ or _site_transient_). Default false.', 'default' => false ),
-						'per_page'          => array( 'type' => 'integer', 'description' => 'Results per page. Default 50, max 200.', 'default' => 50 ),
-						'page'              => array( 'type' => 'integer', 'description' => 'Page number. Default 1.', 'default' => 1 ),
+						'search'             => array(
+							'type'        => 'string',
+							'description' => 'Option name pattern to search for. Supports % as wildcard (e.g. "wpt_%").',
+						),
+						'autoload'           => array(
+							'type'        => 'string',
+							'description' => 'Filter by autoload: "yes", "no", or omit for all.',
+						),
+						'include_transients' => array(
+							'type'        => 'boolean',
+							'description' => 'Include transient options (those prefixed with _transient_ or _site_transient_). Default false.',
+							'default'     => false,
+						),
+						'per_page'           => array(
+							'type'        => 'integer',
+							'description' => 'Results per page. Default 50, max 200.',
+							'default'     => 50,
+						),
+						'page'               => array(
+							'type'        => 'integer',
+							'description' => 'Page number. Default 1.',
+							'default'     => 1,
+						),
 					),
 				),
 				'output_schema'       => array(
@@ -385,9 +444,12 @@ class MCP {
 				'input_schema'        => array(
 					'type'       => 'object',
 					'properties' => array(
-						'name' => array( 'type' => 'string', 'description' => 'The option name.' ),
+						'name' => array(
+							'type'        => 'string',
+							'description' => 'The option name.',
+						),
 					),
-					'required' => array( 'name' ),
+					'required'   => array( 'name' ),
 				),
 				'output_schema'       => array(
 					'type'       => 'object',
@@ -417,11 +479,18 @@ class MCP {
 				'input_schema'        => array(
 					'type'       => 'object',
 					'properties' => array(
-						'name'     => array( 'type' => 'string', 'description' => 'The option name.' ),
+						'name'     => array(
+							'type'        => 'string',
+							'description' => 'The option name.',
+						),
 						'value'    => array( 'description' => 'The option value. Objects and arrays will be serialized automatically.' ),
-						'autoload' => array( 'type' => 'string', 'description' => 'Whether to autoload on every page load: "yes" or "no". Default "yes".', 'default' => 'yes' ),
+						'autoload' => array(
+							'type'        => 'string',
+							'description' => 'Whether to autoload on every page load: "yes" or "no". Default "yes".',
+							'default'     => 'yes',
+						),
 					),
-					'required' => array( 'name', 'value' ),
+					'required'   => array( 'name', 'value' ),
 				),
 				'output_schema'       => array(
 					'type'       => 'object',
@@ -450,11 +519,17 @@ class MCP {
 				'input_schema'        => array(
 					'type'       => 'object',
 					'properties' => array(
-						'name'     => array( 'type' => 'string', 'description' => 'The option name.' ),
+						'name'     => array(
+							'type'        => 'string',
+							'description' => 'The option name.',
+						),
 						'value'    => array( 'description' => 'The new option value. Objects and arrays will be serialized automatically.' ),
-						'autoload' => array( 'type' => 'string', 'description' => 'Whether to autoload: "yes" or "no". Omit to keep the existing autoload value.' ),
+						'autoload' => array(
+							'type'        => 'string',
+							'description' => 'Whether to autoload: "yes" or "no". Omit to keep the existing autoload value.',
+						),
 					),
-					'required' => array( 'name', 'value' ),
+					'required'   => array( 'name', 'value' ),
 				),
 				'output_schema'       => array(
 					'type'       => 'object',
@@ -483,9 +558,12 @@ class MCP {
 				'input_schema'        => array(
 					'type'       => 'object',
 					'properties' => array(
-						'name' => array( 'type' => 'string', 'description' => 'The option name to delete.' ),
+						'name' => array(
+							'type'        => 'string',
+							'description' => 'The option name to delete.',
+						),
 					),
-					'required' => array( 'name' ),
+					'required'   => array( 'name' ),
 				),
 				'output_schema'       => array(
 					'type'       => 'object',
@@ -514,12 +592,32 @@ class MCP {
 				'input_schema'        => array(
 					'type'       => 'object',
 					'properties' => array(
-						'search'     => array( 'type' => 'string', 'description' => 'Keyword to search across title, caption, alt text, description, and filename.' ),
-						'mime_type'  => array( 'type' => 'string', 'description' => 'Filter by MIME type or prefix: "image", "image/jpeg", "image/png", "image/gif", "image/webp", "image/svg+xml", "video", "application/pdf", etc.' ),
-						'after'      => array( 'type' => 'string', 'description' => 'Return items uploaded after this date (YYYY-MM-DD).' ),
-						'before'     => array( 'type' => 'string', 'description' => 'Return items uploaded before this date (YYYY-MM-DD).' ),
-						'per_page'   => array( 'type' => 'integer', 'description' => 'Results per page. Default 20, max 100.', 'default' => 20 ),
-						'page'       => array( 'type' => 'integer', 'description' => 'Page number. Default 1.', 'default' => 1 ),
+						'search'    => array(
+							'type'        => 'string',
+							'description' => 'Keyword to search across title, caption, alt text, description, and filename.',
+						),
+						'mime_type' => array(
+							'type'        => 'string',
+							'description' => 'Filter by MIME type or prefix: "image", "image/jpeg", "image/png", "image/gif", "image/webp", "image/svg+xml", "video", "application/pdf", etc.',
+						),
+						'after'     => array(
+							'type'        => 'string',
+							'description' => 'Return items uploaded after this date (YYYY-MM-DD).',
+						),
+						'before'    => array(
+							'type'        => 'string',
+							'description' => 'Return items uploaded before this date (YYYY-MM-DD).',
+						),
+						'per_page'  => array(
+							'type'        => 'integer',
+							'description' => 'Results per page. Default 20, max 100.',
+							'default'     => 20,
+						),
+						'page'      => array(
+							'type'        => 'integer',
+							'description' => 'Page number. Default 1.',
+							'default'     => 1,
+						),
 					),
 				),
 				'output_schema'       => array(
@@ -552,9 +650,12 @@ class MCP {
 				'input_schema'        => array(
 					'type'       => 'object',
 					'properties' => array(
-						'id' => array( 'type' => 'integer', 'description' => 'The attachment post ID.' ),
+						'id' => array(
+							'type'        => 'integer',
+							'description' => 'The attachment post ID.',
+						),
 					),
-					'required' => array( 'id' ),
+					'required'   => array( 'id' ),
 				),
 				'output_schema'       => array(
 					'type'       => 'object',
@@ -580,7 +681,7 @@ class MCP {
 			array(
 				'category'            => '829-tools',
 				'label'               => 'List Allowed Blocks',
-				'description'         => 'Returns all block types permitted in the block editor on this site, with their slug, title, and category. Reflects any theme or plugin restrictions',
+				'description'         => 'Returns all block types permitted in the block editor on this site, with their slug, title, category, description, icon, and keywords. Reflects any theme or plugin restrictions. Use get-block-info for full attributes/supports detail on a specific block.',
 				'input_schema'        => array(
 					'type'       => 'object',
 					'properties' => array(),
@@ -605,6 +706,41 @@ class MCP {
 			)
 		);
 
+		wp_register_ability(
+			'829-tools/get-block-info',
+			array(
+				'category'            => '829-tools',
+				'label'               => 'Get Block Info',
+				'description'         => 'Returns full registration detail for a single block type (description, icon, keywords, supports, attributes, styles, example, etc). Use list-allowed-blocks first to find the slug.',
+				'input_schema'        => array(
+					'type'       => 'object',
+					'properties' => array(
+						'slug' => array(
+							'type'        => 'string',
+							'description' => 'Block name/slug, e.g. "core/paragraph".',
+						),
+					),
+					'required'   => array( 'slug' ),
+				),
+				'output_schema'       => array(
+					'type'       => 'object',
+					'properties' => array(
+						'block' => array( 'type' => 'object' ),
+					),
+				),
+				'permission_callback' => [ $this, 'check_admin_permission' ],
+				'execute_callback'    => [ $this, 'get_block_info' ],
+				'meta'                => array(
+					'mcp'         => array( 'public' => true ),
+					'annotations' => array(
+						'readonly'    => true,
+						'destructive' => false,
+						'idempotent'  => true,
+					),
+				),
+			)
+		);
+
 		// ── ACF ─────────────────────────────────────────────────────────────
 
 		wp_register_ability(
@@ -613,7 +749,10 @@ class MCP {
 				'category'            => '829-tools',
 				'label'               => 'List ACF Blocks',
 				'description'         => 'Returns all registered ACF block types with their field definitions. Use this to understand what blocks are available and what data they accept before inserting block markup into post content.',
-				'input_schema'        => array( 'type' => 'object', 'properties' => array() ),
+				'input_schema'        => array(
+					'type'       => 'object',
+					'properties' => array(),
+				),
 				'output_schema'       => array(
 					'type'       => 'object',
 					'properties' => array( 'blocks' => array( 'type' => 'array' ) ),
@@ -622,7 +761,11 @@ class MCP {
 				'execute_callback'    => [ $this, 'list_acf_blocks' ],
 				'meta'                => array(
 					'mcp'         => array( 'public' => true ),
-					'annotations' => array( 'readonly' => true, 'destructive' => false, 'idempotent' => true ),
+					'annotations' => array(
+						'readonly'    => true,
+						'destructive' => false,
+						'idempotent'  => true,
+					),
 				),
 			)
 		);
@@ -636,9 +779,12 @@ class MCP {
 				'input_schema'        => array(
 					'type'       => 'object',
 					'properties' => array(
-						'post_id' => array( 'type' => array( 'integer', 'string' ), 'description' => 'Post ID, or "options" for the ACF options page.' ),
+						'post_id' => array(
+							'type'        => array( 'integer', 'string' ),
+							'description' => 'Post ID, or "options" for the ACF options page.',
+						),
 					),
-					'required' => array( 'post_id' ),
+					'required'   => array( 'post_id' ),
 				),
 				'output_schema'       => array(
 					'type'       => 'object',
@@ -648,7 +794,11 @@ class MCP {
 				'execute_callback'    => [ $this, 'get_acf_fields' ],
 				'meta'                => array(
 					'mcp'         => array( 'public' => true ),
-					'annotations' => array( 'readonly' => true, 'destructive' => false, 'idempotent' => true ),
+					'annotations' => array(
+						'readonly'    => true,
+						'destructive' => false,
+						'idempotent'  => true,
+					),
 				),
 			)
 		);
@@ -662,10 +812,16 @@ class MCP {
 				'input_schema'        => array(
 					'type'       => 'object',
 					'properties' => array(
-						'post_id' => array( 'type' => array( 'integer', 'string' ), 'description' => 'Post ID, or "options" for the ACF options page.' ),
-						'fields'  => array( 'type' => 'object', 'description' => 'Key/value map of field names to their new values.' ),
+						'post_id' => array(
+							'type'        => array( 'integer', 'string' ),
+							'description' => 'Post ID, or "options" for the ACF options page.',
+						),
+						'fields'  => array(
+							'type'        => 'object',
+							'description' => 'Key/value map of field names to their new values.',
+						),
 					),
-					'required' => array( 'post_id', 'fields' ),
+					'required'   => array( 'post_id', 'fields' ),
 				),
 				'output_schema'       => array(
 					'type'       => 'object',
@@ -675,7 +831,10 @@ class MCP {
 				'execute_callback'    => [ $this, 'update_acf_fields' ],
 				'meta'                => array(
 					'mcp'         => array( 'public' => true ),
-					'annotations' => array( 'destructive' => true, 'idempotent' => true ),
+					'annotations' => array(
+						'destructive' => true,
+						'idempotent'  => true,
+					),
 				),
 			)
 		);
@@ -691,10 +850,24 @@ class MCP {
 				'input_schema'        => array(
 					'type'       => 'object',
 					'properties' => array(
-						'search'   => array( 'type' => 'string', 'description' => 'Filter by source URL, target URL, or title.' ),
-						'status'   => array( 'type' => 'string', 'description' => 'Filter by status: "enabled" or "disabled". Omit for all.' ),
-						'per_page' => array( 'type' => 'integer', 'description' => 'Results per page. Default 50, max 200.', 'default' => 50 ),
-						'page'     => array( 'type' => 'integer', 'description' => 'Page number. Default 1.', 'default' => 1 ),
+						'search'   => array(
+							'type'        => 'string',
+							'description' => 'Filter by source URL, target URL, or title.',
+						),
+						'status'   => array(
+							'type'        => 'string',
+							'description' => 'Filter by status: "enabled" or "disabled". Omit for all.',
+						),
+						'per_page' => array(
+							'type'        => 'integer',
+							'description' => 'Results per page. Default 50, max 200.',
+							'default'     => 50,
+						),
+						'page'     => array(
+							'type'        => 'integer',
+							'description' => 'Page number. Default 1.',
+							'default'     => 1,
+						),
 					),
 				),
 				'output_schema'       => array(
@@ -709,7 +882,11 @@ class MCP {
 				'execute_callback'    => [ $this, 'search_redirects' ],
 				'meta'                => array(
 					'mcp'         => array( 'public' => true ),
-					'annotations' => array( 'readonly' => true, 'destructive' => false, 'idempotent' => true ),
+					'annotations' => array(
+						'readonly'    => true,
+						'destructive' => false,
+						'idempotent'  => true,
+					),
 				),
 			)
 		);
@@ -723,9 +900,12 @@ class MCP {
 				'input_schema'        => array(
 					'type'       => 'object',
 					'properties' => array(
-						'id' => array( 'type' => 'integer', 'description' => 'Redirect ID.' ),
+						'id' => array(
+							'type'        => 'integer',
+							'description' => 'Redirect ID.',
+						),
 					),
-					'required' => array( 'id' ),
+					'required'   => array( 'id' ),
 				),
 				'output_schema'       => array(
 					'type'       => 'object',
@@ -735,7 +915,11 @@ class MCP {
 				'execute_callback'    => [ $this, 'get_redirect' ],
 				'meta'                => array(
 					'mcp'         => array( 'public' => true ),
-					'annotations' => array( 'readonly' => true, 'destructive' => false, 'idempotent' => true ),
+					'annotations' => array(
+						'readonly'    => true,
+						'destructive' => false,
+						'idempotent'  => true,
+					),
 				),
 			)
 		);
@@ -749,14 +933,35 @@ class MCP {
 				'input_schema'        => array(
 					'type'       => 'object',
 					'properties' => array(
-						'source_url' => array( 'type' => 'string', 'description' => 'Source URL path (e.g. "/old-page").' ),
-						'target_url' => array( 'type' => 'string', 'description' => 'Target URL or path the redirect points to.' ),
-						'code'       => array( 'type' => 'integer', 'description' => 'HTTP status code: 301, 302, 307, 308, 410, 404. Default 301.', 'default' => 301 ),
-						'regex'      => array( 'type' => 'boolean', 'description' => 'Whether source_url is a regular expression. Default false.', 'default' => false ),
-						'title'      => array( 'type' => 'string', 'description' => 'Optional label for this redirect.' ),
-						'group_id'   => array( 'type' => 'integer', 'description' => 'Redirection group ID. Default 1.', 'default' => 1 ),
+						'source_url' => array(
+							'type'        => 'string',
+							'description' => 'Source URL path (e.g. "/old-page").',
+						),
+						'target_url' => array(
+							'type'        => 'string',
+							'description' => 'Target URL or path the redirect points to.',
+						),
+						'code'       => array(
+							'type'        => 'integer',
+							'description' => 'HTTP status code: 301, 302, 307, 308, 410, 404. Default 301.',
+							'default'     => 301,
+						),
+						'regex'      => array(
+							'type'        => 'boolean',
+							'description' => 'Whether source_url is a regular expression. Default false.',
+							'default'     => false,
+						),
+						'title'      => array(
+							'type'        => 'string',
+							'description' => 'Optional label for this redirect.',
+						),
+						'group_id'   => array(
+							'type'        => 'integer',
+							'description' => 'Redirection group ID. Default 1.',
+							'default'     => 1,
+						),
 					),
-					'required' => array( 'source_url', 'target_url' ),
+					'required'   => array( 'source_url', 'target_url' ),
 				),
 				'output_schema'       => array(
 					'type'       => 'object',
@@ -769,7 +974,10 @@ class MCP {
 				'execute_callback'    => [ $this, 'create_redirect' ],
 				'meta'                => array(
 					'mcp'         => array( 'public' => true ),
-					'annotations' => array( 'destructive' => false, 'idempotent' => false ),
+					'annotations' => array(
+						'destructive' => false,
+						'idempotent'  => false,
+					),
 				),
 			)
 		);
@@ -783,15 +991,36 @@ class MCP {
 				'input_schema'        => array(
 					'type'       => 'object',
 					'properties' => array(
-						'id'         => array( 'type' => 'integer', 'description' => 'Redirect ID.' ),
-						'source_url' => array( 'type' => 'string', 'description' => 'New source URL.' ),
-						'target_url' => array( 'type' => 'string', 'description' => 'New target URL.' ),
-						'code'       => array( 'type' => 'integer', 'description' => 'New HTTP status code.' ),
-						'regex'      => array( 'type' => 'boolean', 'description' => 'Whether source_url is a regex.' ),
-						'title'      => array( 'type' => 'string', 'description' => 'New title/label.' ),
-						'status'     => array( 'type' => 'string', 'description' => '"enabled" or "disabled".' ),
+						'id'         => array(
+							'type'        => 'integer',
+							'description' => 'Redirect ID.',
+						),
+						'source_url' => array(
+							'type'        => 'string',
+							'description' => 'New source URL.',
+						),
+						'target_url' => array(
+							'type'        => 'string',
+							'description' => 'New target URL.',
+						),
+						'code'       => array(
+							'type'        => 'integer',
+							'description' => 'New HTTP status code.',
+						),
+						'regex'      => array(
+							'type'        => 'boolean',
+							'description' => 'Whether source_url is a regex.',
+						),
+						'title'      => array(
+							'type'        => 'string',
+							'description' => 'New title/label.',
+						),
+						'status'     => array(
+							'type'        => 'string',
+							'description' => '"enabled" or "disabled".',
+						),
 					),
-					'required' => array( 'id' ),
+					'required'   => array( 'id' ),
 				),
 				'output_schema'       => array(
 					'type'       => 'object',
@@ -801,7 +1030,10 @@ class MCP {
 				'execute_callback'    => [ $this, 'update_redirect' ],
 				'meta'                => array(
 					'mcp'         => array( 'public' => true ),
-					'annotations' => array( 'destructive' => true, 'idempotent' => true ),
+					'annotations' => array(
+						'destructive' => true,
+						'idempotent'  => true,
+					),
 				),
 			)
 		);
@@ -815,9 +1047,12 @@ class MCP {
 				'input_schema'        => array(
 					'type'       => 'object',
 					'properties' => array(
-						'id' => array( 'type' => 'integer', 'description' => 'Redirect ID.' ),
+						'id' => array(
+							'type'        => 'integer',
+							'description' => 'Redirect ID.',
+						),
 					),
-					'required' => array( 'id' ),
+					'required'   => array( 'id' ),
 				),
 				'output_schema'       => array(
 					'type'       => 'object',
@@ -827,7 +1062,10 @@ class MCP {
 				'execute_callback'    => [ $this, 'delete_redirect' ],
 				'meta'                => array(
 					'mcp'         => array( 'public' => true ),
-					'annotations' => array( 'destructive' => true, 'idempotent' => false ),
+					'annotations' => array(
+						'destructive' => true,
+						'idempotent'  => false,
+					),
 				),
 			)
 		);
@@ -916,7 +1154,7 @@ class MCP {
 							'description' => 'Post ID.',
 						),
 					),
-					'required' => array( 'id' ),
+					'required'   => array( 'id' ),
 				),
 				'output_schema'       => array(
 					'type'       => 'object',
@@ -1075,7 +1313,7 @@ class MCP {
 							'description' => 'Taxonomy terms to set. Keys are taxonomy slugs, values are arrays of term slugs or IDs. Replaces all existing terms for each provided taxonomy.',
 						),
 					),
-					'required' => array( 'id' ),
+					'required'   => array( 'id' ),
 				),
 				'output_schema'       => array(
 					'type'       => 'object',
@@ -1114,7 +1352,7 @@ class MCP {
 							'description' => 'Set to true to permanently delete. Defaults to false (moves to trash).',
 						),
 					),
-					'required' => array( 'id' ),
+					'required'   => array( 'id' ),
 				),
 				'output_schema'       => array(
 					'type'       => 'object',
@@ -1144,7 +1382,10 @@ class MCP {
 				'input_schema'        => array(
 					'type'       => 'object',
 					'properties' => array(
-						'post_type' => array( 'type' => 'string', 'description' => 'Limit the response to a single post type slug (e.g. "post", "page", "event"). Omit for all public post types.' ),
+						'post_type' => array(
+							'type'        => 'string',
+							'description' => 'Limit the response to a single post type slug (e.g. "post", "page", "event"). Omit for all public post types.',
+						),
 					),
 				),
 				'output_schema'       => array(
@@ -1508,7 +1749,7 @@ class MCP {
 	 * @param string $location_slug Theme location slug.
 	 */
 	private function assign_menu_location( $menu_id, $location_slug ) {
-		$locations                  = get_nav_menu_locations();
+		$locations                   = get_nav_menu_locations();
 		$locations[ $location_slug ] = $menu_id;
 		set_theme_mod( 'nav_menu_locations', $locations );
 	}
@@ -1528,18 +1769,18 @@ class MCP {
 				$menu_id,
 				0,
 				array(
-					'menu-item-title'     => $item['title'] ?? '',
-					'menu-item-url'       => $item['url'] ?? '',
-					'menu-item-type'      => $item['type'] ?? 'custom',
-					'menu-item-object'    => $item['object'] ?? '',
-					'menu-item-object-id' => intval( $item['object_id'] ?? 0 ),
-					'menu-item-parent-id' => intval( $item['parent_id'] ?? 0 ),
-					'menu-item-position'  => intval( $item['position'] ?? ( $index + 1 ) ),
-					'menu-item-target'    => $item['target'] ?? '',
-					'menu-item-classes'   => $item['classes'] ?? '',
+					'menu-item-title'       => $item['title'] ?? '',
+					'menu-item-url'         => $item['url'] ?? '',
+					'menu-item-type'        => $item['type'] ?? 'custom',
+					'menu-item-object'      => $item['object'] ?? '',
+					'menu-item-object-id'   => intval( $item['object_id'] ?? 0 ),
+					'menu-item-parent-id'   => intval( $item['parent_id'] ?? 0 ),
+					'menu-item-position'    => intval( $item['position'] ?? ( $index + 1 ) ),
+					'menu-item-target'      => $item['target'] ?? '',
+					'menu-item-classes'     => $item['classes'] ?? '',
 					'menu-item-description' => $item['description'] ?? '',
 					'menu-item-attr-title'  => $item['attr_title'] ?? '',
-					'menu-item-status'    => 'publish',
+					'menu-item-status'      => 'publish',
 				)
 			);
 		}
@@ -1664,33 +1905,42 @@ class MCP {
 
 		$where_sql = 'WHERE ' . implode( ' AND ', $where );
 
-		// phpcs:disable WordPress.DB.PreparedSQL.InterpolatedNotPrepared
-		$total = (int) $wpdb->get_var(
-			$wpdb->prepare( "SELECT COUNT(*) FROM {$wpdb->options} {$where_sql}", $params )
-		);
+		$cache_key = 'wpt_mcp_search_options_' . md5( wp_json_encode( array( $where_sql, $params, $per_page, $offset ) ) );
+		$result    = wp_cache_get( $cache_key, 'options' );
 
-		$rows = $wpdb->get_results(
-			$wpdb->prepare(
-				"SELECT option_name, option_value, autoload FROM {$wpdb->options} {$where_sql} ORDER BY option_name ASC LIMIT %d OFFSET %d",
-				array_merge( $params, array( $per_page, $offset ) )
-			)
-		);
-		// phpcs:enable
-
-		$options = array();
-		foreach ( $rows as $row ) {
-			$options[] = array(
-				'name'     => $row->option_name,
-				'value'    => maybe_unserialize( $row->option_value ),
-				'autoload' => $row->autoload,
+		if ( false === $result ) {
+			// phpcs:disable WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.PreparedSQL.InterpolatedNotPrepared, WordPress.DB.PreparedSQLPlaceholders.UnfinishedPrepare, WordPress.DB.PreparedSQLPlaceholders.ReplacementsWrongNumber -- no core API for pattern search; $where_sql is already prepared correctly.
+			$total = (int) $wpdb->get_var(
+				$wpdb->prepare( "SELECT COUNT(*) FROM {$wpdb->options} {$where_sql}", $params )
 			);
+
+			$rows = $wpdb->get_results(
+				$wpdb->prepare(
+					"SELECT option_name, option_value, autoload FROM {$wpdb->options} {$where_sql} ORDER BY option_name ASC LIMIT %d OFFSET %d",
+					array_merge( $params, array( $per_page, $offset ) )
+				)
+			);
+			// phpcs:enable
+
+			$options = array();
+			foreach ( $rows as $row ) {
+				$options[] = array(
+					'name'     => $row->option_name,
+					'value'    => maybe_unserialize( $row->option_value ),
+					'autoload' => $row->autoload,
+				);
+			}
+
+			$result = array(
+				'options' => $options,
+				'total'   => $total,
+				'pages'   => $per_page > 0 ? (int) ceil( $total / $per_page ) : 1,
+			);
+
+			wp_cache_set( $cache_key, $result, 'options', MINUTE_IN_SECONDS );
 		}
 
-		return array(
-			'options' => $options,
-			'total'   => $total,
-			'pages'   => $per_page > 0 ? (int) ceil( $total / $per_page ) : 1,
-		);
+		return $result;
 	}
 
 	/**
@@ -1716,8 +1966,15 @@ class MCP {
 			return new WP_Error( 'not_found', "Option '{$name}' does not exist." );
 		}
 
-		global $wpdb;
-		$autoload = $wpdb->get_var( $wpdb->prepare( "SELECT autoload FROM {$wpdb->options} WHERE option_name = %s", $name ) );
+		$cache_key = 'wpt_mcp_option_autoload_' . $name;
+		$autoload  = wp_cache_get( $cache_key, 'options' );
+
+		if ( false === $autoload ) {
+			global $wpdb;
+			// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery -- no core API for the autoload column.
+			$autoload = $wpdb->get_var( $wpdb->prepare( "SELECT autoload FROM {$wpdb->options} WHERE option_name = %s", $name ) );
+			wp_cache_set( $cache_key, $autoload, 'options', 5 * MINUTE_IN_SECONDS );
+		}
 
 		return array(
 			'option' => array(
@@ -1752,6 +2009,10 @@ class MCP {
 		$autoload = isset( $input['autoload'] ) && 'no' === $input['autoload'] ? 'no' : 'yes';
 		$result   = add_option( $name, $input['value'] ?? '', '', $autoload );
 
+		if ( $result ) {
+			wp_cache_delete( 'wpt_mcp_option_autoload_' . $name, 'options' );
+		}
+
 		return array( 'created' => (bool) $result );
 	}
 
@@ -1780,6 +2041,8 @@ class MCP {
 
 		$result = update_option( ...$args );
 
+		wp_cache_delete( 'wpt_mcp_option_autoload_' . $name, 'options' );
+
 		return array( 'updated' => (bool) $result );
 	}
 
@@ -1805,6 +2068,10 @@ class MCP {
 		}
 
 		$result = delete_option( $name );
+
+		if ( $result ) {
+			wp_cache_delete( 'wpt_mcp_option_autoload_' . $name, 'options' );
+		}
 
 		return array( 'deleted' => (bool) $result );
 	}
@@ -2053,13 +2320,13 @@ class MCP {
 
 		// Block markup guidance.
 		$block_markup = array(
-			'description'   => 'WordPress block content is stored as HTML with special block comment delimiters. Attributes are JSON encoded in the opening comment.',
-			'block_format'  => '<!-- wp:block-slug {"attr":"value"} --> optional inner HTML <!-- /wp:block-slug -->',
-			'self_closing'  => '<!-- wp:block-slug {"attr":"value"} /-->',
-			'core_example'  => '<!-- wp:paragraph --><p>Hello world</p><!-- /wp:paragraph -->',
-			'acf_example'   => '<!-- wp:acf/my-block {"name":"acf/my-block","data":{"field_key":"value"},"mode":"preview"} /-->',
+			'description'     => 'WordPress block content is stored as HTML with special block comment delimiters. Attributes are JSON encoded in the opening comment.',
+			'block_format'    => '<!-- wp:block-slug {"attr":"value"} --> optional inner HTML <!-- /wp:block-slug -->',
+			'self_closing'    => '<!-- wp:block-slug {"attr":"value"} /-->',
+			'core_example'    => '<!-- wp:paragraph --><p>Hello world</p><!-- /wp:paragraph -->',
+			'acf_example'     => '<!-- wp:acf/my-block {"name":"acf/my-block","data":{"field_key":"value"},"mode":"preview"} /-->',
 			'heading_example' => '<!-- wp:heading {"level":2} --><h2 class="wp-block-heading">My Heading</h2><!-- /wp:heading -->',
-			'note'          => 'Use the list-allowed-blocks ability to see all blocks available on this site.',
+			'note'            => 'Use the list-allowed-blocks ability to see all blocks available on this site.',
 		);
 
 		return array(
@@ -2094,18 +2361,31 @@ class MCP {
 
 		foreach ( $allowed as $slug ) {
 			$block_type = $all_registered[ $slug ] ?? $registry->get_registered( $slug );
-			$blocks[]   = array(
-				'slug'     => $slug,
-				'title'    => $block_type ? ( $block_type->title ?? $slug ) : $slug,
-				'category' => $block_type ? ( $block_type->category ?? '' ) : '',
+			$entry      = array(
+				'slug'           => $slug,
+				'title'          => $block_type ? ( $block_type->title ?? $slug ) : $slug,
+				'category'       => $block_type ? ( $block_type->category ?? '' ) : '',
+				'description'    => $block_type ? ( $block_type->description ?? '' ) : '',
+				'keywords'       => $block_type ? ( $block_type->keywords ?? array() ) : array(),
+				'allowed_blocks' => $block_type ? ( $block_type->allowed_blocks ?? array() ) : array(),
 			);
+
+			/**
+			 * Filters the lightweight entry returned for a single block via list-allowed-blocks.
+			 *
+			 * @param array              $entry      slug, title, category, description, icon, keywords.
+			 * @param WP_Block_Type|null $block_type The registered block type, or null if unregistered.
+			 */
+			$filtered = apply_filters( 'wpt_mcp_block_list_entry', $entry, $block_type );
+
+			$blocks[] = is_array( $filtered ) ? $filtered : $entry;
 		}
 
 		usort(
 			$blocks,
 			function ( $a, $b ) {
 				$cat = strcmp( $a['category'], $b['category'] );
-				return $cat !== 0 ? $cat : strcmp( $a['slug'], $b['slug'] );
+				return 0 !== $cat ? $cat : strcmp( $a['slug'], $b['slug'] );
 			}
 		);
 
@@ -2113,6 +2393,69 @@ class MCP {
 			'blocks' => $blocks,
 			'total'  => count( $blocks ),
 		);
+	}
+
+	/**
+	 * Execute callback: get full detail for a single registered block type.
+	 *
+	 * @param  array $input Ability input.
+	 * @return array|WP_Error
+	 */
+	public function get_block_info( $input = array() ) {
+		$slug = sanitize_text_field( $input['slug'] ?? '' );
+
+		if ( empty( $slug ) ) {
+			return new WP_Error( 'missing_slug', 'slug is required.' );
+		}
+
+		$registry   = \WP_Block_Type_Registry::get_instance();
+		$block_type = $registry->get_registered( $slug );
+
+		if ( ! $block_type ) {
+			return new WP_Error( 'not_found', "Block '{$slug}' is not registered." );
+		}
+
+		// Respect the same allowed_block_types_all restrictions as list_allowed_blocks(),
+		// so this ability can't be used to read detail on a block a theme has hidden.
+		$all_slugs = array_keys( $registry->get_all_registered() );
+		$allowed   = apply_filters( 'allowed_block_types_all', $all_slugs, null );
+		$allowed   = is_array( $allowed ) ? $allowed : $all_slugs;
+
+		if ( ! in_array( $slug, $allowed, true ) ) {
+			return new WP_Error( 'not_found', "Block '{$slug}' is not registered." );
+		}
+
+		$block = array(
+			'name'                => $block_type->name,
+			'title'               => $block_type->title ?? '',
+			'description'         => $block_type->description ?? '',
+			'category'            => $block_type->category ?? '',
+			'icon'                => is_string( $block_type->icon ?? null ) ? $block_type->icon : '',
+			'keywords'            => $block_type->keywords ?? array(),
+			'allowed_blocks'      => $block_type->allowed_blocks ?? array(),
+			'parent'              => $block_type->parent ?? array(),
+			'ancestor'            => $block_type->ancestor ?? array(),
+			'api_version'         => $block_type->api_version ?? 1,
+			'textdomain'          => $block_type->textdomain ?? '',
+			'attributes'          => $block_type->attributes ?? array(),
+			'supports'            => $block_type->supports ?? array(),
+			'styles'              => $block_type->styles ?? array(),
+			'variations'          => $block_type->variations ?? array(),
+			'example'             => $block_type->example ?? null,
+			'provides_context'    => $block_type->provides_context ?? array(),
+			'uses_context'        => $block_type->uses_context ?? array(),
+			'has_render_callback' => is_callable( $block_type->render_callback ?? null ),
+		);
+
+		/**
+		 * Filters the detailed data returned for a single block via the get-block-info MCP ability.
+		 *
+		 * @param array         $block      The serialized block detail.
+		 * @param WP_Block_Type $block_type The raw registered block type object.
+		 */
+		$block = apply_filters( 'wpt_mcp_block_info_data', $block, $block_type );
+
+		return array( 'block' => $block );
 	}
 
 	// ── ACF ──────────────────────────────────────────────────────────────────
@@ -2132,13 +2475,13 @@ class MCP {
 
 		foreach ( $block_types as $block ) {
 			$entry = array(
-				'name'        => $block['name'],
-				'title'       => $block['title'],
-				'description' => $block['description'] ?? '',
-				'category'    => $block['category'] ?? '',
-				'icon'        => is_string( $block['icon'] ?? null ) ? $block['icon'] : '',
-				'keywords'    => $block['keywords'] ?? array(),
-				'fields'      => array(),
+				'name'           => $block['name'],
+				'title'          => $block['title'],
+				'description'    => $block['description'] ?? '',
+				'category'       => $block['category'] ?? '',
+				'keywords'       => $block['keywords'] ?? array(),
+				'allowed_blocks' => $block['allowed_blocks'] ?? array(),
+				'fields'         => array(),
 			);
 
 			// Fetch the field group attached to this block.
@@ -2175,10 +2518,26 @@ class MCP {
 				}
 			}
 
+			/**
+			 * Filters the data returned for a single ACF block via the list-acf-blocks MCP ability.
+			 *
+			 * Allows a theme or plugin to append additional information (e.g. usage notes,
+			 * example markup, or custom metadata) to each block entry before it's returned.
+			 *
+			 * @param array $entry The block entry (name, title, description, category, icon, keywords, fields).
+			 * @param array $block The raw ACF block type definition from acf_get_block_types().
+			 */
+			$entry = apply_filters( 'wpt_mcp_acf_block_data', $entry, $block );
+
 			$blocks[] = $entry;
 		}
 
-		usort( $blocks, function ( $a, $b ) { return strcmp( $a['name'], $b['name'] ); } );
+		usort(
+			$blocks,
+			function ( $a, $b ) {
+				return strcmp( $a['name'], $b['name'] );
+			}
+		);
 
 		return array( 'blocks' => $blocks );
 	}
@@ -2262,8 +2621,15 @@ class MCP {
 		global $wpdb;
 		$table = $wpdb->prefix . 'redirection_items';
 
-		// phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared
-		if ( $wpdb->get_var( $wpdb->prepare( 'SHOW TABLES LIKE %s', $table ) ) !== $table ) {
+		$exists = wp_cache_get( 'wpt_mcp_redirection_table_exists', 'wpt_mcp', false, $found );
+
+		if ( ! $found ) {
+			// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery -- third-party table, no core API.
+			$exists = ( $wpdb->get_var( $wpdb->prepare( 'SHOW TABLES LIKE %s', $table ) ) === $table );
+			wp_cache_set( 'wpt_mcp_redirection_table_exists', $exists, 'wpt_mcp', HOUR_IN_SECONDS );
+		}
+
+		if ( ! $exists ) {
 			return new WP_Error( 'redirection_missing', 'The Redirection plugin is not installed or has not been set up yet.' );
 		}
 
@@ -2278,33 +2644,45 @@ class MCP {
 	 */
 	private function format_redirect( $row ) {
 		return array(
-			'id'         => (int) $row->id,
-			'source_url' => $row->url,
-			'target_url' => $row->action_data,
-			'code'       => (int) $row->action_code,
-			'status'     => $row->status,
-			'regex'      => (bool) $row->regex,
-			'group_id'   => (int) $row->group_id,
-			'title'      => $row->title,
-			'hits'       => (int) $row->hits,
+			'id'          => (int) $row->id,
+			'source_url'  => $row->url,
+			'target_url'  => $row->action_data,
+			'code'        => (int) $row->action_code,
+			'status'      => $row->status,
+			'regex'       => (bool) $row->regex,
+			'group_id'    => (int) $row->group_id,
+			'title'       => $row->title,
+			'hits'        => (int) $row->hits,
 			'last_access' => $row->last_access,
 		);
 	}
 
 	/**
-	 * Bust the Redirection plugin's redirect cache after a write operation.
+	 * Bust the Redirection plugin's redirect cache after a write operation, and our own
+	 * per-redirect cache entry if an $id is given.
+	 *
+	 * @param int|null $id Redirect ID whose cached get_redirect() entry should be cleared.
 	 */
-	private function flush_redirection_cache() {
+	private function flush_redirection_cache( $id = null ) {
 		// Use Red_Item::flush() if available (plugin is active).
 		if ( class_exists( 'Red_Item' ) && method_exists( 'Red_Item', 'flush' ) ) {
 			\Red_Item::flush();
-			return;
+		} else {
+			// Fallback: delete transients with the red_ prefix.
+			global $wpdb;
+			// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching -- write, nothing to cache.
+			$wpdb->query(
+				$wpdb->prepare(
+					"DELETE FROM {$wpdb->options} WHERE option_name LIKE %s OR option_name LIKE %s",
+					'\_transient\_red\_%',
+					'\_transient\_timeout\_red\_%'
+				)
+			);
 		}
 
-		// Fallback: delete transients with the red_ prefix.
-		global $wpdb;
-		// phpcs:ignore WordPress.DB.PreparedSQL.NotPrepared
-		$wpdb->query( "DELETE FROM {$wpdb->options} WHERE option_name LIKE '\_transient\_red\_%' OR option_name LIKE '\_transient\_timeout\_red\_%'" );
+		if ( null !== $id ) {
+			wp_cache_delete( 'wpt_mcp_redirect_' . $id, 'wpt_mcp' );
+		}
 	}
 
 	/**
@@ -2343,21 +2721,30 @@ class MCP {
 
 		$where_sql = implode( ' AND ', $where );
 
-		// phpcs:disable WordPress.DB.PreparedSQL.InterpolatedNotPrepared
-		if ( $params ) {
-			$total = (int) $wpdb->get_var( $wpdb->prepare( "SELECT COUNT(*) FROM {$table} WHERE {$where_sql}", $params ) );
-			$rows  = $wpdb->get_results( $wpdb->prepare( "SELECT * FROM {$table} WHERE {$where_sql} ORDER BY id DESC LIMIT %d OFFSET %d", array_merge( $params, array( $per_page, $offset ) ) ) );
-		} else {
-			$total = (int) $wpdb->get_var( "SELECT COUNT(*) FROM {$table}" );
-			$rows  = $wpdb->get_results( $wpdb->prepare( "SELECT * FROM {$table} ORDER BY id DESC LIMIT %d OFFSET %d", array( $per_page, $offset ) ) );
-		}
-		// phpcs:enable
+		$cache_key = 'wpt_mcp_search_redirects_' . md5( wp_json_encode( array( $where_sql, $params, $per_page, $offset ) ) );
+		$result    = wp_cache_get( $cache_key, 'wpt_mcp' );
 
-		return array(
-			'redirects' => array_map( array( $this, 'format_redirect' ), $rows ),
-			'total'     => $total,
-			'pages'     => $per_page > 0 ? (int) ceil( $total / $per_page ) : 1,
-		);
+		if ( false === $result ) {
+			// phpcs:disable WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.PreparedSQL.InterpolatedNotPrepared, WordPress.DB.PreparedSQLPlaceholders.UnfinishedPrepare, WordPress.DB.PreparedSQLPlaceholders.ReplacementsWrongNumber -- third-party table, no core API; $where_sql is already prepared correctly.
+			if ( $params ) {
+				$total = (int) $wpdb->get_var( $wpdb->prepare( "SELECT COUNT(*) FROM {$table} WHERE {$where_sql}", $params ) );
+				$rows  = $wpdb->get_results( $wpdb->prepare( "SELECT * FROM {$table} WHERE {$where_sql} ORDER BY id DESC LIMIT %d OFFSET %d", array_merge( $params, array( $per_page, $offset ) ) ) );
+			} else {
+				$total = (int) $wpdb->get_var( "SELECT COUNT(*) FROM {$table}" );
+				$rows  = $wpdb->get_results( $wpdb->prepare( "SELECT * FROM {$table} ORDER BY id DESC LIMIT %d OFFSET %d", array( $per_page, $offset ) ) );
+			}
+			// phpcs:enable
+
+			$result = array(
+				'redirects' => array_map( array( $this, 'format_redirect' ), $rows ),
+				'total'     => $total,
+				'pages'     => $per_page > 0 ? (int) ceil( $total / $per_page ) : 1,
+			);
+
+			wp_cache_set( $cache_key, $result, 'wpt_mcp', MINUTE_IN_SECONDS );
+		}
+
+		return $result;
 	}
 
 	/**
@@ -2374,9 +2761,18 @@ class MCP {
 			return $table;
 		}
 
-		$id  = intval( $input['id'] ?? 0 );
-		// phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared
-		$row = $wpdb->get_row( $wpdb->prepare( "SELECT * FROM {$table} WHERE id = %d", $id ) );
+		$id        = intval( $input['id'] ?? 0 );
+		$cache_key = 'wpt_mcp_redirect_' . $id;
+		$row       = wp_cache_get( $cache_key, 'wpt_mcp' );
+
+		if ( false === $row ) {
+			// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.PreparedSQL.InterpolatedNotPrepared -- third-party table, no core API.
+			$row = $wpdb->get_row( $wpdb->prepare( "SELECT * FROM {$table} WHERE id = %d", $id ) );
+
+			if ( $row ) {
+				wp_cache_set( $cache_key, $row, 'wpt_mcp', 5 * MINUTE_IN_SECONDS );
+			}
+		}
 
 		if ( ! $row ) {
 			return new WP_Error( 'not_found', "Redirect {$id} not found." );
@@ -2411,7 +2807,7 @@ class MCP {
 		$group_id = intval( $input['group_id'] ?? 1 );
 		$title    = $input['title'] ?? '';
 
-		// phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared
+		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery -- third-party table, no core API.
 		$result = $wpdb->insert(
 			$table,
 			array(
@@ -2436,10 +2832,12 @@ class MCP {
 		}
 
 		$new_id = $wpdb->insert_id;
-		$this->flush_redirection_cache();
+		$this->flush_redirection_cache( $new_id );
 
-		// phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared
+		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, WordPress.DB.PreparedSQL.InterpolatedNotPrepared -- just inserted, nothing to cache yet.
 		$row = $wpdb->get_row( $wpdb->prepare( "SELECT * FROM {$table} WHERE id = %d", $new_id ) );
+
+		wp_cache_set( 'wpt_mcp_redirect_' . $new_id, $row, 'wpt_mcp', 5 * MINUTE_IN_SECONDS );
 
 		return array(
 			'id'       => $new_id,
@@ -2461,10 +2859,18 @@ class MCP {
 			return $table;
 		}
 
-		$id = intval( $input['id'] ?? 0 );
+		$id        = intval( $input['id'] ?? 0 );
+		$cache_key = 'wpt_mcp_redirect_' . $id;
+		$existing  = wp_cache_get( $cache_key, 'wpt_mcp' );
 
-		// phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared
-		$existing = $wpdb->get_row( $wpdb->prepare( "SELECT * FROM {$table} WHERE id = %d", $id ) );
+		if ( false === $existing ) {
+			// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.PreparedSQL.InterpolatedNotPrepared -- third-party table, no core API.
+			$existing = $wpdb->get_row( $wpdb->prepare( "SELECT * FROM {$table} WHERE id = %d", $id ) );
+
+			if ( $existing ) {
+				wp_cache_set( $cache_key, $existing, 'wpt_mcp', 5 * MINUTE_IN_SECONDS );
+			}
+		}
 
 		if ( ! $existing ) {
 			return new WP_Error( 'not_found', "Redirect {$id} not found." );
@@ -2510,9 +2916,9 @@ class MCP {
 		$data['updated'] = current_time( 'mysql' );
 		$formats[]       = '%s';
 
-		// phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared
+		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching -- write, nothing to cache.
 		$wpdb->update( $table, $data, array( 'id' => $id ), $formats, array( '%d' ) );
-		$this->flush_redirection_cache();
+		$this->flush_redirection_cache( $id );
 
 		return array( 'updated' => true );
 	}
@@ -2531,18 +2937,22 @@ class MCP {
 			return $table;
 		}
 
-		$id = intval( $input['id'] ?? 0 );
+		$id        = intval( $input['id'] ?? 0 );
+		$cache_key = 'wpt_mcp_redirect_' . $id;
+		$existing  = wp_cache_get( $cache_key, 'wpt_mcp' );
 
-		// phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared
-		$existing = $wpdb->get_row( $wpdb->prepare( "SELECT id FROM {$table} WHERE id = %d", $id ) );
+		if ( false === $existing ) {
+			// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, WordPress.DB.PreparedSQL.InterpolatedNotPrepared -- id-only row, about to be deleted; don't cache it.
+			$existing = $wpdb->get_row( $wpdb->prepare( "SELECT id FROM {$table} WHERE id = %d", $id ) );
+		}
 
 		if ( ! $existing ) {
 			return new WP_Error( 'not_found', "Redirect {$id} not found." );
 		}
 
-		// phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared
+		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching -- write, nothing to cache.
 		$result = $wpdb->delete( $table, array( 'id' => $id ), array( '%d' ) );
-		$this->flush_redirection_cache();
+		$this->flush_redirection_cache( $id );
 
 		return array( 'deleted' => (bool) $result );
 	}
