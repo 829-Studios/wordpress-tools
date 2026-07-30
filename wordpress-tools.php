@@ -29,6 +29,7 @@ use WordPressTools\API\API;
 use WordPressTools\SiteInfo\ActivityLog;
 use WordPressTools\SiteInfo\SiteInfo;
 use WordPressTools\MCP\MCP;
+use WordPressTools\Roles;
 use WordPressTools\RoleManagement\RoleManagement;
 use WordPressTools\NoIndex\NoIndex;
 use WP_CLI;
@@ -173,10 +174,19 @@ add_action(
 // Generate an API key on activation if one doesn't exist.
 register_activation_hook( __FILE__, [ Settings::class, 'maybe_generate_api_key' ] );
 
+// Create the MCP roles on activation.
+register_activation_hook( __FILE__, [ Roles::class, 'register_roles' ] );
+
 // On admin load, ensure an API key exists (covers plugin updates).
 add_action(
 	'admin_init',
 	[ Settings::class, 'maybe_generate_api_key' ]
+);
+
+// On admin load, ensure the MCP roles exist and are current (covers plugin updates).
+add_action(
+	'admin_init',
+	[ Roles::class, 'maybe_register_roles' ]
 );
 
 // Register WP-CLI commands
