@@ -1422,9 +1422,8 @@ class MCP {
 	}
 
 	/**
-	 * Permission callback: read posts (list-posts, get-post). Granted to
-	 * administrators, MCP site managers, and anyone holding any of the
-	 * post-specific MCP capabilities.
+	 * Permission callback: read posts (list-posts, get-post). Execute
+	 * callbacks scope non-managers to their own posts only.
 	 *
 	 * @return true|WP_Error
 	 */
@@ -1451,7 +1450,8 @@ class MCP {
 	}
 
 	/**
-	 * Permission callback: edit existing posts.
+	 * Permission callback: edit existing posts. Non-managers may only edit
+	 * their own posts.
 	 *
 	 * @return true|WP_Error
 	 */
@@ -1524,6 +1524,15 @@ class MCP {
 	 * @return bool
 	 */
 	private function current_user_can_delete_posts() {
+		return $this->current_user_can_any( array( '829_mcp_manage_site', '829_mcp_delete_posts' ) );
+	}
+
+	/**
+	 * Whether the current user may act on posts belonging to other users.
+	 *
+	 * @return bool
+	 */
+	private function current_user_can_manage_any_post() {
 		return $this->current_user_can_any( array( '829_mcp_manage_site', '829_mcp_delete_posts' ) );
 	}
 
@@ -3098,6 +3107,11 @@ class MCP {
 			$args['author'] = intval( $input['author'] );
 		}
 
+		// Non-managers may only list their own posts.
+		if ( ! $this->current_user_can_manage_any_post() ) {
+			$args['author'] = get_current_user_id();
+		}
+
 		if ( ! empty( $input['terms'] ) && is_array( $input['terms'] ) ) {
 			$tax_query = array( 'relation' => 'AND' );
 			foreach ( $input['terms'] as $taxonomy => $term_values ) {
@@ -3145,6 +3159,10 @@ class MCP {
 
 		if ( ! $post ) {
 			return new WP_Error( 'not_found', "Post {$id} not found." );
+		}
+
+		if ( ! $this->current_user_can_manage_any_post() && get_current_user_id() !== (int) $post->post_author ) {
+			return new WP_Error( 'insufficient_permission', 'You do not have permission to view this post.' );
 		}
 
 		return array( 'post' => $this->format_post_detail( $post ) );
@@ -3231,6 +3249,10 @@ class MCP {
 
 		if ( ! $post ) {
 			return new WP_Error( 'not_found', "Post {$id} not found." );
+		}
+
+		if ( ! $this->current_user_can_manage_any_post() && get_current_user_id() !== (int) $post->post_author ) {
+			return new WP_Error( 'insufficient_permission', 'You do not have permission to edit this post.' );
 		}
 
 		$postarr = array( 'ID' => $id );
