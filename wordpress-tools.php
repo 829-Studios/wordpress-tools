@@ -3,7 +3,7 @@
  * Plugin Name: 829 Studios - WordPress Tools
  * Plugin URI: https://www.829studios.com/
  * Description: WordPress tools for 829 Studios.
- * Version: 1.8.1
+ * Version: 1.8.2
  * Author: 829 Studios
  * Author URI: https://www.829studios.com/
  * Text Domain: 829-wordpress-tools
@@ -29,6 +29,7 @@ use WordPressTools\API\API;
 use WordPressTools\SiteInfo\ActivityLog;
 use WordPressTools\SiteInfo\SiteInfo;
 use WordPressTools\MCP\MCP;
+use WordPressTools\Roles;
 use WordPressTools\RoleManagement\RoleManagement;
 use WordPressTools\NoIndex\NoIndex;
 use WP_CLI;
@@ -38,7 +39,7 @@ if ( ! defined( 'ABSPATH' ) ) {
 	exit;
 }
 
-define( 'WPT_VERSION', '1.8.1' );
+define( 'WPT_VERSION', '1.8.2' );
 define( 'WPT_PLUGIN_DIR', plugin_dir_path( __FILE__ ) );
 define( 'WPT_PLUGIN_URL', plugin_dir_url( __FILE__ ) );
 
@@ -173,10 +174,19 @@ add_action(
 // Generate an API key on activation if one doesn't exist.
 register_activation_hook( __FILE__, [ Settings::class, 'maybe_generate_api_key' ] );
 
+// Create the MCP roles on activation.
+register_activation_hook( __FILE__, [ Roles::class, 'register_roles' ] );
+
 // On admin load, ensure an API key exists (covers plugin updates).
 add_action(
 	'admin_init',
 	[ Settings::class, 'maybe_generate_api_key' ]
+);
+
+// On admin load, ensure the MCP roles exist and are current (covers plugin updates).
+add_action(
+	'admin_init',
+	[ Roles::class, 'maybe_register_roles' ]
 );
 
 // Register WP-CLI commands

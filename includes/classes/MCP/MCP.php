@@ -1127,7 +1127,7 @@ class MCP {
 						'pages' => array( 'type' => 'integer' ),
 					),
 				),
-				'permission_callback' => [ $this, 'check_admin_permission' ],
+				'permission_callback' => [ $this, 'check_posts_read_permission' ],
 				'execute_callback'    => [ $this, 'list_posts' ],
 				'meta'                => array(
 					'mcp'         => array( 'public' => true ),
@@ -1162,7 +1162,7 @@ class MCP {
 						'post' => array( 'type' => 'object' ),
 					),
 				),
-				'permission_callback' => [ $this, 'check_admin_permission' ],
+				'permission_callback' => [ $this, 'check_posts_read_permission' ],
 				'execute_callback'    => [ $this, 'get_post_item' ],
 				'meta'                => array(
 					'mcp'         => array( 'public' => true ),
@@ -1241,7 +1241,7 @@ class MCP {
 						'post_id' => array( 'type' => 'integer' ),
 					),
 				),
-				'permission_callback' => [ $this, 'check_admin_permission' ],
+				'permission_callback' => [ $this, 'check_posts_create_permission' ],
 				'execute_callback'    => [ $this, 'create_post_item' ],
 				'meta'                => array(
 					'mcp'         => array( 'public' => true ),
@@ -1321,7 +1321,7 @@ class MCP {
 						'updated' => array( 'type' => 'boolean' ),
 					),
 				),
-				'permission_callback' => [ $this, 'check_admin_permission' ],
+				'permission_callback' => [ $this, 'check_posts_edit_permission' ],
 				'execute_callback'    => [ $this, 'update_post_item' ],
 				'meta'                => array(
 					'mcp'         => array( 'public' => true ),
@@ -1360,7 +1360,7 @@ class MCP {
 						'deleted' => array( 'type' => 'boolean' ),
 					),
 				),
-				'permission_callback' => [ $this, 'check_admin_permission' ],
+				'permission_callback' => [ $this, 'check_posts_delete_permission' ],
 				'execute_callback'    => [ $this, 'delete_post_item' ],
 				'meta'                => array(
 					'mcp'         => array( 'public' => true ),
@@ -1411,20 +1411,129 @@ class MCP {
 	}
 
 	/**
-	 * Permission callback: requires manage_options.
+	 * Permission callback: site administration tools (plugins, themes, users,
+	 * menus, options, media, redirects, ACF, blocks). Requires manage_options
+	 * or the MCP site management capability.
 	 *
 	 * @return true|WP_Error
 	 */
 	public function check_admin_permission() {
+		return $this->check_permission( array( '829_mcp_manage_site' ) );
+	}
+
+	/**
+	 * Permission callback: read posts (list-posts, get-post). Execute
+	 * callbacks scope non-managers to their own posts only.
+	 *
+	 * @return true|WP_Error
+	 */
+	public function check_posts_read_permission() {
+		return $this->check_permission(
+			array(
+				'829_mcp_manage_site',
+				'829_mcp_create_posts',
+				'829_mcp_edit_posts',
+				'829_mcp_publish_posts',
+				'829_mcp_delete_posts',
+			)
+		);
+	}
+
+	/**
+	 * Permission callback: create new posts. A user with only this capability
+	 * can create drafts but not publish, edit existing posts, or delete.
+	 *
+	 * @return true|WP_Error
+	 */
+	public function check_posts_create_permission() {
+		return $this->check_permission( array( '829_mcp_manage_site', '829_mcp_create_posts' ) );
+	}
+
+	/**
+	 * Permission callback: edit existing posts. Non-managers may only edit
+	 * their own posts.
+	 *
+	 * @return true|WP_Error
+	 */
+	public function check_posts_edit_permission() {
+		return $this->check_permission( array( '829_mcp_manage_site', '829_mcp_edit_posts' ) );
+	}
+
+	/**
+	 * Permission callback: delete or trash posts.
+	 *
+	 * @return true|WP_Error
+	 */
+	public function check_posts_delete_permission() {
+		return $this->check_permission( array( '829_mcp_manage_site', '829_mcp_delete_posts' ) );
+	}
+
+	/**
+	 * Checks that the current user is logged in and holds at least one of the
+	 * given capabilities. Administrators (manage_options) always pass.
+	 *
+	 * @param  string[] $capabilities Capabilities, any one of which grants access.
+	 * @return true|WP_Error
+	 */
+	private function check_permission( array $capabilities ) {
 		if ( ! is_user_logged_in() ) {
 			return new WP_Error( 'not_authenticated', 'Authentication required.' );
 		}
 
-		if ( ! current_user_can( 'manage_options' ) ) {
-			return new WP_Error( 'insufficient_permission', 'Administrator access required.' );
+		if ( $this->current_user_can_any( $capabilities ) ) {
+			return true;
 		}
 
-		return true;
+		return new WP_Error( 'insufficient_permission', 'You do not have permission to use this tool.' );
+	}
+
+	/**
+	 * Whether the current user is an administrator or holds at least one of
+	 * the given capabilities.
+	 *
+	 * @param  string[] $capabilities Capabilities to check.
+	 * @return bool
+	 */
+	private function current_user_can_any( array $capabilities ) {
+		if ( current_user_can( 'manage_options' ) ) {
+			return true;
+		}
+
+		foreach ( $capabilities as $capability ) {
+			if ( current_user_can( $capability ) ) {
+				return true;
+			}
+		}
+
+		return false;
+	}
+
+	/**
+	 * Whether the current user may publish posts (set status to "publish"
+	 * or "future") via MCP.
+	 *
+	 * @return bool
+	 */
+	private function current_user_can_publish_posts() {
+		return $this->current_user_can_any( array( '829_mcp_manage_site', '829_mcp_publish_posts' ) );
+	}
+
+	/**
+	 * Whether the current user may delete or trash posts via MCP.
+	 *
+	 * @return bool
+	 */
+	private function current_user_can_delete_posts() {
+		return $this->current_user_can_any( array( '829_mcp_manage_site', '829_mcp_delete_posts' ) );
+	}
+
+	/**
+	 * Whether the current user may act on posts belonging to other users.
+	 *
+	 * @return bool
+	 */
+	private function current_user_can_manage_any_post() {
+		return $this->current_user_can_any( array( '829_mcp_manage_site', '829_mcp_delete_posts' ) );
 	}
 
 	/**
@@ -2998,6 +3107,11 @@ class MCP {
 			$args['author'] = intval( $input['author'] );
 		}
 
+		// Non-managers may only list their own posts.
+		if ( ! $this->current_user_can_manage_any_post() ) {
+			$args['author'] = get_current_user_id();
+		}
+
 		if ( ! empty( $input['terms'] ) && is_array( $input['terms'] ) ) {
 			$tax_query = array( 'relation' => 'AND' );
 			foreach ( $input['terms'] as $taxonomy => $term_values ) {
@@ -3047,6 +3161,10 @@ class MCP {
 			return new WP_Error( 'not_found', "Post {$id} not found." );
 		}
 
+		if ( ! $this->current_user_can_manage_any_post() && get_current_user_id() !== (int) $post->post_author ) {
+			return new WP_Error( 'insufficient_permission', 'You do not have permission to view this post.' );
+		}
+
 		return array( 'post' => $this->format_post_detail( $post ) );
 	}
 
@@ -3057,9 +3175,15 @@ class MCP {
 	 * @return array|WP_Error
 	 */
 	public function create_post_item( $input = array() ) {
+		$status = ! empty( $input['status'] ) ? $input['status'] : 'draft';
+
+		if ( in_array( $status, array( 'publish', 'future' ), true ) && ! $this->current_user_can_publish_posts() ) {
+			return new WP_Error( 'insufficient_permission', 'You do not have permission to publish posts.' );
+		}
+
 		$postarr = array(
 			'post_type'   => ! empty( $input['post_type'] ) ? sanitize_key( $input['post_type'] ) : 'post',
-			'post_status' => ! empty( $input['status'] ) ? $input['status'] : 'draft',
+			'post_status' => $status,
 		);
 
 		if ( isset( $input['title'] ) ) {
@@ -3127,6 +3251,10 @@ class MCP {
 			return new WP_Error( 'not_found', "Post {$id} not found." );
 		}
 
+		if ( ! $this->current_user_can_manage_any_post() && get_current_user_id() !== (int) $post->post_author ) {
+			return new WP_Error( 'insufficient_permission', 'You do not have permission to edit this post.' );
+		}
+
 		$postarr = array( 'ID' => $id );
 
 		if ( isset( $input['title'] ) ) {
@@ -3142,6 +3270,14 @@ class MCP {
 		}
 
 		if ( isset( $input['status'] ) ) {
+			if ( in_array( $input['status'], array( 'publish', 'future' ), true ) && ! $this->current_user_can_publish_posts() ) {
+				return new WP_Error( 'insufficient_permission', 'You do not have permission to publish posts.' );
+			}
+
+			if ( 'trash' === $input['status'] && ! $this->current_user_can_delete_posts() ) {
+				return new WP_Error( 'insufficient_permission', 'You do not have permission to delete posts.' );
+			}
+
 			$postarr['post_status'] = $input['status'];
 		}
 

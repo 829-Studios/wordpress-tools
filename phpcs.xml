@@ -98,6 +98,19 @@
 		</properties>
 	</rule>
 
+	<!-- Custom capabilities registered by this plugin (see MCP\Roles). -->
+	<rule ref="WordPress.WP.Capabilities">
+		<properties>
+			<property name="custom_capabilities" type="array">
+				<element value="829_mcp_manage_site"/>
+				<element value="829_mcp_create_posts"/>
+				<element value="829_mcp_edit_posts"/>
+				<element value="829_mcp_publish_posts"/>
+				<element value="829_mcp_delete_posts"/>
+			</property>
+		</properties>
+	</rule>
+
 	<rule ref="Generic.CodeAnalysis.UnusedFunctionParameter.FoundAfterLastUsed">
         <exclude-pattern>.*</exclude-pattern>
     </rule>
