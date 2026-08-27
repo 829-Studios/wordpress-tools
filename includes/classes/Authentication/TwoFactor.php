@@ -52,6 +52,29 @@ class TwoFactor {
 	];
 
 	/**
+	 * Two-Factor plugin's own usermeta key for enabled providers.
+	 *
+	 * @var string
+	 */
+	const ENABLED_PROVIDERS_META_KEY = '_two_factor_enabled_providers';
+
+	/**
+	 * Usermeta keys used to hold a 2FA setup pending email confirmation.
+	 *
+	 * @var string
+	 */
+	const PENDING_PROVIDERS_META_KEY = '_two_factor_pending_providers';
+	const PENDING_TOKEN_META_KEY     = '_two_factor_pending_token';
+	const PENDING_EXPIRES_META_KEY   = '_two_factor_pending_expires';
+
+	/**
+	 * Query var marking a 2FA confirmation link.
+	 *
+	 * @var string
+	 */
+	const CONFIRM_QUERY_VAR = 'wpt_confirm_2fa';
+
+	/**
 	 * Setup 2FA enforcement.
 	 */
 	public function __construct() {
@@ -63,6 +86,8 @@ class TwoFactor {
 		add_filter( 'map_meta_cap', [ $this, 'restrict_capabilities_without_2fa' ], 10, 4 );
 		add_filter( 'wp_pre_insert_user_data', [ $this, 'prevent_email_change_without_2fa' ], 10, 4 );
 		add_action( 'user_profile_update_errors', [ $this, 'block_email_change_on_profile_save' ], 10, 3 );
+		add_filter( 'update_user_metadata', [ $this, 'require_email_confirmation_for_2fa_setup' ], 10, 5 );
+		add_action( 'init', [ $this, 'maybe_confirm_2fa_setup' ] );
 		add_action( 'admin_notices', [ $this, 'show_2fa_required_notice' ] );
 		add_action( 'admin_init', [ $this, 'redirect_to_profile_if_no_2fa' ] );
 	}
@@ -241,12 +266,158 @@ class TwoFactor {
 	}
 
 	/**
+	 * Hold first-time 2FA setup for email confirmation, so a password
+	 * compromise alone can't let someone else lock in their own 2FA.
+	 *
+	 * @param mixed  $check     Short-circuit value; non-null skips the real write.
+	 * @param int    $object_id User being updated.
+	 * @param string $meta_key  Meta key being written.
+	 * @param mixed  $meta_value New value.
+	 * @param mixed  $prev_value Previous value filter arg (unused).
+	 * @return mixed
+	 */
+	public function require_email_confirmation_for_2fa_setup( $check, $object_id, $meta_key, $meta_value, $prev_value ) {
+		if ( self::ENABLED_PROVIDERS_META_KEY !== $meta_key || ! $object_id ) {
+			return $check;
+		}
+
+		// Only gate first-time setup - not disabling, or an already-confirmed user changing providers.
+		if ( ! $this->user_requires_2fa( $object_id ) || $this->user_has_2fa_enabled( $object_id ) ) {
+			return $check;
+		}
+
+		$new_providers = is_array( $meta_value ) ? array_filter( $meta_value ) : [];
+
+		if ( empty( $new_providers ) ) {
+			return $check;
+		}
+
+		$token = wp_generate_password( 32, false );
+
+		update_user_meta( $object_id, self::PENDING_PROVIDERS_META_KEY, $new_providers );
+		update_user_meta( $object_id, self::PENDING_TOKEN_META_KEY, hash_hmac( 'sha256', $token, wp_salt() ) );
+		update_user_meta( $object_id, self::PENDING_EXPIRES_META_KEY, time() + DAY_IN_SECONDS );
+
+		$this->send_2fa_confirmation_email( $object_id, $token );
+
+		// Pretend the write succeeded (profile.php just shows "Profile updated") without actually enabling 2FA yet.
+		return true;
+	}
+
+	/**
+	 * Email the account's on-file address a link to confirm the pending 2FA setup.
+	 *
+	 * @param int    $user_id User ID.
+	 * @param string $token   Raw confirmation token.
+	 * @return void
+	 */
+	private function send_2fa_confirmation_email( int $user_id, string $token ): void {
+		$user = get_userdata( $user_id );
+
+		if ( ! $user ) {
+			return;
+		}
+
+		$confirm_url = add_query_arg(
+			[
+				self::CONFIRM_QUERY_VAR => 1,
+				'user_id'               => $user_id,
+				'token'                 => $token,
+			],
+			wp_login_url()
+		);
+
+		wp_mail(
+			$user->user_email,
+			__( 'Confirm Your Two-Factor Authentication Setup', 'wordpress-tools' ),
+			sprintf(
+				/* translators: 1: site name, 2: confirmation URL */
+				__( "Two-Factor Authentication was just set up on your %1\$s account.\n\nIf this was you, confirm it here (expires in 24 hours):\n%2\$s\n\nIf this wasn't you, your password may be compromised - change it immediately and contact your site administrator.", 'wordpress-tools' ),
+				get_bloginfo( 'name' ),
+				$confirm_url
+			)
+		);
+	}
+
+	/**
+	 * Handle a clicked 2FA confirmation link.
+	 *
+	 * @return void
+	 */
+	public function maybe_confirm_2fa_setup(): void {
+		if ( empty( $_GET[ self::CONFIRM_QUERY_VAR ] ) || empty( $_GET['user_id'] ) || empty( $_GET['token'] ) ) {
+			return;
+		}
+
+		$user_id = absint( $_GET['user_id'] );
+		$token   = sanitize_text_field( wp_unslash( $_GET['token'] ) );
+
+		$stored_hash = get_user_meta( $user_id, self::PENDING_TOKEN_META_KEY, true );
+
+		if ( ! $stored_hash || ! hash_equals( $stored_hash, hash_hmac( 'sha256', $token, wp_salt() ) ) ) {
+			wp_die( esc_html__( 'This confirmation link is invalid.', 'wordpress-tools' ) );
+		}
+
+		if ( time() > (int) get_user_meta( $user_id, self::PENDING_EXPIRES_META_KEY, true ) ) {
+			$this->clear_pending_2fa_setup( $user_id );
+			wp_die( esc_html__( 'This confirmation link has expired. Please set up 2FA again from your profile.', 'wordpress-tools' ) );
+		}
+
+		$providers = get_user_meta( $user_id, self::PENDING_PROVIDERS_META_KEY, true );
+
+		if ( empty( $providers ) || ! is_array( $providers ) ) {
+			wp_die( esc_html__( 'Nothing to confirm.', 'wordpress-tools' ) );
+		}
+
+		// Bypass our own gate above to actually write the real, now-confirmed value.
+		remove_filter( 'update_user_metadata', [ $this, 'require_email_confirmation_for_2fa_setup' ], 10 );
+		update_user_meta( $user_id, self::ENABLED_PROVIDERS_META_KEY, $providers );
+		add_filter( 'update_user_metadata', [ $this, 'require_email_confirmation_for_2fa_setup' ], 10, 5 );
+
+		$this->clear_pending_2fa_setup( $user_id );
+
+		wp_die(
+			esc_html__( 'Two-Factor Authentication has been confirmed and is now active on your account.', 'wordpress-tools' ),
+			esc_html__( '2FA Confirmed', 'wordpress-tools' ),
+			[ 'response' => 200 ]
+		);
+	}
+
+	/**
+	 * Clear any pending (unconfirmed) 2FA setup for a user.
+	 *
+	 * @param int $user_id User ID.
+	 * @return void
+	 */
+	private function clear_pending_2fa_setup( int $user_id ): void {
+		delete_user_meta( $user_id, self::PENDING_PROVIDERS_META_KEY );
+		delete_user_meta( $user_id, self::PENDING_TOKEN_META_KEY );
+		delete_user_meta( $user_id, self::PENDING_EXPIRES_META_KEY );
+	}
+
+	/**
 	 * Show admin notice for users who need to set up 2FA.
 	 *
 	 * @return void
 	 */
 	public function show_2fa_required_notice(): void {
 		if ( ! $this->current_user_needs_2fa() ) {
+			return;
+		}
+
+		$user_id = get_current_user_id();
+
+		if ( get_user_meta( $user_id, self::PENDING_TOKEN_META_KEY, true ) ) {
+			?>
+			<div class="notice notice-warning">
+				<p>
+					<strong><?php esc_html_e( 'Two-Factor Authentication Pending Confirmation', 'wordpress-tools' ); ?></strong>
+				</p>
+				<p>
+					<?php esc_html_e( 'A confirmation email has been sent to your account\'s email address. Click the link in that email to activate 2FA - your account capabilities remain restricted until then.', 'wordpress-tools' ); ?>
+				</p>
+			</div>
+			<?php
 			return;
 		}
 
