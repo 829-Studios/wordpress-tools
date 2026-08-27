@@ -295,7 +295,7 @@ class TwoFactor {
 		$token = wp_generate_password( 32, false );
 
 		update_user_meta( $object_id, self::PENDING_PROVIDERS_META_KEY, $new_providers );
-		update_user_meta( $object_id, self::PENDING_TOKEN_META_KEY, hash_hmac( 'sha256', $token, wp_salt() ) );
+		update_user_meta( $object_id, self::PENDING_TOKEN_META_KEY, $this->hash_confirmation_token( $object_id, $token ) );
 		update_user_meta( $object_id, self::PENDING_EXPIRES_META_KEY, time() + DAY_IN_SECONDS );
 
 		$this->send_2fa_confirmation_email( $object_id, $token );
@@ -332,7 +332,7 @@ class TwoFactor {
 			__( 'Confirm Your Two-Factor Authentication Setup', 'wordpress-tools' ),
 			sprintf(
 				/* translators: 1: site name, 2: confirmation URL */
-				__( "Two-Factor Authentication was just set up on your %1\$s account.\n\nIf this was you, confirm it here (expires in 24 hours):\n%2\$s\n\nIf this wasn't you, your password may be compromised - change it immediately and contact your site administrator.", 'wordpress-tools' ),
+				__( "Two-Factor Authentication was just set up on your %1\$s account.\n\nIf this was you, confirm it here (expires in 24 hours):\n%2\$s\n\nIf you did NOT just set this up yourself, do not confirm it - your password may be compromised. Change it immediately and contact your site administrator.", 'wordpress-tools' ),
 				get_bloginfo( 'name' ),
 				$confirm_url
 			)
@@ -340,21 +340,36 @@ class TwoFactor {
 	}
 
 	/**
+	 * HMAC a confirmation token, binding it to the target user ID.
+	 *
+	 * @param int    $user_id User ID.
+	 * @param string $token   Raw confirmation token.
+	 * @return string
+	 */
+	private function hash_confirmation_token( int $user_id, string $token ): string {
+		return hash_hmac( 'sha256', $user_id . '|' . $token, wp_salt() );
+	}
+
+	/**
 	 * Handle a clicked 2FA confirmation link.
+	 *
+	 * Requires an actual form POST, not just the GET link being requested,
+	 * so an email security scanner that auto-prefetches links can't silently
+	 * confirm 2FA on the user's behalf before they've seen the email.
 	 *
 	 * @return void
 	 */
 	public function maybe_confirm_2fa_setup(): void {
-		if ( empty( $_GET[ self::CONFIRM_QUERY_VAR ] ) || empty( $_GET['user_id'] ) || empty( $_GET['token'] ) ) {
+		if ( empty( $_REQUEST[ self::CONFIRM_QUERY_VAR ] ) || empty( $_REQUEST['user_id'] ) || empty( $_REQUEST['token'] ) ) {
 			return;
 		}
 
-		$user_id = absint( $_GET['user_id'] );
-		$token   = sanitize_text_field( wp_unslash( $_GET['token'] ) );
+		$user_id = absint( $_REQUEST['user_id'] );
+		$token   = sanitize_text_field( wp_unslash( $_REQUEST['token'] ) );
 
 		$stored_hash = get_user_meta( $user_id, self::PENDING_TOKEN_META_KEY, true );
 
-		if ( ! $stored_hash || ! hash_equals( $stored_hash, hash_hmac( 'sha256', $token, wp_salt() ) ) ) {
+		if ( ! $stored_hash || ! hash_equals( $stored_hash, $this->hash_confirmation_token( $user_id, $token ) ) ) {
 			wp_die( esc_html__( 'This confirmation link is invalid.', 'wordpress-tools' ) );
 		}
 
@@ -369,6 +384,11 @@ class TwoFactor {
 			wp_die( esc_html__( 'Nothing to confirm.', 'wordpress-tools' ) );
 		}
 
+		if ( ! isset( $_SERVER['REQUEST_METHOD'] ) || 'POST' !== $_SERVER['REQUEST_METHOD'] ) {
+			$this->show_2fa_confirmation_prompt( $user_id, $token );
+			return;
+		}
+
 		// Bypass our own gate above to actually write the real, now-confirmed value.
 		remove_filter( 'update_user_metadata', [ $this, 'require_email_confirmation_for_2fa_setup' ], 10 );
 		update_user_meta( $user_id, self::ENABLED_PROVIDERS_META_KEY, $providers );
@@ -381,6 +401,28 @@ class TwoFactor {
 			esc_html__( '2FA Confirmed', 'wordpress-tools' ),
 			[ 'response' => 200 ]
 		);
+	}
+
+	/**
+	 * Show an interstitial page requiring an explicit click (POST) to confirm.
+	 *
+	 * @param int    $user_id User ID.
+	 * @param string $token   Raw confirmation token.
+	 * @return void
+	 */
+	private function show_2fa_confirmation_prompt( int $user_id, string $token ): void {
+		ob_start();
+		?>
+		<p><?php esc_html_e( 'Click below to activate Two-Factor Authentication on your account.', 'wordpress-tools' ); ?></p>
+		<p><strong><?php esc_html_e( 'If you did not just set this up yourself, do not confirm - change your password immediately instead.', 'wordpress-tools' ); ?></strong></p>
+		<form method="post">
+			<input type="hidden" name="<?php echo esc_attr( self::CONFIRM_QUERY_VAR ); ?>" value="1" />
+			<input type="hidden" name="user_id" value="<?php echo esc_attr( $user_id ); ?>" />
+			<input type="hidden" name="token" value="<?php echo esc_attr( $token ); ?>" />
+			<button type="submit"><?php esc_html_e( 'Yes, activate 2FA', 'wordpress-tools' ); ?></button>
+		</form>
+		<?php
+		wp_die( ob_get_clean(), esc_html__( 'Confirm Two-Factor Authentication', 'wordpress-tools' ), [ 'response' => 200 ] );
 	}
 
 	/**
@@ -410,9 +452,7 @@ class TwoFactor {
 		if ( get_user_meta( $user_id, self::PENDING_TOKEN_META_KEY, true ) ) {
 			?>
 			<div class="notice notice-warning">
-				<p>
-					<strong><?php esc_html_e( 'Two-Factor Authentication Pending Confirmation', 'wordpress-tools' ); ?></strong>
-				</p>
+				<h2><?php esc_html_e( 'Two-Factor Authentication Pending Confirmation', 'wordpress-tools' ); ?></h2>
 				<p>
 					<?php esc_html_e( 'A confirmation email has been sent to your account\'s email address. Click the link in that email to activate 2FA - your account capabilities remain restricted until then.', 'wordpress-tools' ); ?>
 				</p>
