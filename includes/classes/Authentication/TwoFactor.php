@@ -30,15 +30,25 @@ class TwoFactor {
 	 * Capabilities ALLOWED for users without 2FA.
 	 * Everything else is blocked.
 	 *
+	 * edit_user/edit_users deliberately excluded - allow-listing them by
+	 * name would let a 2FA-less admin edit ANY user, not just themselves.
+	 *
 	 * @var array
 	 */
 	const ALLOWED_CAPABILITIES = [
 		'read',
 		'level_0',
 		'exist', // Internal WP capability.
-		// Profile editing - needed so user can set up 2FA.
-		'edit_user',
-		'edit_users', // Required for editing own profile in some contexts.
+	];
+
+	/**
+	 * admin-ajax.php actions ALLOWED for users without 2FA.
+	 *
+	 * @var array
+	 */
+	const ALLOWED_AJAX_ACTIONS = [
+		'heartbeat',
+		'destroy-sessions', // "Log Out Everywhere Else" button on profile.php.
 	];
 
 	/**
@@ -51,6 +61,8 @@ class TwoFactor {
 		}
 
 		add_filter( 'map_meta_cap', [ $this, 'restrict_capabilities_without_2fa' ], 10, 4 );
+		add_filter( 'wp_pre_insert_user_data', [ $this, 'prevent_email_change_without_2fa' ], 10, 4 );
+		add_action( 'user_profile_update_errors', [ $this, 'block_email_change_on_profile_save' ], 10, 3 );
 		add_action( 'admin_notices', [ $this, 'show_2fa_required_notice' ] );
 		add_action( 'admin_init', [ $this, 'redirect_to_profile_if_no_2fa' ] );
 	}
@@ -145,7 +157,7 @@ class TwoFactor {
 			return $caps;
 		}
 
-		// Allow user to edit their own profile (needed to set up 2FA).
+		// Allow editing own profile only (needed to set up 2FA).
 		if ( 'edit_user' === $cap && ! empty( $args[0] ) && (int) $args[0] === $user_id ) {
 			return $caps;
 		}
@@ -159,6 +171,76 @@ class TwoFactor {
 	}
 
 	/**
+	 * Block a user from changing their OWN email while 2FA is required
+	 * and not enabled - enforced at the data layer since is_829_user()
+	 * (and thus the 2FA requirement itself) keys off user_email, and
+	 * REST/ajax/CLI can all reach wp_update_user() directly.
+	 *
+	 * Must return an array, not a WP_Error - core doesn't check for one
+	 * here - so a blocked change is silently reverted instead of erroring.
+	 *
+	 * @param array    $data     User data about to be saved to the DB.
+	 * @param bool     $update   Whether this is an update (vs a new user).
+	 * @param int|null $user_id  ID of the user being updated, or null on create.
+	 * @param array    $userdata Raw data passed to wp_insert_user().
+	 * @return array
+	 */
+	public function prevent_email_change_without_2fa( $data, $update, $user_id, $userdata ) {
+		if ( ! $update || ! $user_id || empty( $data['user_email'] ) ) {
+			return $data;
+		}
+
+		// Editing another user's email is already blocked at the capability layer.
+		if ( get_current_user_id() !== (int) $user_id ) {
+			return $data;
+		}
+
+		if ( ! $this->user_requires_2fa( $user_id ) || $this->user_has_2fa_enabled( $user_id ) ) {
+			return $data;
+		}
+
+		$existing_user = get_userdata( $user_id );
+
+		if ( $existing_user && strtolower( $existing_user->user_email ) !== strtolower( $data['user_email'] ) ) {
+			$data['user_email'] = $existing_user->user_email;
+		}
+
+		return $data;
+	}
+
+	/**
+	 * Surface a visible error on wp-admin profile saves (REST/ajax/CLI
+	 * still fall back to the silent revert above).
+	 *
+	 * @param \WP_Error $errors Validation errors, added to by reference.
+	 * @param bool      $update Whether this is an update.
+	 * @param \stdClass $user   The user object being saved (by reference).
+	 * @return void
+	 */
+	public function block_email_change_on_profile_save( $errors, $update, $user ) {
+		if ( ! $update || empty( $user->ID ) ) {
+			return;
+		}
+
+		if ( get_current_user_id() !== (int) $user->ID ) {
+			return;
+		}
+
+		if ( ! $this->user_requires_2fa( $user->ID ) || $this->user_has_2fa_enabled( $user->ID ) ) {
+			return;
+		}
+
+		$existing_user = get_userdata( $user->ID );
+
+		if ( $existing_user && ! empty( $user->user_email ) && strtolower( $existing_user->user_email ) !== strtolower( $user->user_email ) ) {
+			$errors->add(
+				'2fa_required_email_locked',
+				__( 'You must set up Two-Factor Authentication before you can change your email address.', 'wordpress-tools' )
+			);
+		}
+	}
+
+	/**
 	 * Show admin notice for users who need to set up 2FA.
 	 *
 	 * @return void
@@ -168,7 +250,7 @@ class TwoFactor {
 			return;
 		}
 
-		$profile_url = admin_url( 'profile.php' );
+		$profile_url = admin_url( 'profile.php#two-factor-options' );
 		?>
 		<div class="notice notice-error">
 			<p>
@@ -202,11 +284,18 @@ class TwoFactor {
 
 		global $pagenow;
 
-		// Allow access to profile page so they can set up 2FA.
-		$allowed_pages = [ 'profile.php', 'admin-ajax.php' ];
-
-		if ( in_array( $pagenow, $allowed_pages, true ) ) {
+		// Allow access to the profile page so the user can set up 2FA.
+		if ( 'profile.php' === $pagenow ) {
 			return;
+		}
+
+		// Only allow the specific ajax actions profile.php needs - not all of admin-ajax.php.
+		if ( 'admin-ajax.php' === $pagenow ) {
+			$action = isset( $_REQUEST['action'] ) ? sanitize_text_field( wp_unslash( $_REQUEST['action'] ) ) : '';
+
+			if ( in_array( $action, self::ALLOWED_AJAX_ACTIONS, true ) ) {
+				return;
+			}
 		}
 
 		// Redirect to profile page.
