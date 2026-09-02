@@ -55,6 +55,7 @@ class Settings {
 			'allow_sso'                      => 1,
 			'restrict_829_credential_login'  => 1,
 			'credential_login_allow_list'     => [],
+			'two_factor_allow_list'          => [],
 			'disable_comments'               => 0,
 			'require_strong_passwords'       => 1,
 			'password_protect'               => 0,
@@ -209,6 +210,7 @@ class Settings {
 					'allow_sso'                     => 1,
 					'restrict_829_credential_login' => 1,
 					'credential_login_allow_list'    => [],
+					'two_factor_allow_list'         => [],
 					'disable_comments'              => 0,
 					'require_strong_passwords'      => 1,
 					'password_protect'              => 0,
@@ -244,6 +246,15 @@ class Settings {
 			'wpt_restrict_829_credential_login',
 			esc_html__( 'Restrict 829 Credential Login', 'wordpress-tools' ),
 			[ $this, 'restrict_829_credential_login_setting_callback' ],
+			'wpt-829-settings',
+			'wpt_829_general_section'
+		);
+
+		// External Email Users (2FA login exceptions) setting field
+		add_settings_field(
+			'wpt_two_factor_allow_list',
+			esc_html__( 'External Email Users', 'wordpress-tools' ),
+			[ $this, 'two_factor_allow_list_setting_callback' ],
 			'wpt-829-settings',
 			'wpt_829_general_section'
 		);
@@ -406,6 +417,30 @@ class Settings {
 				<p class="description" style="margin: 0 0 8px;"><?php esc_html_e( 'These users can still log in with credentials even when restriction is enabled.', 'wordpress-tools' ); ?></p>
 				<?php $this->render_user_search_field( 'credential_login_allow_list', $allow_list); ?>
 			</div>
+		</fieldset>
+		<?php
+	}
+
+	/**
+	 * External Email Users (2FA login exceptions) setting callback.
+	 */
+	public function two_factor_allow_list_setting_callback() {
+		$settings   = self::get_settings();
+		$allow_list = $settings['two_factor_allow_list'] ?? [];
+		$this->render_two_factor_allow_list_field( $allow_list );
+	}
+
+	/**
+	 * Shared fieldset for the 2FA login exceptions setting.
+	 *
+	 * @param array $allow_list Currently saved user IDs.
+	 */
+	private function render_two_factor_allow_list_field( array $allow_list ): void {
+		?>
+		<fieldset>
+			<p class="description" style="margin: 0 0 4px;"><strong><?php esc_html_e( '2FA Login Exceptions', 'wordpress-tools' ); ?></strong></p>
+			<p class="description" style="margin: 0 0 8px;"><?php esc_html_e( 'These users can still log in without using 2FA. Not recommended except for users with roles meant for third-party integrations.', 'wordpress-tools' ); ?></p>
+			<?php $this->render_user_search_field( 'two_factor_allow_list', $allow_list ); ?>
 		</fieldset>
 		<?php
 	}
@@ -913,6 +948,11 @@ class Settings {
 			? $this->sanitize_user_id_list( $input['credential_login_allow_list'] )
 			: [];
 
+		// Sanitize two_factor_allow_list — drops IDs for deleted users
+		$sanitized['two_factor_allow_list'] = isset( $input['two_factor_allow_list'] )
+			? $this->sanitize_user_id_list( $input['two_factor_allow_list'] )
+			: [];
+
 		// Sanitize disable_comments
 		$sanitized['disable_comments'] = isset( $input['disable_comments'] ) ? intval( $input['disable_comments'] ) : 0;
 
@@ -1128,6 +1168,7 @@ class Settings {
 		$allow_sso                       = $settings['allow_sso'];
 		$restrict_829_credential_login   = $settings['restrict_829_credential_login'];
 		$credential_login_allow_list      = isset( $settings['credential_login_allow_list'] ) ? $settings['credential_login_allow_list'] : [];
+		$two_factor_allow_list           = isset( $settings['two_factor_allow_list'] ) ? $settings['two_factor_allow_list'] : [];
 		$disable_comments                = $settings['disable_comments'];
 		$require_strong_passwords        = $settings['require_strong_passwords'];
 		$password_protect                = $settings['password_protect'];
@@ -1185,6 +1226,14 @@ class Settings {
 							</th>
 							<td>
 								<?php $this->render_credential_login_restriction_field( $restrict_829_credential_login, $credential_login_allow_list ); ?>
+							</td>
+						</tr>
+						<tr>
+							<th scope="row">
+								<?php esc_html_e( 'External Email Users', 'wordpress-tools' ); ?>
+							</th>
+							<td>
+								<?php $this->render_two_factor_allow_list_field( $two_factor_allow_list ); ?>
 							</td>
 						</tr>
 						<tr>

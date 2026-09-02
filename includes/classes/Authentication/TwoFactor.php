@@ -10,6 +10,7 @@
 namespace WordPressTools\Authentication;
 
 use WordPressTools\Singleton;
+use WordPressTools\Settings\Settings;
 use function WordPressTools\Utils\is_829_user;
 
 if ( ! defined( 'ABSPATH' ) ) {
@@ -68,12 +69,37 @@ class TwoFactor {
 	 * Check if a user requires 2FA (non-SSO users).
 	 *
 	 * SSO users (@829llc.com) don't need 2FA - they use SSO authentication.
+	 * Users on the "2FA Login Exceptions" allow list are also exempt, for
+	 * accounts belonging to third-party integrations that can't do 2FA.
 	 *
 	 * @param int $user_id The user ID.
 	 * @return bool
 	 */
 	public function user_requires_2fa( int $user_id ): bool {
-		return ! is_829_user( $user_id );
+		if ( is_829_user( $user_id ) ) {
+			return false;
+		}
+
+		return ! $this->user_is_2fa_exempt( $user_id );
+	}
+
+	/**
+	 * Check if a user is on the "2FA Login Exceptions" allow list.
+	 *
+	 * @param int $user_id The user ID.
+	 * @return bool
+	 */
+	public function user_is_2fa_exempt( int $user_id ): bool {
+		if ( ! $user_id ) {
+			return false;
+		}
+
+		$settings   = Settings::get_settings();
+		$allow_list = ! empty( $settings['two_factor_allow_list'] )
+			? array_map( 'intval', (array) $settings['two_factor_allow_list'] )
+			: [];
+
+		return in_array( (int) $user_id, $allow_list, true );
 	}
 
 	/**

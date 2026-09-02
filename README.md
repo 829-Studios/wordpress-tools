@@ -28,6 +28,7 @@ This plugin provides multiple layers of security protection:
   - Users are redirected to their profile page to set up 2FA
   - Only `read` capability is allowed until 2FA is configured
   - 829 Studios accounts (@829llc.com) are exempt as they use SSO
+  - Individual accounts can be exempted via **External Email Users → 2FA Login Exceptions** on the 829 Settings page (intended for third-party integration accounts that can't complete a 2FA challenge)
 - **Strong Password Enforcement**:
   - Validates password strength using the Zxcvbn library (medium strength or greater required)
   - Checks passwords against the Have I Been Pwned API to prevent compromised passwords
