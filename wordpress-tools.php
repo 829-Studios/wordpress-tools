@@ -30,6 +30,7 @@ use WordPressTools\SiteInfo\ActivityLog;
 use WordPressTools\SiteInfo\SiteInfo;
 use WordPressTools\MCP\MCP;
 use WordPressTools\Roles;
+use WordPressTools\Updates;
 use WordPressTools\RoleManagement\RoleManagement;
 use WordPressTools\NoIndex\NoIndex;
 use WP_CLI;
@@ -146,7 +147,7 @@ $plugin_updater = PucFactory::buildUpdateChecker(
 	'wordpress-tools'
 );
 
-$plugin_updater->getVcsApi()->enableReleaseAssets();
+Updates::apply_channel( $plugin_updater );
 
 PluginManagement::instance();
 

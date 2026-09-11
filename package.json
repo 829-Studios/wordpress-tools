@@ -5,6 +5,7 @@
 	"author": "829 Studios",
 	"license": "MIT",
 	"scripts": {
+		"set-version": "node npm-scripts/set-version.js",
 		"zip": "wp-scripts plugin-zip && node npm-scripts/add-zip-version.js"
 	},
 	"devDependencies": {
