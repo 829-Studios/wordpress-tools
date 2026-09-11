@@ -48,7 +48,14 @@ jobs:
 
           VERSION="$(node npm-scripts/prerelease-version.js "${{ inputs.ref }}" "${{ github.run_number }}" --min "$LATEST_STABLE")"
           echo "version=${VERSION}" >> "$GITHUB_OUTPUT"
-          echo "slug=$(node npm-scripts/branch-slug.js "${{ inputs.ref }}")" >> "$GITHUB_OUTPUT"
+
+          SLUG="$(node npm-scripts/branch-slug.js "${{ inputs.ref }}")"
+          echo "slug=${SLUG}" >> "$GITHUB_OUTPUT"
+
+          # github.sha is the workflow file's ref, not inputs.ref — tag the commit
+          # that was actually checked out.
+          echo "sha=$(git rev-parse HEAD)" >> "$GITHUB_OUTPUT"
+
           echo "Building ${VERSION}"
 
       - name: Stamp version into the plugin
@@ -85,6 +92,6 @@ jobs:
           gh release create "${{ steps.version.outputs.version }}" \
             ./wordpress-tools-${{ steps.version.outputs.version }}.zip \
             --prerelease \
-            --target "${{ github.sha }}" \
+            --target "${{ steps.version.outputs.sha }}" \
             --title "${{ steps.version.outputs.version }}" \
             --notes-file notes.md

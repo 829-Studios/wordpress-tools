@@ -111,7 +111,8 @@ class Updates {
 	 * @return string
 	 */
 	public static function sanitize_channel( $channel ) {
-		$channel = is_string( $channel ) ? trim( $channel ) : '';
+		// Lowercased so a miscased constant doesn't silently fall back to stable.
+		$channel = is_string( $channel ) ? strtolower( trim( $channel ) ) : '';
 
 		if ( self::CHANNEL_BETA === $channel ) {
 			return self::CHANNEL_BETA;

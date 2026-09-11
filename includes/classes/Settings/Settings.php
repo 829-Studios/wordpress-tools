@@ -1029,15 +1029,22 @@ class Settings {
 		// Sanitize enable_mcp
 		$sanitized['enable_mcp'] = isset( $input['enable_mcp'] ) ? intval( $input['enable_mcp'] ) : 1;
 
-		// Sanitize update_channel — recombine the radio and branch input into a single value
-		$channel_type   = isset( $input['update_channel_type'] ) ? $input['update_channel_type'] : Updates::CHANNEL_STABLE;
-		$channel_branch = isset( $input['update_channel_branch'] ) ? $input['update_channel_branch'] : '';
+		// Sanitize update_channel — recombine the radio and branch input into a single value.
+		// The fields are absent when the constant locks them, since disabled inputs aren't
+		// submitted; keep the stored value rather than resetting it to stable.
+		if ( isset( $input['update_channel_type'] ) ) {
+			$channel_type   = $input['update_channel_type'];
+			$channel_branch = isset( $input['update_channel_branch'] ) ? $input['update_channel_branch'] : '';
 
-		if ( 'branch' === $channel_type ) {
-			$channel_type = Updates::CHANNEL_BRANCH_PREFIX . $channel_branch;
+			if ( 'branch' === $channel_type ) {
+				$channel_type = Updates::CHANNEL_BRANCH_PREFIX . $channel_branch;
+			}
+
+			$sanitized['update_channel'] = Updates::sanitize_channel( $channel_type );
+		} else {
+			$current_settings            = self::get_settings();
+			$sanitized['update_channel'] = Updates::sanitize_channel( $current_settings['update_channel'] );
 		}
-
-		$sanitized['update_channel'] = Updates::sanitize_channel( $channel_type );
 
 		return $sanitized;
 	}
