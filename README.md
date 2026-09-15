@@ -101,6 +101,7 @@ All settings are managed through the centralized **829 Settings** page:
 - **Restrict Plugin/Theme Management**: Limit plugin and theme management to 829 administrators only
 - **REST API Availability**: Control access to WordPress REST API endpoints
 - **Limit Login Attempts**: Enable/disable login attempt limiting (enabled by default)
+- **Plugin Update Channel**: Which builds this site updates to — Stable, Beta, or a single branch (see [Releases](#releases))
 
 ## Constants
 
@@ -112,6 +113,9 @@ The following constants can be defined in `wp-config.php` to customize plugin be
 
 ### Settings Access
 - `WPT_ALLOW_ADMIN_SETTINGS_ACCESS` (default: `false`) - If set to `true`, allows any administrator (or super admin on multisite) to access the 829 Settings page
+
+### Updates
+- `WPT_UPDATE_CHANNEL` (default: `stable`) - Which builds this site updates to. Overrides the settings page. See [Releases](#releases)
 
 ## WP-CLI Commands
 
@@ -130,6 +134,52 @@ wp 829-tools clear-login-attempts
 Clearing login attempt transients...
 Success: Cleared 5 login attempt transient(s).
 ```
+
+## Releases
+
+Sites update themselves from GitHub releases. Which release a site sees depends on its **update channel**.
+
+### Update channels
+
+Set per site, either in `wp-config.php` (wins, and survives staging refreshes) or under **829 Settings → Plugin Update Channel**:
+
+| Channel | Site updates to |
+| --- | --- |
+| `stable` *(default)* | Normal releases only. **Use this on production.** |
+| `beta` | Newest pre-release, whichever branch it came from |
+| `branch:<slug>` | Pre-releases from one branch only |
+
+```php
+define( 'WPT_UPDATE_CHANNEL', 'beta' );
+```
+
+> Settings-page values live in the database, so refreshing a staging site from production wipes them. Use the constant for anything permanent.
+
+### Testing a branch on a staging site
+
+1. **Actions → Publish pre-release → Run workflow**, pick your branch.
+2. Add the `define()` from the release notes to the staging site's `wp-config.php`.
+3. **Dashboard → Updates → Check again**, then update as normal.
+
+The pre-release is built from your branch, published as version `1.9.0-<branch-slug>.<date>.<run>`, and deleted automatically when the branch merges or is deleted.
+
+> If the workflow fails with *"package.json is at X, which is not newer than the latest release"*, bump the version first — see below. A build at or below the current release sorts under stable and no site would be offered it.
+
+### Shipping a stable release
+
+```bash
+npm run set-version 1.9.0    # updates the plugin header, WPT_VERSION and package.json
+```
+
+1. Commit the version bump and merge to `main`.
+2. Create a GitHub release tagged `1.9.0` (`gh release create 1.9.0 --generate-notes`).
+3. Actions builds the zip and attaches it. Sites on `stable` pick it up within a day.
+
+Bump the version at the **start** of a release cycle — pre-release builds are numbered from it.
+
+### When a branch merges
+
+Move any site pinned to `branch:<slug>` back to `beta` or `stable`. Its pre-releases are deleted on merge, and a site left pinned silently stops seeing updates.
 
 ## License
 
