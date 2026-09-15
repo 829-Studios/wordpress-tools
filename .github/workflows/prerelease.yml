@@ -1,0 +1,97 @@
+name: Publish pre-release
+
+on:
+  workflow_dispatch:
+    inputs:
+      ref:
+        description: "Branch to build a pre-release from"
+        required: true
+        type: string
+
+jobs:
+  prerelease:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ inputs.ref }}
+
+      - name: Set up Node.js from .nvmrc
+        uses: actions/setup-node@v4
+        with:
+          cache: "npm"
+          node-version-file: ".nvmrc"
+
+      - name: Set up PHP & Composer
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: 8.2
+          tools: composer:v2
+
+      - name: Install Composer dependencies
+        run: composer install --no-dev --optimize-autoloader
+
+      - name: Install dependencies
+        run: npm install
+
+      - name: Compute pre-release version
+        id: version
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          LATEST_STABLE="$(gh release list --limit 100 --json tagName,isPrerelease \
+            --jq '[.[] | select(.isPrerelease | not)] | .[0].tagName // ""')"
+          echo "Latest stable release: ${LATEST_STABLE:-none}"
+
+          VERSION="$(node npm-scripts/prerelease-version.js "${{ inputs.ref }}" "${{ github.run_number }}" --min "$LATEST_STABLE")"
+          echo "version=${VERSION}" >> "$GITHUB_OUTPUT"
+
+          SLUG="$(node npm-scripts/branch-slug.js "${{ inputs.ref }}")"
+          echo "slug=${SLUG}" >> "$GITHUB_OUTPUT"
+
+          # github.sha is the workflow file's ref, not inputs.ref — tag the commit
+          # that was actually checked out.
+          echo "sha=$(git rev-parse HEAD)" >> "$GITHUB_OUTPUT"
+
+          echo "Building ${VERSION}"
+
+      - name: Stamp version into the plugin
+        run: node npm-scripts/set-version.js "${{ steps.version.outputs.version }}"
+
+      - name: Build plugin zip
+        run: npm run zip
+
+      - name: Verify zip exists
+        run: test -f ./wordpress-tools-${{ steps.version.outputs.version }}.zip
+
+      - name: Publish pre-release
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          # Quoted delimiter: the notes contain backticks, which bash would
+          # otherwise treat as command substitution.
+          cat > notes.md <<'EOF'
+          Pre-release build from `${{ inputs.ref }}`.
+
+          To pull this onto a staging site, add one of these to its `wp-config.php`:
+
+          ```php
+          // Newest pre-release, whichever branch it came from.
+          define( 'WPT_UPDATE_CHANNEL', 'beta' );
+
+          // Only pre-releases from this branch.
+          define( 'WPT_UPDATE_CHANNEL', 'branch:${{ steps.version.outputs.slug }}' );
+          ```
+
+          These pre-releases are deleted when the branch merges or is deleted.
+          EOF
+
+          gh release create "${{ steps.version.outputs.version }}" \
+            ./wordpress-tools-${{ steps.version.outputs.version }}.zip \
+            --prerelease \
+            --target "${{ steps.version.outputs.sha }}" \
+            --title "${{ steps.version.outputs.version }}" \
+            --notes-file notes.md

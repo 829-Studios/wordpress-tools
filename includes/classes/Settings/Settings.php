@@ -9,6 +9,7 @@ namespace WordPressTools\Settings;
 
 use WordPressTools\Singleton;
 use WordPressTools\NoIndex\NoIndex;
+use WordPressTools\Updates;
 use function WordPressTools\Utils\is_local_environment;
 
 if ( ! defined( 'ABSPATH' ) ) {
@@ -65,6 +66,7 @@ class Settings {
 			'restrict_rest_api'              => 'users',
 			'limit_login'                    => 1,
 			'enable_mcp'                     => 1,
+			'update_channel'                 => Updates::CHANNEL_STABLE,
 		];
 
 		// Get settings from single option
@@ -219,6 +221,7 @@ class Settings {
 					'restrict_rest_api'             => 'users',
 					'limit_login'                   => 1,
 					'enable_mcp'                    => 1,
+					'update_channel'                => Updates::CHANNEL_STABLE,
 				],
 			]
 		);
@@ -325,6 +328,15 @@ class Settings {
 			'wpt_noindex_status',
 			esc_html__( 'Force No-Index on Staging/Dev', 'wordpress-tools' ),
 			[ $this, 'noindex_status_setting_callback' ],
+			'wpt-829-settings',
+			'wpt_829_general_section'
+		);
+
+		// Update Channel setting field
+		add_settings_field(
+			'wpt_update_channel',
+			esc_html__( 'Plugin Update Channel', 'wordpress-tools' ),
+			[ $this, 'update_channel_setting_callback' ],
 			'wpt-829-settings',
 			'wpt_829_general_section'
 		);
@@ -688,6 +700,72 @@ class Settings {
 	}
 
 	/**
+	 * Plugin Update Channel setting callback.
+	 */
+	public function update_channel_setting_callback() {
+		$this->render_update_channel_field();
+	}
+
+	/**
+	 * Shared fieldset for the Plugin Update Channel setting.
+	 */
+	private function render_update_channel_field(): void {
+		$is_locked = Updates::is_channel_locked();
+		$channel   = Updates::get_channel();
+		$branch    = Updates::get_channel_branch( $channel );
+		$type      = Updates::CHANNEL_STABLE;
+
+		if ( Updates::CHANNEL_BETA === $channel ) {
+			$type = Updates::CHANNEL_BETA;
+		} elseif ( '' !== $branch ) {
+			$type = 'branch';
+		}
+
+		$disabled = $is_locked ? ' disabled' : '';
+		?>
+		<fieldset>
+			<?php if ( $is_locked ) : ?>
+				<p class="description">
+					<?php
+						echo wp_kses_post(
+							sprintf(
+								/* translators: %s is the resolved update channel. */
+								__( 'Set to <code>%s</code> by the <code>WPT_UPDATE_CHANNEL</code> constant in <code>wp-config.php</code>, which overrides the setting below.', 'wordpress-tools' ),
+								esc_html( $channel )
+							)
+						);
+					?>
+				</p>
+			<?php endif; ?>
+
+			<input id="wpt-update-channel-stable" name="wpt_settings[update_channel_type]" type="radio" value="stable"<?php checked( Updates::CHANNEL_STABLE, $type ); ?><?php echo esc_attr( $disabled ); ?> />
+			<label for="wpt-update-channel-stable">
+				<?php esc_html_e( 'Stable — released versions only', 'wordpress-tools' ); ?>
+			</label><br>
+
+			<input id="wpt-update-channel-beta" name="wpt_settings[update_channel_type]" type="radio" value="beta"<?php checked( Updates::CHANNEL_BETA, $type ); ?><?php echo esc_attr( $disabled ); ?> />
+			<label for="wpt-update-channel-beta">
+				<?php esc_html_e( 'Beta — newest version including pre-releases', 'wordpress-tools' ); ?>
+			</label><br>
+
+			<input id="wpt-update-channel-branch" name="wpt_settings[update_channel_type]" type="radio" value="branch"<?php checked( 'branch', $type ); ?><?php echo esc_attr( $disabled ); ?> />
+			<label for="wpt-update-channel-branch">
+				<?php esc_html_e( 'Branch — pre-releases built from one branch only', 'wordpress-tools' ); ?>
+			</label>
+			<input
+				id="wpt-update-channel-branch-slug"
+				name="wpt_settings[update_channel_branch]"
+				type="text"
+				class="regular-text"
+				value="<?php echo esc_attr( $branch ); ?>"
+				placeholder="<?php esc_attr_e( 'e.g. feature/new-feature-name', 'wordpress-tools' ); ?>"
+				<?php echo esc_attr( $disabled ); ?>
+			/>
+		</fieldset>
+		<?php
+	}
+
+	/**
 	 * Shared fieldset for the Force No-Index status setting.
 	 */
 	private function render_noindex_status_field(): void {
@@ -950,6 +1028,23 @@ class Settings {
 
 		// Sanitize enable_mcp
 		$sanitized['enable_mcp'] = isset( $input['enable_mcp'] ) ? intval( $input['enable_mcp'] ) : 1;
+
+		// Sanitize update_channel — recombine the radio and branch input into a single value.
+		// The fields are absent when the constant locks them, since disabled inputs aren't
+		// submitted; keep the stored value rather than resetting it to stable.
+		if ( isset( $input['update_channel_type'] ) ) {
+			$channel_type   = $input['update_channel_type'];
+			$channel_branch = isset( $input['update_channel_branch'] ) ? $input['update_channel_branch'] : '';
+
+			if ( 'branch' === $channel_type ) {
+				$channel_type = Updates::CHANNEL_BRANCH_PREFIX . $channel_branch;
+			}
+
+			$sanitized['update_channel'] = Updates::sanitize_channel( $channel_type );
+		} else {
+			$current_settings            = self::get_settings();
+			$sanitized['update_channel'] = Updates::sanitize_channel( $current_settings['update_channel'] );
+		}
 
 		return $sanitized;
 	}
@@ -1345,6 +1440,14 @@ class Settings {
 							</th>
 							<td>
 								<?php $this->render_noindex_status_field(); ?>
+							</td>
+						</tr>
+						<tr>
+							<th scope="row">
+								<?php esc_html_e( 'Plugin Update Channel', 'wordpress-tools' ); ?>
+							</th>
+							<td>
+								<?php $this->render_update_channel_field(); ?>
 							</td>
 						</tr>
 						<tr>
