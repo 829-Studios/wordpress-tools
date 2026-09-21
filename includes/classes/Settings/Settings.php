@@ -53,21 +53,21 @@ class Settings {
 	 */
 	public static function get_settings() {
 		$defaults = [
-			'allow_sso'                      => 1,
-			'restrict_829_credential_login'  => 1,
-			'credential_login_allow_list'     => [],
-			'two_factor_allow_list'          => [],
-			'disable_comments'               => 0,
-			'require_strong_passwords'       => 1,
-			'password_protect'               => 0,
-			'restrict_plugin_management'     => 1,
-			'plugin_management_allow_list'    => [],
-			'restrict_theme_management'      => 1,
-			'theme_management_allow_list'     => [],
-			'restrict_rest_api'              => 'users',
-			'limit_login'                    => 1,
-			'enable_mcp'                     => 1,
-			'update_channel'                 => Updates::CHANNEL_STABLE,
+			'allow_sso'                     => 1,
+			'restrict_829_credential_login' => 1,
+			'credential_login_allow_list'   => [],
+			'two_factor_allow_list'         => [],
+			'disable_comments'              => 0,
+			'require_strong_passwords'      => 1,
+			'password_protect'              => 0,
+			'restrict_plugin_management'    => 1,
+			'plugin_management_allow_list'  => [],
+			'restrict_theme_management'     => 1,
+			'theme_management_allow_list'   => [],
+			'restrict_rest_api'             => 'users',
+			'limit_login'                   => 1,
+			'enable_mcp'                    => 1,
+			'update_channel'                => Updates::CHANNEL_STABLE,
 		];
 
 		// Get settings from single option
@@ -83,7 +83,7 @@ class Settings {
 			'plugin_management_whitelist' => 'plugin_management_allow_list',
 			'theme_management_whitelist'  => 'theme_management_allow_list',
 		];
-		$migrated = false;
+		$migrated    = false;
 		foreach ( $legacy_keys as $old => $new ) {
 			if ( array_key_exists( $old, $settings ) ) {
 				$settings[ $new ] = $settings[ $old ];
@@ -211,15 +211,15 @@ class Settings {
 				'default'           => [
 					'allow_sso'                     => 1,
 					'restrict_829_credential_login' => 1,
-					'credential_login_allow_list'    => [],
+					'credential_login_allow_list'   => [],
 					'two_factor_allow_list'         => [],
 					'disable_comments'              => 0,
 					'require_strong_passwords'      => 1,
 					'password_protect'              => 0,
 					'restrict_plugin_management'    => 1,
-					'plugin_management_allow_list'   => [],
+					'plugin_management_allow_list'  => [],
 					'restrict_theme_management'     => 1,
-					'theme_management_allow_list'    => [],
+					'theme_management_allow_list'   => [],
 					'restrict_rest_api'             => 'users',
 					'limit_login'                   => 1,
 					'enable_mcp'                    => 1,
@@ -395,10 +395,10 @@ class Settings {
 	 * Restrict 829 Credential Login setting callback.
 	 */
 	public function restrict_829_credential_login_setting_callback() {
-		$settings  = self::get_settings();
-		$restrict  = $settings['restrict_829_credential_login'];
+		$settings   = self::get_settings();
+		$restrict   = $settings['restrict_829_credential_login'];
 		$allow_list = $settings['credential_login_allow_list'] ?? [];
-		$this->render_credential_login_restriction_field( $restrict, $allow_list);
+		$this->render_credential_login_restriction_field( $restrict, $allow_list );
 	}
 
 	/**
@@ -427,7 +427,7 @@ class Settings {
 			<div class="wpt-allow-list-container<?php echo $restrict ? '' : ' wpt-hidden'; ?>" data-restriction="restrict_829_credential_login">
 				<p class="description" style="margin: 0 0 4px;"><strong><?php esc_html_e( 'Credential Login Exceptions', 'wordpress-tools' ); ?></strong></p>
 				<p class="description" style="margin: 0 0 8px;"><?php esc_html_e( 'These users can still log in with credentials even when restriction is enabled.', 'wordpress-tools' ); ?></p>
-				<?php $this->render_user_search_field( 'credential_login_allow_list', $allow_list); ?>
+				<?php $this->render_user_search_field( 'credential_login_allow_list', $allow_list ); ?>
 			</div>
 		</fieldset>
 		<?php
@@ -552,10 +552,10 @@ class Settings {
 	 * Restrict Plugin Management setting callback.
 	 */
 	public function restrict_plugin_management_setting_callback() {
-		$settings = self::get_settings();
-		$restrict  = $settings['restrict_plugin_management'];
+		$settings   = self::get_settings();
+		$restrict   = $settings['restrict_plugin_management'];
 		$allow_list = $settings['plugin_management_allow_list'] ?? [];
-		$this->render_plugin_management_restriction_field( $restrict, $allow_list);
+		$this->render_plugin_management_restriction_field( $restrict, $allow_list );
 	}
 
 	/**
@@ -581,7 +581,7 @@ class Settings {
 			<div class="wpt-allow-list-container<?php echo $restrict ? '' : ' wpt-hidden'; ?>" data-restriction="restrict_plugin_management">
 				<p class="description" style="margin: 0 0 4px;"><strong><?php esc_html_e( 'Allowed Users', 'wordpress-tools' ); ?></strong></p>
 				<p class="description" style="margin: 0 0 8px;"><?php esc_html_e( 'These users can manage plugins even when restriction is enabled.', 'wordpress-tools' ); ?></p>
-				<?php $this->render_user_search_field( 'plugin_management_allow_list', $allow_list); ?>
+				<?php $this->render_user_search_field( 'plugin_management_allow_list', $allow_list ); ?>
 			</div>
 		</fieldset>
 		<?php
@@ -591,10 +591,10 @@ class Settings {
 	 * Restrict Theme Management setting callback.
 	 */
 	public function restrict_theme_management_setting_callback() {
-		$settings  = self::get_settings();
-		$restrict  = $settings['restrict_theme_management'];
+		$settings   = self::get_settings();
+		$restrict   = $settings['restrict_theme_management'];
 		$allow_list = $settings['theme_management_allow_list'] ?? [];
-		$this->render_theme_management_restriction_field( $restrict, $allow_list);
+		$this->render_theme_management_restriction_field( $restrict, $allow_list );
 	}
 
 	/**
@@ -620,7 +620,7 @@ class Settings {
 			<div class="wpt-allow-list-container<?php echo $restrict ? '' : ' wpt-hidden'; ?>" data-restriction="restrict_theme_management">
 				<p class="description" style="margin: 0 0 4px;"><strong><?php esc_html_e( 'Allowed Users', 'wordpress-tools' ); ?></strong></p>
 				<p class="description" style="margin: 0 0 8px;"><?php esc_html_e( 'These users can manage themes even when restriction is enabled.', 'wordpress-tools' ); ?></p>
-				<?php $this->render_user_search_field( 'theme_management_allow_list', $allow_list); ?>
+				<?php $this->render_user_search_field( 'theme_management_allow_list', $allow_list ); ?>
 			</div>
 		</fieldset>
 		<?php
@@ -1003,7 +1003,16 @@ class Settings {
 		if ( empty( $ids ) ) {
 			return [];
 		}
-		return array_map( 'intval', get_users( [ 'include' => $ids, 'fields' => 'ID', 'number' => count( $ids ) ] ) );
+		return array_map(
+			'intval',
+			get_users(
+				[
+					'include' => $ids,
+					'fields'  => 'ID',
+					'number'  => count( $ids ),
+				]
+			)
+		);
 	}
 
 	/**
@@ -1259,24 +1268,24 @@ class Settings {
 			wp_die( esc_html__( 'You do not have permission to access this page.', 'wordpress-tools' ) );
 		}
 
-		$settings                        = self::get_settings();
-		$allow_sso                       = $settings['allow_sso'];
-		$restrict_829_credential_login   = $settings['restrict_829_credential_login'];
-		$credential_login_allow_list      = isset( $settings['credential_login_allow_list'] ) ? $settings['credential_login_allow_list'] : [];
-		$two_factor_allow_list           = isset( $settings['two_factor_allow_list'] ) ? $settings['two_factor_allow_list'] : [];
-		$disable_comments                = $settings['disable_comments'];
-		$require_strong_passwords        = $settings['require_strong_passwords'];
-		$password_protect                = $settings['password_protect'];
-		$restrict_plugin_management      = $settings['restrict_plugin_management'];
-		$plugin_management_allow_list     = isset( $settings['plugin_management_allow_list'] ) ? $settings['plugin_management_allow_list'] : [];
-		$restrict_theme_management       = $settings['restrict_theme_management'];
-		$theme_management_allow_list      = isset( $settings['theme_management_allow_list'] ) ? $settings['theme_management_allow_list'] : [];
-		$restrict_rest_api               = $settings['restrict_rest_api'];
-		$limit_login                     = $settings['limit_login'];
-		$enable_mcp                      = $settings['enable_mcp'];
-		$attempt_limit              = defined( 'WPT_LOGIN_ATTEMPT_LIMIT' ) ? WPT_LOGIN_ATTEMPT_LIMIT : 10;
-		$lockout_minutes            = defined( 'WPT_LOGIN_LOCKOUT_DURATION' ) ? ceil( WPT_LOGIN_LOCKOUT_DURATION / 60 ) : 15;
-		$is_disabled                = defined( 'WPT_DISABLE_COMMENTS' ) || has_filter( 'wpt_disable_comments' );
+		$settings                      = self::get_settings();
+		$allow_sso                     = $settings['allow_sso'];
+		$restrict_829_credential_login = $settings['restrict_829_credential_login'];
+		$credential_login_allow_list   = isset( $settings['credential_login_allow_list'] ) ? $settings['credential_login_allow_list'] : [];
+		$two_factor_allow_list         = isset( $settings['two_factor_allow_list'] ) ? $settings['two_factor_allow_list'] : [];
+		$disable_comments              = $settings['disable_comments'];
+		$require_strong_passwords      = $settings['require_strong_passwords'];
+		$password_protect              = $settings['password_protect'];
+		$restrict_plugin_management    = $settings['restrict_plugin_management'];
+		$plugin_management_allow_list  = isset( $settings['plugin_management_allow_list'] ) ? $settings['plugin_management_allow_list'] : [];
+		$restrict_theme_management     = $settings['restrict_theme_management'];
+		$theme_management_allow_list   = isset( $settings['theme_management_allow_list'] ) ? $settings['theme_management_allow_list'] : [];
+		$restrict_rest_api             = $settings['restrict_rest_api'];
+		$limit_login                   = $settings['limit_login'];
+		$enable_mcp                    = $settings['enable_mcp'];
+		$attempt_limit                 = defined( 'WPT_LOGIN_ATTEMPT_LIMIT' ) ? WPT_LOGIN_ATTEMPT_LIMIT : 10;
+		$lockout_minutes               = defined( 'WPT_LOGIN_LOCKOUT_DURATION' ) ? ceil( WPT_LOGIN_LOCKOUT_DURATION / 60 ) : 15;
+		$is_disabled                   = defined( 'WPT_DISABLE_COMMENTS' ) || has_filter( 'wpt_disable_comments' );
 		?>
 		<div class="wrap">
 			<h1><?php echo esc_html( get_admin_page_title() . ' — v' . WPT_VERSION ); ?></h1>

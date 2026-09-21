@@ -35,7 +35,7 @@ class NoIndex {
 			return;
 		}
 
-		add_filter( 'wp_robots',    [ $this, 'add_noindex_robots' ] );
+		add_filter( 'wp_robots', [ $this, 'add_noindex_robots' ] );
 		add_action( 'send_headers', [ $this, 'send_noindex_header' ] );
 	}
 

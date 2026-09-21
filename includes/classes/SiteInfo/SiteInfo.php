@@ -267,12 +267,28 @@ class SiteInfo {
 		}
 
 		$api_options = [
-			'frontend_url', 'backend_url', 'autoupdater_enabled', 'autoupdate_at',
-			'autoupdate_days', 'autoupdate_frequency', 'autoupdate_scheduled_at',
-			'update_plugins', 'update_themes', 'plugins', 'themes', 'notification_emails',
-			'notification_on_success', 'notification_on_failure', 'auto_rollback',
-			'maintenance_mode', 'sitemap_url', 'vrt_css_exclusions', 'vrt_urls_limit',
-			'vrt_asynchronous', 'worker_token', 'aes_key',
+			'frontend_url',
+			'backend_url',
+			'autoupdater_enabled',
+			'autoupdate_at',
+			'autoupdate_days',
+			'autoupdate_frequency',
+			'autoupdate_scheduled_at',
+			'update_plugins',
+			'update_themes',
+			'plugins',
+			'themes',
+			'notification_emails',
+			'notification_on_success',
+			'notification_on_failure',
+			'auto_rollback',
+			'maintenance_mode',
+			'sitemap_url',
+			'vrt_css_exclusions',
+			'vrt_urls_limit',
+			'vrt_asynchronous',
+			'worker_token',
+			'aes_key',
 		];
 
 		try {
