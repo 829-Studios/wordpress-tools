@@ -90,14 +90,6 @@
 
 	<rule ref="PHPCompatibilityWP"/>
 
-	<rule ref="WordPress.Security.EscapeOutput">
-		<properties>
-			<property name="customAutoEscapedFunctions" type="array">
-				<element value="propel_array_to_link"/>
-			</property>
-		</properties>
-	</rule>
-
 	<!-- Custom capabilities registered by this plugin (see MCP\Roles). -->
 	<rule ref="WordPress.WP.Capabilities">
 		<properties>
