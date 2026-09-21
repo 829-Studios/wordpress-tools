@@ -10,24 +10,17 @@ Tooling and code style only. No functional changes.
 
 ### Added
 
-- ESLint config on `@wordpress/eslint-plugin`, with `npm run lint` / `lint:fix`.
-- Husky hooks: `pre-commit` lints staged files, `pre-push` runs the full JS and PHP lint.
-- Lint GitHub Actions workflow on PRs and pushes to `main`.
-- `CLAUDE.md` repository conventions.
+- Added Husky and lint checks on pre-commit, pre-push, and a GitHub action to ensure code follows the PHP and JS linting rules.
+- Added CLAUDE.md file for AI-assisted development guidelines.
+- Added CHANGELOG.md file documenting current and all previous releases.
 
 ### Changed
 
 - Bumped `@wordpress/scripts` `^31.4.0` → `^33.0.0`, the tooling behind `npm run zip`.
-- Reformatted JS to the WordPress ESLint rules and PHP to PHPCS.
 
 ### Fixed
-
-- Added the missing `$user` param doc on `ActivityLog::on_wp_login()`.
-- Scoped the blanket PHPCS ignores and gave each a justification.
-
-### Removed
-
-- The `propel_array_to_link` escape exemption from `phpcs.xml`, which belonged to the theme.
+- Fixed all PHPCS errors including formatting and code style adjustments and a few minor adjustments.
+- Fixed all JS linting errors - all just formatting inconsistencies.
 
 ## [1.10.0] - 2026-09-21
 
