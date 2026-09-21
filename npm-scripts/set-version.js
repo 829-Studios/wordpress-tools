@@ -12,11 +12,9 @@
 
 const fs = require( 'fs' );
 const path = require( 'path' );
-
 const ROOT = path.join( __dirname, '..' );
 const PLUGIN_FILE = path.join( ROOT, 'wordpress-tools.php' );
 const PACKAGE_FILE = path.join( ROOT, 'package.json' );
-
 // Semver, with an optional dot-separated pre-release suffix.
 const VERSION_PATTERN = /^\d+\.\d+\.\d+(?:-[0-9A-Za-z.-]+)?$/;
 
@@ -34,7 +32,9 @@ function setVersion( version ) {
 
 	replacements.forEach( ( [ pattern, replacement ] ) => {
 		if ( ! pattern.test( plugin ) ) {
-			throw new Error( `Could not find ${ pattern } in wordpress-tools.php` );
+			throw new Error(
+				`Could not find ${ pattern } in wordpress-tools.php`
+			);
 		}
 
 		plugin = plugin.replace( pattern, replacement );
@@ -44,7 +44,11 @@ function setVersion( version ) {
 
 	const pkg = JSON.parse( fs.readFileSync( PACKAGE_FILE, 'utf8' ) );
 	pkg.version = version;
-	fs.writeFileSync( PACKAGE_FILE, `${ JSON.stringify( pkg, null, '\t' ) }\n` );
+
+	fs.writeFileSync(
+		PACKAGE_FILE,
+		`${ JSON.stringify( pkg, null, '\t' ) }\n`
+	);
 
 	return version;
 }
