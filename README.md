@@ -182,6 +182,10 @@ Bump the version at the **start** of a release cycle — pre-release builds are 
 
 Move any site pinned to `branch:<slug>` back to `beta` or `stable`. Its pre-releases are deleted on merge, and a site left pinned silently stops seeing updates.
 
+## Changelog
+
+See [CHANGELOG.md](CHANGELOG.md) for the release history.
+
 ## License
 
 MIT
