@@ -1,0 +1,2 @@
+# Lint only what's staged. Fast enough to run on every commit.
+npx lint-staged

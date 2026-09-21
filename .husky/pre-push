@@ -1,0 +1,38 @@
+# Full lint before anything leaves the machine. pre-commit only sees staged
+# files, so this is what catches a change that breaks a file it didn't touch.
+set -e
+
+zero="0000000000000000000000000000000000000000"
+run_checks=false
+changed_files=""
+
+while read -r local_ref local_sha remote_ref remote_sha; do
+	# Branch deletion — nothing being pushed, so nothing to check.
+	if [ "$local_sha" = "$zero" ]; then
+		continue
+	fi
+
+	# New branch on the remote: no base to diff against, so check everything.
+	if [ "$remote_sha" = "$zero" ]; then
+		run_checks=true
+		continue
+	fi
+
+	# If the remote sha isn't in this clone (someone force-pushed, or the ref
+	# moved on) there's no usable base either, so fall back to checking all.
+	if ! git cat-file -e "$remote_sha^{commit}" 2>/dev/null; then
+		run_checks=true
+		continue
+	fi
+
+	changed_files="$changed_files
+$(git diff --name-only "$remote_sha".."$local_sha")"
+done
+
+if [ "$run_checks" = false ] && ! echo "$changed_files" | grep -qE '\.(php|js|mjs)$'; then
+	echo "No PHP or JS changes — skipping lint."
+	exit 0
+fi
+
+npm run lint
+composer lint

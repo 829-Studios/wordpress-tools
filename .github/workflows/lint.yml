@@ -1,0 +1,42 @@
+name: Lint
+
+on:
+  pull_request:
+  push:
+    branches:
+      - main
+  workflow_dispatch:
+
+jobs:
+  lint:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+
+      - name: Set up Node.js from .nvmrc
+        uses: actions/setup-node@v3
+        with:
+          cache: "npm"
+          node-version-file: ".nvmrc"
+
+      - name: Set up PHP & Composer
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: 8.2
+          tools: composer:v2
+
+      # Dev dependencies are required here — phpcs, WPCS and the VIP sniffs all
+      # live in require-dev, unlike the release build which installs --no-dev.
+      - name: Install Composer dependencies
+        run: composer install --optimize-autoloader
+
+      - name: Install npm dependencies
+        run: npm install
+
+      - name: Lint JS
+        run: npm run lint
+
+      - name: Lint PHP
+        if: always()
+        run: composer lint
