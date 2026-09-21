@@ -305,7 +305,7 @@ class SiteInfo {
 			];
 		}
 
-		if ( $response->code !== 200 || empty( $response->body->site ) ) {
+		if ( 200 !== $response->code || empty( $response->body->site ) ) {
 			return [
 				'active'    => true,
 				'connected' => false,

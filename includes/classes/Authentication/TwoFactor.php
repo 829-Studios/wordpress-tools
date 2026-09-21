@@ -386,12 +386,14 @@ class TwoFactor {
 	 * @return void
 	 */
 	public function maybe_confirm_2fa_setup(): void {
+		// phpcs:disable WordPress.Security.NonceVerification.Recommended -- This request originates from a link in an email, so no nonce can exist in the user's session. The single-use, 24-hour, HMAC-bound token verified below is the CSRF control; an attacker who knows the token could simply follow the link themselves.
 		if ( empty( $_REQUEST[ self::CONFIRM_QUERY_VAR ] ) || empty( $_REQUEST['user_id'] ) || empty( $_REQUEST['token'] ) ) {
 			return;
 		}
 
 		$user_id = absint( $_REQUEST['user_id'] );
 		$token   = sanitize_text_field( wp_unslash( $_REQUEST['token'] ) );
+		// phpcs:enable WordPress.Security.NonceVerification.Recommended
 
 		$stored_hash = get_user_meta( $user_id, self::PENDING_TOKEN_META_KEY, true );
 
@@ -448,6 +450,7 @@ class TwoFactor {
 			<button type="submit"><?php esc_html_e( 'Yes, activate 2FA', 'wordpress-tools' ); ?></button>
 		</form>
 		<?php
+		// phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- Buffer is intentional markup assembled above from individually escaped values; wp_kses_post() would strip the form.
 		wp_die( ob_get_clean(), esc_html__( 'Confirm Two-Factor Authentication', 'wordpress-tools' ), [ 'response' => 200 ] );
 	}
 
@@ -528,6 +531,7 @@ class TwoFactor {
 
 		// Only allow the specific ajax actions profile.php needs - not all of admin-ajax.php.
 		if ( 'admin-ajax.php' === $pagenow ) {
+			// phpcs:ignore WordPress.Security.NonceVerification.Recommended -- Read-only check of which action was requested in order to decide whether to redirect; the action's own handler performs its nonce and capability checks.
 			$action = isset( $_REQUEST['action'] ) ? sanitize_text_field( wp_unslash( $_REQUEST['action'] ) ) : '';
 
 			if ( in_array( $action, self::ALLOWED_AJAX_ACTIONS, true ) ) {
