@@ -1,15 +1,23 @@
 {
 	"name": "wordpress-tools",
-	"version": "1.10.0",
+	"version": "1.11.0",
 	"description": "WordPress tools for 829 Studios. A comprehensive WordPress security and management plugin designed to enhance site security, streamline authentication, and provide centralized control over critical WordPress features.",
 	"author": "829 Studios",
 	"license": "MIT",
 	"scripts": {
+		"lint": "eslint 'assets/js/**/*.js' 'npm-scripts/**/*.js' eslint.config.mjs",
+		"lint:fix": "npm run lint -- --fix",
 		"set-version": "node npm-scripts/set-version.js",
-		"zip": "wp-scripts plugin-zip && node npm-scripts/add-zip-version.js"
+		"zip": "wp-scripts plugin-zip && node npm-scripts/add-zip-version.js",
+		"prepare": "husky"
 	},
 	"devDependencies": {
-		"@wordpress/scripts": "^31.4.0"
+		"@wordpress/eslint-plugin": "^25.10.0",
+		"@wordpress/scripts": "^33.0.0",
+		"eslint": "^10.11.0",
+		"globals": "^16.5.0",
+		"husky": "^9.1.7",
+		"lint-staged": "^17.5.1"
 	},
 	"files": [
 		"wordpress-tools.php",

@@ -1,0 +1,6 @@
+{
+	"assets/js/**/*.js": "eslint",
+	"npm-scripts/**/*.js": "eslint",
+	"eslint.config.mjs": "eslint",
+	"**/*.php": "vendor/bin/phpcs"
+}

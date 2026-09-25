@@ -236,8 +236,8 @@ class ActivityLog {
 
 		$table_name = $this->get_table_name();
 
-		// phpcs:ignore WordPress.DB.DirectDatabaseQuery, WordPress.DB.PreparedSQL.InterpolatedNotPrepared
-		return $wpdb->get_results(
+		// phpcs:disable WordPress.DB.DirectDatabaseQuery, WordPress.DB.PreparedSQL.InterpolatedNotPrepared -- Table name is built from $wpdb->prefix, all user input is passed through prepare().
+		$results = $wpdb->get_results(
 			$wpdb->prepare(
 				"SELECT id, blog_id, action, summary, category, user_id, created_at FROM {$table_name} WHERE blog_id = %d ORDER BY created_at DESC LIMIT %d",
 				get_current_blog_id(),
@@ -245,6 +245,9 @@ class ActivityLog {
 			),
 			ARRAY_A
 		);
+		// phpcs:enable WordPress.DB.DirectDatabaseQuery, WordPress.DB.PreparedSQL.InterpolatedNotPrepared
+
+		return $results;
 	}
 
 	/**
@@ -328,7 +331,8 @@ class ActivityLog {
 	/**
 	 * User logged in.
 	 *
-	 * @param string $user_login Username.
+	 * @param string   $user_login Username.
+	 * @param \WP_User $user       User object.
 	 */
 	public function on_wp_login( $user_login, $user ) {
 		if ( ! $user instanceof \WP_User ) {

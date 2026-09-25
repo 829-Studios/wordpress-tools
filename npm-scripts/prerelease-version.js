@@ -29,7 +29,9 @@ function prereleaseVersion( branch, run, min ) {
 	const base = String( pkg.version ).split( '-' )[ 0 ];
 
 	if ( ! /^\d+\.\d+\.\d+$/.test( base ) ) {
-		throw new Error( `package.json version is not a plain semver version: ${ pkg.version }` );
+		throw new Error(
+			`package.json version is not a plain semver version: ${ pkg.version }`
+		);
 	}
 
 	if ( min && compareCore( base, min ) <= 0 ) {

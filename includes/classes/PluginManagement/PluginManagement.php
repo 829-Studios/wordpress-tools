@@ -194,7 +194,7 @@ class PluginManagement {
 			return $caps;
 		}
 
-		$settings  = Settings::get_settings();
+		$settings   = Settings::get_settings();
 		$restricted = $is_plugin_cap ? $settings['restrict_plugin_management'] : $settings['restrict_theme_management'];
 
 		if ( ! $restricted ) {
@@ -207,7 +207,7 @@ class PluginManagement {
 
 		$allow_list_key = $is_plugin_cap ? 'plugin_management_allow_list' : 'theme_management_allow_list';
 		$allow_list     = ! empty( $settings[ $allow_list_key ] ) ? array_map( 'intval', (array) $settings[ $allow_list_key ] ) : [];
-		$uid           = $user_id ? (int) $user_id : get_current_user_id();
+		$uid            = $user_id ? (int) $user_id : get_current_user_id();
 
 		if ( ! empty( $allow_list ) && in_array( $uid, $allow_list, true ) ) {
 			return []; // Empty caps array grants access regardless of user role.
