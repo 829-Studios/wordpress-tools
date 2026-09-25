@@ -677,6 +677,68 @@ class MCP {
 		);
 
 		wp_register_ability(
+			'829-tools/upload-media',
+			array(
+				'category'            => '829-tools',
+				'label'               => 'Upload Media',
+				'description'         => 'Uploads a new file to the media library, either downloaded from a public URL or passed as base64-encoded data. Only file types the site allows are accepted. Images require alt text. Optionally sets title, caption, description, and the post it is attached to.',
+				'input_schema'        => array(
+					'type'       => 'object',
+					'properties' => array(
+						'url'         => array(
+							'type'        => 'string',
+							'description' => 'Public URL to download the file from. Provide either url or data, not both.',
+						),
+						'data'        => array(
+							'type'        => 'string',
+							'description' => 'Base64-encoded file contents (a "data:<mime>;base64," prefix is allowed). Requires filename.',
+						),
+						'filename'    => array(
+							'type'        => 'string',
+							'description' => 'File name including extension (e.g. "hero.jpg"). Required with data; defaults to the URL\'s file name.',
+						),
+						'title'       => array(
+							'type'        => 'string',
+							'description' => 'Attachment title. Defaults to the file name.',
+						),
+						'alt'         => array(
+							'type'        => 'string',
+							'description' => 'Alt text describing the image. Required for image uploads.',
+						),
+						'caption'     => array(
+							'type'        => 'string',
+							'description' => 'Attachment caption.',
+						),
+						'description' => array(
+							'type'        => 'string',
+							'description' => 'Attachment description.',
+						),
+						'post_id'     => array(
+							'type'        => 'integer',
+							'description' => 'ID of the post to attach the upload to. Omit to leave it unattached.',
+						),
+					),
+				),
+				'output_schema'       => array(
+					'type'       => 'object',
+					'properties' => array(
+						'media' => array( 'type' => 'object' ),
+					),
+				),
+				'permission_callback' => [ $this, 'check_media_upload_permission' ],
+				'execute_callback'    => [ $this, 'upload_media' ],
+				'meta'                => array(
+					'mcp'         => array( 'public' => true ),
+					'annotations' => array(
+						'readonly'    => false,
+						'destructive' => false,
+						'idempotent'  => false,
+					),
+				),
+			)
+		);
+
+		wp_register_ability(
 			'829-tools/list-allowed-blocks',
 			array(
 				'category'            => '829-tools',
@@ -1457,6 +1519,16 @@ class MCP {
 	 */
 	public function check_posts_edit_permission() {
 		return $this->check_permission( array( '829_mcp_manage_site', '829_mcp_edit_posts' ) );
+	}
+
+	/**
+	 * Permission callback: upload media. Open to post writers so they can
+	 * add images to their own content.
+	 *
+	 * @return true|WP_Error
+	 */
+	public function check_media_upload_permission() {
+		return $this->check_permission( array( '829_mcp_manage_site', '829_mcp_create_posts', '829_mcp_edit_posts' ) );
 	}
 
 	/**
@@ -2253,6 +2325,129 @@ class MCP {
 		}
 
 		return array( 'media' => $this->format_attachment( $post, true ) );
+	}
+
+	/**
+	 * Execute callback: upload a file to the media library from a URL or base64 data.
+	 *
+	 * @param  array $input Ability input.
+	 * @return array|WP_Error
+	 */
+	public function upload_media( $input = array() ) {
+		$url      = $input['url'] ?? '';
+		$data     = $input['data'] ?? '';
+		$filename = sanitize_file_name( $input['filename'] ?? '' );
+		$parent   = intval( $input['post_id'] ?? 0 );
+
+		if ( empty( $url ) === empty( $data ) ) {
+			return new WP_Error( 'invalid_input', 'Provide exactly one of url or data.' );
+		}
+
+		if ( $parent ) {
+			$parent_post = get_post( $parent );
+
+			if ( ! $parent_post ) {
+				return new WP_Error( 'not_found', "Post {$parent} not found." );
+			}
+
+			if ( ! $this->current_user_can_manage_any_post() && get_current_user_id() !== (int) $parent_post->post_author ) {
+				return new WP_Error( 'insufficient_permission', 'You do not have permission to attach media to this post.' );
+			}
+		}
+
+		require_once ABSPATH . 'wp-admin/includes/file.php';
+		require_once ABSPATH . 'wp-admin/includes/media.php';
+		require_once ABSPATH . 'wp-admin/includes/image.php';
+
+		if ( $url ) {
+			if ( ! wp_http_validate_url( $url ) ) {
+				return new WP_Error( 'invalid_url', 'The URL is not valid or points to a disallowed host.' );
+			}
+
+			// download_url() uses wp_safe_remote_get(), which blocks requests to local/private hosts.
+			$tmp = download_url( $url );
+
+			if ( is_wp_error( $tmp ) ) {
+				return $tmp;
+			}
+
+			if ( ! $filename ) {
+				$filename = sanitize_file_name( wp_basename( (string) wp_parse_url( $url, PHP_URL_PATH ) ) );
+			}
+		} else {
+			if ( ! $filename ) {
+				return new WP_Error( 'missing_filename', 'A filename is required when uploading base64 data.' );
+			}
+
+			$decoded = base64_decode( preg_replace( '/^data:[^,]*;base64,/', '', $data ), true ); // phpcs:ignore WordPress.PHP.DiscouragedPHPFunctions.obfuscation_base64_decode -- decoding an uploaded file, not obfuscated code.
+
+			if ( false === $decoded || '' === $decoded ) {
+				return new WP_Error( 'invalid_data', 'The data is not valid base64.' );
+			}
+
+			$tmp = wp_tempnam( $filename );
+
+			// phpcs:ignore WordPress.WP.AlternativeFunctions.file_system_operations_file_put_contents -- writing to our own temp file; WP_Filesystem may need credentials.
+			if ( ! $tmp || false === file_put_contents( $tmp, $decoded ) ) {
+				return new WP_Error( 'write_failed', 'Could not write the temporary upload file.' );
+			}
+		}
+
+		// Sideloads bypass PHP's upload limits, so enforce the site's max upload size here.
+		if ( filesize( $tmp ) > wp_max_upload_size() ) {
+			wp_delete_file( $tmp );
+			return new WP_Error( 'file_too_large', 'The file exceeds the maximum upload size of ' . size_format( wp_max_upload_size() ) . '.' );
+		}
+
+		$image_mime = wp_get_image_mime( $tmp );
+
+		// URLs from image CDNs often have no extension, which the file type check would reject.
+		if ( ! pathinfo( $filename, PATHINFO_EXTENSION ) ) {
+			$exts = $image_mime ? array_search( $image_mime, wp_get_mime_types(), true ) : false;
+
+			if ( $exts ) {
+				$filename = ( $filename ? $filename : 'upload' ) . '.' . strtok( $exts, '|' );
+			}
+		}
+
+		// wp_get_image_mime() can't sniff SVGs, so fall back to the extension.
+		$filetype = wp_check_filetype( $filename );
+		$is_image = $image_mime || 0 === strpos( (string) $filetype['type'], 'image/' );
+		$alt      = sanitize_text_field( $input['alt'] ?? '' );
+
+		if ( $is_image && '' === $alt ) {
+			wp_delete_file( $tmp );
+			return new WP_Error( 'missing_alt', 'Alt text is required when uploading an image.' );
+		}
+
+		$post_data = array();
+
+		if ( isset( $input['caption'] ) ) {
+			$post_data['post_excerpt'] = $input['caption'];
+		}
+
+		if ( isset( $input['description'] ) ) {
+			$post_data['post_content'] = $input['description'];
+		}
+
+		$file_array = array(
+			'name'     => $filename,
+			'tmp_name' => $tmp,
+		);
+
+		$title         = isset( $input['title'] ) ? $input['title'] : null;
+		$attachment_id = media_handle_sideload( $file_array, $parent, $title, $post_data );
+
+		if ( is_wp_error( $attachment_id ) ) {
+			wp_delete_file( $tmp );
+			return $attachment_id;
+		}
+
+		if ( '' !== $alt ) {
+			update_post_meta( $attachment_id, '_wp_attachment_image_alt', $alt );
+		}
+
+		return array( 'media' => $this->format_attachment( get_post( $attachment_id ), true ) );
 	}
 
 	/**

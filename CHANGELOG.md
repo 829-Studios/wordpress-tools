@@ -4,6 +4,12 @@ All notable changes to 829 Studios WordPress Tools are documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and this
 project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Unreleased]
+
+### Added
+
+- `upload-media` MCP ability for adding files to the media library from a URL or base64 data; images require alt text.
+
 ## [1.11.0] - 2026-09-21
 
 Tooling and code style only. No functional changes.
