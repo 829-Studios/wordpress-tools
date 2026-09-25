@@ -9,6 +9,11 @@ project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 ### Added
 
 - `upload-media` MCP ability for adding files to the media library from a URL or base64 data; images require alt text.
+- `list-terms`, `create-term`, and `assign-terms` MCP abilities for managing taxonomy terms on any post type.
+
+### Changed
+
+- The `terms` input on `create-post`, `update-post`, and `list-posts` now also accepts term names.
 
 ## [1.11.0] - 2026-09-21
 

@@ -1436,6 +1436,169 @@ class MCP {
 		);
 
 		wp_register_ability(
+			'829-tools/list-terms',
+			array(
+				'category'            => '829-tools',
+				'label'               => 'List Terms',
+				'description'         => 'Lists terms in a taxonomy (e.g. categories, tags, or custom taxonomies), with optional keyword search, slug, and parent filters. Use get-content-schema to see which taxonomies each post type supports.',
+				'input_schema'        => array(
+					'type'       => 'object',
+					'properties' => array(
+						'taxonomy'   => array(
+							'type'        => 'string',
+							'description' => 'Taxonomy slug (e.g. "category", "post_tag").',
+						),
+						'search'     => array(
+							'type'        => 'string',
+							'description' => 'Keyword to search term names and slugs.',
+						),
+						'slug'       => array(
+							'type'        => 'string',
+							'description' => 'Return only the term with this exact slug.',
+						),
+						'parent'     => array(
+							'type'        => 'integer',
+							'description' => 'Return only direct children of this term ID. Use 0 for top-level terms.',
+						),
+						'hide_empty' => array(
+							'type'        => 'boolean',
+							'description' => 'Exclude terms not assigned to any posts. Defaults to false.',
+						),
+						'per_page'   => array(
+							'type'        => 'integer',
+							'description' => 'Results per page. Default 50, max 100.',
+							'default'     => 50,
+						),
+						'page'       => array(
+							'type'        => 'integer',
+							'description' => 'Page number. Default 1.',
+							'default'     => 1,
+						),
+					),
+					'required'   => array( 'taxonomy' ),
+				),
+				'output_schema'       => array(
+					'type'       => 'object',
+					'properties' => array(
+						'terms' => array( 'type' => 'array' ),
+						'total' => array( 'type' => 'integer' ),
+						'pages' => array( 'type' => 'integer' ),
+					),
+				),
+				'permission_callback' => [ $this, 'check_posts_read_permission' ],
+				'execute_callback'    => [ $this, 'list_terms' ],
+				'meta'                => array(
+					'mcp'         => array( 'public' => true ),
+					'annotations' => array(
+						'readonly'    => true,
+						'destructive' => false,
+						'idempotent'  => true,
+					),
+				),
+			)
+		);
+
+		wp_register_ability(
+			'829-tools/create-term',
+			array(
+				'category'            => '829-tools',
+				'label'               => 'Create Term',
+				'description'         => 'Creates a new term in a taxonomy. Fails if a term with the same name already exists at that level, returning the existing term ID. Creating terms in hierarchical taxonomies (like categories) requires editor-level access.',
+				'input_schema'        => array(
+					'type'       => 'object',
+					'properties' => array(
+						'taxonomy'    => array(
+							'type'        => 'string',
+							'description' => 'Taxonomy slug (e.g. "category", "post_tag").',
+						),
+						'name'        => array(
+							'type'        => 'string',
+							'description' => 'Term name.',
+						),
+						'slug'        => array(
+							'type'        => 'string',
+							'description' => 'Term slug. Defaults to a slug generated from the name.',
+						),
+						'description' => array(
+							'type'        => 'string',
+							'description' => 'Term description.',
+						),
+						'parent'      => array(
+							'type'        => 'integer',
+							'description' => 'Parent term ID. Hierarchical taxonomies only.',
+						),
+					),
+					'required'   => array( 'taxonomy', 'name' ),
+				),
+				'output_schema'       => array(
+					'type'       => 'object',
+					'properties' => array(
+						'term' => array( 'type' => 'object' ),
+					),
+				),
+				'permission_callback' => [ $this, 'check_terms_create_permission' ],
+				'execute_callback'    => [ $this, 'create_term' ],
+				'meta'                => array(
+					'mcp'         => array( 'public' => true ),
+					'annotations' => array(
+						'readonly'    => false,
+						'destructive' => false,
+						'idempotent'  => false,
+					),
+				),
+			)
+		);
+
+		wp_register_ability(
+			'829-tools/assign-terms',
+			array(
+				'category'            => '829-tools',
+				'label'               => 'Assign Terms',
+				'description'         => 'Assigns existing taxonomy terms to a post of any post type. By default adds to the post\'s current terms; set append to false to replace them. The taxonomy must be registered for the post\'s type. Use create-term first for terms that do not exist yet.',
+				'input_schema'        => array(
+					'type'       => 'object',
+					'properties' => array(
+						'post_id'  => array(
+							'type'        => 'integer',
+							'description' => 'ID of the post to assign terms to.',
+						),
+						'taxonomy' => array(
+							'type'        => 'string',
+							'description' => 'Taxonomy slug (e.g. "category", "post_tag").',
+						),
+						'terms'    => array(
+							'type'        => 'array',
+							'items'       => array( 'type' => array( 'string', 'integer' ) ),
+							'description' => 'Terms to assign, as term IDs, slugs, or names. Pass an empty array with append false to remove all terms in this taxonomy.',
+						),
+						'append'   => array(
+							'type'        => 'boolean',
+							'description' => 'Add to the existing terms (true, default) or replace them (false).',
+						),
+					),
+					'required'   => array( 'post_id', 'taxonomy', 'terms' ),
+				),
+				'output_schema'       => array(
+					'type'       => 'object',
+					'properties' => array(
+						'post_id' => array( 'type' => 'integer' ),
+						'terms'   => array( 'type' => 'array' ),
+					),
+				),
+				'permission_callback' => [ $this, 'check_posts_edit_permission' ],
+				'execute_callback'    => [ $this, 'assign_terms' ],
+				'meta'                => array(
+					'mcp'         => array( 'public' => true ),
+					'annotations' => array(
+						'readonly'    => false,
+						'destructive' => false,
+						'idempotent'  => true,
+					),
+				),
+			)
+		);
+
+		wp_register_ability(
 			'829-tools/get-content-schema',
 			array(
 				'category'            => '829-tools',
@@ -1484,7 +1647,7 @@ class MCP {
 	}
 
 	/**
-	 * Permission callback: read posts (list-posts, get-post). Execute
+	 * Permission callback: read posts and terms (list-posts, get-post, list-terms). Execute
 	 * callbacks scope non-managers to their own posts only.
 	 *
 	 * @return true|WP_Error
@@ -1528,6 +1691,16 @@ class MCP {
 	 * @return true|WP_Error
 	 */
 	public function check_media_upload_permission() {
+		return $this->check_permission( array( '829_mcp_manage_site', '829_mcp_create_posts', '829_mcp_edit_posts' ) );
+	}
+
+	/**
+	 * Permission callback: create taxonomy terms. Like core, post writers may
+	 * add flat terms (tags); create_term() limits hierarchical ones to editors.
+	 *
+	 * @return true|WP_Error
+	 */
+	public function check_terms_create_permission() {
 		return $this->check_permission( array( '829_mcp_manage_site', '829_mcp_create_posts', '829_mcp_edit_posts' ) );
 	}
 
@@ -3553,6 +3726,265 @@ class MCP {
 	}
 
 	/**
+	 * Execute callback: list terms in a taxonomy.
+	 *
+	 * @param  array $input Ability input.
+	 * @return array|WP_Error
+	 */
+	public function list_terms( $input = array() ) {
+		$taxonomy = $this->get_editable_taxonomy( $input['taxonomy'] ?? '' );
+
+		if ( is_wp_error( $taxonomy ) ) {
+			return $taxonomy;
+		}
+
+		$per_page = min( max( intval( $input['per_page'] ?? 50 ), 1 ), 100 );
+		$page     = max( intval( $input['page'] ?? 1 ), 1 );
+
+		$args = array(
+			'taxonomy'   => $taxonomy->name,
+			'hide_empty' => ! empty( $input['hide_empty'] ),
+		);
+
+		if ( ! empty( $input['search'] ) ) {
+			$args['search'] = sanitize_text_field( $input['search'] );
+		}
+
+		if ( ! empty( $input['slug'] ) ) {
+			$args['slug'] = sanitize_title( $input['slug'] );
+		}
+
+		if ( isset( $input['parent'] ) ) {
+			$args['parent'] = intval( $input['parent'] );
+		}
+
+		$total = wp_count_terms( $args );
+		$total = is_wp_error( $total ) ? 0 : (int) $total;
+
+		$terms = get_terms(
+			array_merge(
+				$args,
+				array(
+					'orderby' => 'name',
+					'order'   => 'ASC',
+					'number'  => $per_page,
+					'offset'  => ( $page - 1 ) * $per_page,
+				)
+			)
+		);
+
+		if ( is_wp_error( $terms ) ) {
+			return $terms;
+		}
+
+		$results = array();
+
+		foreach ( $terms as $term ) {
+			$results[] = $this->format_term( $term );
+		}
+
+		return array(
+			'terms' => $results,
+			'total' => $total,
+			'pages' => max( (int) ceil( $total / $per_page ), 1 ),
+		);
+	}
+
+	/**
+	 * Execute callback: create a term.
+	 *
+	 * @param  array $input Ability input.
+	 * @return array|WP_Error
+	 */
+	public function create_term( $input = array() ) {
+		$taxonomy = $this->get_editable_taxonomy( $input['taxonomy'] ?? '' );
+
+		if ( is_wp_error( $taxonomy ) ) {
+			return $taxonomy;
+		}
+
+		$name = trim( (string) ( $input['name'] ?? '' ) );
+
+		if ( '' === $name ) {
+			return new WP_Error( 'missing_name', 'Term name is required.' );
+		}
+
+		// Mirrors core: authors can add tags, but only editors can add categories.
+		if ( $taxonomy->hierarchical && ! $this->current_user_can_manage_any_post() ) {
+			return new WP_Error( 'insufficient_permission', "You do not have permission to create terms in {$taxonomy->name}." );
+		}
+
+		$args = array();
+
+		if ( ! empty( $input['slug'] ) ) {
+			$args['slug'] = sanitize_title( $input['slug'] );
+		}
+
+		if ( isset( $input['description'] ) ) {
+			$args['description'] = $input['description'];
+		}
+
+		if ( ! empty( $input['parent'] ) ) {
+			if ( ! $taxonomy->hierarchical ) {
+				return new WP_Error( 'invalid_parent', "The {$taxonomy->name} taxonomy is not hierarchical, so terms cannot have a parent." );
+			}
+
+			$parent = get_term( intval( $input['parent'] ), $taxonomy->name );
+
+			if ( ! $parent instanceof \WP_Term ) {
+				return new WP_Error( 'not_found', 'Parent term not found.' );
+			}
+
+			$args['parent'] = $parent->term_id;
+		}
+
+		$result = wp_insert_term( $name, $taxonomy->name, $args );
+
+		if ( is_wp_error( $result ) ) {
+			if ( 'term_exists' === $result->get_error_code() ) {
+				$existing = (int) $result->get_error_data();
+				return new WP_Error( 'term_exists', "A term named '{$name}' already exists in {$taxonomy->name} (ID {$existing}). Assign it with assign-terms instead." );
+			}
+
+			return $result;
+		}
+
+		return array( 'term' => $this->format_term( get_term( $result['term_id'], $taxonomy->name ) ) );
+	}
+
+	/**
+	 * Execute callback: assign terms to a post.
+	 *
+	 * @param  array $input Ability input.
+	 * @return array|WP_Error
+	 */
+	public function assign_terms( $input = array() ) {
+		$post_id = intval( $input['post_id'] ?? 0 );
+		$post    = get_post( $post_id );
+
+		if ( ! $post ) {
+			return new WP_Error( 'not_found', "Post {$post_id} not found." );
+		}
+
+		if ( ! $this->current_user_can_manage_any_post() && get_current_user_id() !== (int) $post->post_author ) {
+			return new WP_Error( 'insufficient_permission', 'You do not have permission to edit this post.' );
+		}
+
+		$taxonomy = $this->get_editable_taxonomy( $input['taxonomy'] ?? '' );
+
+		if ( is_wp_error( $taxonomy ) ) {
+			return $taxonomy;
+		}
+
+		if ( ! is_object_in_taxonomy( $post->post_type, $taxonomy->name ) ) {
+			return new WP_Error( 'invalid_taxonomy', "The {$taxonomy->name} taxonomy is not registered for the {$post->post_type} post type." );
+		}
+
+		$term_ids = array();
+		$missing  = array();
+
+		foreach ( (array) ( $input['terms'] ?? array() ) as $value ) {
+			$term = $this->find_term( $taxonomy->name, $value );
+
+			if ( $term ) {
+				$term_ids[] = $term->term_id;
+			} else {
+				$missing[] = is_scalar( $value ) ? (string) $value : wp_json_encode( $value );
+			}
+		}
+
+		// Fail rather than silently assign a partial set.
+		if ( $missing ) {
+			return new WP_Error( 'terms_not_found', "Terms not found in {$taxonomy->name}: " . implode( ', ', $missing ) . '. Create them with create-term first.' );
+		}
+
+		$append = ! isset( $input['append'] ) || ! empty( $input['append'] );
+		$result = wp_set_post_terms( $post_id, $term_ids, $taxonomy->name, $append );
+
+		if ( is_wp_error( $result ) ) {
+			return $result;
+		}
+
+		$post_terms = wp_get_post_terms( $post_id, $taxonomy->name );
+
+		if ( is_wp_error( $post_terms ) ) {
+			return $post_terms;
+		}
+
+		$assigned = array();
+
+		foreach ( $post_terms as $term ) {
+			$assigned[] = $this->format_term( $term );
+		}
+
+		return array(
+			'post_id' => $post_id,
+			'terms'   => $assigned,
+		);
+	}
+
+	/**
+	 * Look up a taxonomy that MCP may read and write.
+	 *
+	 * @param  string $taxonomy Taxonomy slug.
+	 * @return \WP_Taxonomy|WP_Error
+	 */
+	private function get_editable_taxonomy( $taxonomy ) {
+		$taxonomy = sanitize_key( $taxonomy );
+		$object   = get_taxonomy( $taxonomy );
+
+		// show_ui matches what's editable in wp-admin and excludes internal taxonomies like nav_menu and wp_theme.
+		if ( ! $object || ! $object->show_ui ) {
+			return new WP_Error( 'invalid_taxonomy', "Taxonomy '{$taxonomy}' does not exist or cannot be managed via MCP." );
+		}
+
+		return $object;
+	}
+
+	/**
+	 * Find a term by ID, slug, or name.
+	 *
+	 * @param  string     $taxonomy Taxonomy slug.
+	 * @param  string|int $value    Term ID, slug, or name.
+	 * @return \WP_Term|null
+	 */
+	private function find_term( $taxonomy, $value ) {
+		if ( ! is_scalar( $value ) || '' === (string) $value ) {
+			return null;
+		}
+
+		$term = is_numeric( $value ) ? get_term( intval( $value ), $taxonomy ) : null;
+
+		// Numeric values fall through too, for terms named like "2026".
+		if ( ! $term instanceof \WP_Term ) {
+			$term = get_term_by( 'slug', (string) $value, $taxonomy ) ?: get_term_by( 'name', (string) $value, $taxonomy );
+		}
+
+		return $term instanceof \WP_Term ? $term : null;
+	}
+
+	/**
+	 * Build a structured term array.
+	 *
+	 * @param  \WP_Term $term Term object.
+	 * @return array
+	 */
+	private function format_term( $term ) {
+		$link = get_term_link( $term );
+
+		return array(
+			'id'          => $term->term_id,
+			'name'        => $term->name,
+			'slug'        => $term->slug,
+			'taxonomy'    => $term->taxonomy,
+			'description' => $term->description,
+			'parent'      => $term->parent,
+			'count'       => $term->count,
+			'link'        => is_wp_error( $link ) ? null : $link,
+		);
+	}
+
+	/**
 	 * Format a post for summary listing.
 	 *
 	 * @param  \WP_Post $post Post object.
@@ -3634,22 +4066,18 @@ class MCP {
 	}
 
 	/**
-	 * Resolve an array of term slugs and/or IDs to term IDs.
+	 * Resolve an array of term IDs, slugs, and/or names to term IDs, skipping unknown terms.
 	 *
 	 * @param  string $taxonomy    Taxonomy slug.
-	 * @param  array  $term_values Mix of term slugs and IDs.
+	 * @param  array  $term_values Mix of term IDs, slugs, and names.
 	 * @return int[]
 	 */
 	private function resolve_term_ids( $taxonomy, $term_values ) {
 		$ids = array();
 		foreach ( $term_values as $value ) {
-			if ( is_numeric( $value ) ) {
-				$ids[] = intval( $value );
-			} else {
-				$term = get_term_by( 'slug', $value, $taxonomy );
-				if ( $term ) {
-					$ids[] = $term->term_id;
-				}
+			$term = $this->find_term( $taxonomy, $value );
+			if ( $term ) {
+				$ids[] = $term->term_id;
 			}
 		}
 		return $ids;
