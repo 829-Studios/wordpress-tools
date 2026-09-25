@@ -687,11 +687,11 @@ class MCP {
 					'properties' => array(
 						'url'         => array(
 							'type'        => 'string',
-							'description' => 'Public URL to download the file from. Provide either url or data, not both.',
+							'description' => 'Public URL to download the file from. Preferred: the site fetches the file directly, so no bytes pass through the tool call. Provide either url or data, not both.',
 						),
 						'data'        => array(
 							'type'        => 'string',
-							'description' => 'Base64-encoded file contents (a "data:<mime>;base64," prefix is allowed). Requires filename.',
+							'description' => 'Base64-encoded file contents (a "data:<mime>;base64," prefix is allowed). Requires filename. Only for small files with no public URL: long base64 strings are easily truncated when written out in a tool call.',
 						),
 						'filename'    => array(
 							'type'        => 'string',
@@ -2418,6 +2418,17 @@ class MCP {
 		if ( $is_image && '' === $alt ) {
 			wp_delete_file( $tmp );
 			return new WP_Error( 'missing_alt', 'Alt text is required when uploading an image.' );
+		}
+
+		if ( $image_mime ) {
+			$editor = wp_get_image_editor( $tmp );
+
+			if ( is_wp_error( $editor ) && 'image_no_editor' !== $editor->get_error_code() ) {
+				wp_delete_file( $tmp );
+				return new WP_Error( 'corrupt_image', 'The image is incomplete or corrupt and could not be decoded. If it was sent as data, retry with url instead.' );
+			}
+
+			unset( $editor );
 		}
 
 		$post_data = array();
