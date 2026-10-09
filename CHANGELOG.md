@@ -4,6 +4,12 @@ All notable changes to 829 Studios WordPress Tools are documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and this
 project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.11.1] - 2026-10-09
+
+### Added
+
+- **WPE Cache Clear Management** setting on the 829 Settings page (WP Engine hosts only): select existing user roles that can clear the WP Engine cache via the admin bar, without granting them `manage_options` or any other administrator-level access.
+
 ## [1.11.0] - 2026-09-21
 
 Tooling and code style only. No functional changes.
@@ -277,7 +283,8 @@ Initial release.
 - **829 Settings page**, restricted to @829llc.com in production, with multisite support.
 - Self-updating from GitHub releases.
 
-[1.11.0]: https://github.com/829-Studios/wordpress-tools/compare/1.10.0...HEAD
+[1.11.1]: https://github.com/829-Studios/wordpress-tools/compare/1.11.0...HEAD
+[1.11.0]: https://github.com/829-Studios/wordpress-tools/releases/tag/1.11.0
 [1.10.0]: https://github.com/829-Studios/wordpress-tools/releases/tag/1.10.0
 [1.9.0]: https://github.com/829-Studios/wordpress-tools/releases/tag/1.9.0
 [1.8.2]: https://github.com/829-Studios/wordpress-tools/releases/tag/1.8.2
