@@ -68,6 +68,7 @@ class Settings {
 			'limit_login'                   => 1,
 			'enable_mcp'                    => 1,
 			'update_channel'                => Updates::CHANNEL_STABLE,
+			'wpe_cache_clear_roles'         => [],
 		];
 
 		// Get settings from single option
@@ -224,6 +225,7 @@ class Settings {
 					'limit_login'                   => 1,
 					'enable_mcp'                    => 1,
 					'update_channel'                => Updates::CHANNEL_STABLE,
+					'wpe_cache_clear_roles'         => [],
 				],
 			]
 		);
@@ -306,6 +308,17 @@ class Settings {
 			'wpt-829-settings',
 			'wpt_829_general_section'
 		);
+
+		// WPE Cache Clear Roles setting field
+		if ( WPT_IS_WPE || is_local_environment() ) {
+			add_settings_field(
+				'wpt_wpe_cache_clear_roles',
+				esc_html__( 'WPE Cache Clear Management', 'wordpress-tools' ),
+				[ $this, 'wpe_cache_clear_roles_setting_callback' ],
+				'wpt-829-settings',
+				'wpt_829_general_section'
+			);
+		}
 
 		// REST API Restriction setting field
 		add_settings_field(
@@ -622,6 +635,60 @@ class Settings {
 				<p class="description" style="margin: 0 0 8px;"><?php esc_html_e( 'These users can manage themes even when restriction is enabled.', 'wordpress-tools' ); ?></p>
 				<?php $this->render_user_search_field( 'theme_management_allow_list', $allow_list ); ?>
 			</div>
+		</fieldset>
+		<?php
+	}
+
+	/**
+	 * WPE Cache Clear Roles setting callback.
+	 */
+	public function wpe_cache_clear_roles_setting_callback() {
+		$settings      = self::get_settings();
+		$allowed_roles = ! empty( $settings['wpe_cache_clear_roles'] ) ? (array) $settings['wpe_cache_clear_roles'] : [];
+		$this->render_wpe_cache_clear_roles_field( $allowed_roles );
+	}
+
+	/**
+	 * Shared fieldset for the WPE Cache Clear Roles setting.
+	 *
+	 * @param array $allowed_roles Role slugs currently allowed to clear the WPE cache.
+	 */
+	private function render_wpe_cache_clear_roles_field( array $allowed_roles ): void {
+		$roles = wp_roles()->get_names();
+		unset( $roles['administrator'] ); // Administrators can already clear the cache.
+		?>
+		<fieldset>
+			<div class="wpt-role-select" data-setting-key="wpe_cache_clear_roles">
+				<div class="wpt-role-tags">
+					<?php foreach ( $allowed_roles as $role_slug ) : ?>
+						<?php if ( isset( $roles[ $role_slug ] ) ) : ?>
+							<span class="wpt-role-tag">
+								<span class="wpt-role-tag-label"><?php echo esc_html( translate_user_role( $roles[ $role_slug ] ) ); ?></span>
+								<button type="button" class="wpt-role-tag-remove" data-role-slug="<?php echo esc_attr( $role_slug ); ?>" aria-label="<?php echo esc_attr( sprintf( __( 'Remove %s', 'wordpress-tools' ), translate_user_role( $roles[ $role_slug ] ) ) ); ?>">&times;</button>
+							</span>
+						<?php endif; ?>
+					<?php endforeach; ?>
+				</div>
+				<div class="wpt-role-ids">
+					<?php foreach ( $allowed_roles as $role_slug ) : ?>
+						<?php if ( isset( $roles[ $role_slug ] ) ) : ?>
+							<input type="hidden" name="wpt_settings[wpe_cache_clear_roles][]" value="<?php echo esc_attr( $role_slug ); ?>" />
+						<?php endif; ?>
+					<?php endforeach; ?>
+				</div>
+				<select class="wpt-role-select-input">
+					<option value=""><?php esc_html_e( 'Select a role…', 'wordpress-tools' ); ?></option>
+					<?php foreach ( $roles as $role_slug => $role_name ) : ?>
+						<option
+							value="<?php echo esc_attr( $role_slug ); ?>"
+							<?php echo in_array( $role_slug, $allowed_roles, true ) ? 'hidden disabled' : ''; ?>
+						>
+							<?php echo esc_html( translate_user_role( $role_name ) ); ?>
+						</option>
+					<?php endforeach; ?>
+				</select>
+			</div>
+			<p class="description"><?php esc_html_e( 'Users with these roles can clear the WP Engine cache via the admin bar, without being granted full administrator access.', 'wordpress-tools' ); ?></p>
 		</fieldset>
 		<?php
 	}
@@ -1078,6 +1145,11 @@ class Settings {
 		// Sanitize enable_mcp
 		$sanitized['enable_mcp'] = isset( $input['enable_mcp'] ) ? intval( $input['enable_mcp'] ) : 1;
 
+		// Sanitize wpe_cache_clear_roles — drops slugs that aren't currently registered roles
+		$sanitized['wpe_cache_clear_roles'] = isset( $input['wpe_cache_clear_roles'] )
+			? array_values( array_intersect( array_map( 'sanitize_key', (array) $input['wpe_cache_clear_roles'] ), array_keys( wp_roles()->get_names() ) ) )
+			: [];
+
 		// Sanitize update_channel — recombine the radio and branch input into a single value.
 		// The fields are absent when the constant locks them, since disabled inputs aren't
 		// submitted; keep the stored value rather than resetting it to stable.
@@ -1129,6 +1201,22 @@ class Settings {
 			[
 				'ajaxUrl'     => admin_url( 'admin-ajax.php' ),
 				'nonce'       => wp_create_nonce( 'wpt_search_users' ),
+				'removeLabel' => __( 'Remove', 'wordpress-tools' ),
+			]
+		);
+
+		wp_enqueue_script(
+			'wpt-settings-role-select',
+			WPT_PLUGIN_URL . 'assets/js/settings-role-select.js',
+			[],
+			file_exists( WPT_PLUGIN_DIR . 'assets/js/settings-role-select.js' ) ? filemtime( WPT_PLUGIN_DIR . 'assets/js/settings-role-select.js' ) : WPT_VERSION,
+			true
+		);
+
+		wp_localize_script(
+			'wpt-settings-role-select',
+			'wptRoleSelect',
+			[
 				'removeLabel' => __( 'Remove', 'wordpress-tools' ),
 			]
 		);
@@ -1408,6 +1496,16 @@ class Settings {
 								<?php $this->render_theme_management_restriction_field( $restrict_theme_management, $theme_management_allow_list ); ?>
 							</td>
 						</tr>
+						<?php if ( WPT_IS_WPE || is_local_environment() ) : ?>
+							<tr>
+								<th scope="row">
+									<?php esc_html_e( 'WPE Cache Clear Management', 'wordpress-tools' ); ?>
+								</th>
+								<td>
+									<?php $this->render_wpe_cache_clear_roles_field( ! empty( $settings['wpe_cache_clear_roles'] ) ? (array) $settings['wpe_cache_clear_roles'] : [] ); ?>
+								</td>
+							</tr>
+						<?php endif; ?>
 						<tr>
 							<th scope="row">
 								<?php esc_html_e( 'REST API Availability', 'wordpress-tools' ); ?>
