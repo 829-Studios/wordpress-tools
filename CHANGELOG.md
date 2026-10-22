@@ -4,6 +4,16 @@ All notable changes to 829 Studios WordPress Tools are documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and this
 project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.13.0] - 2026-10-22
+
+### Changed
+
+- **WPE Cache Clear Management** now always grants the **editor** role access to clear the WP Engine cache, and the setting is now a user picker instead of a role picker — add individual users to grant them the same access alongside editors. The editor role is automatically added to WP Engine's admin-bar visibility option, and configured users are also allowed to see the cache-clear toolbar link.
+
+### Fixed
+
+- **WPE Cache Clear Management** now works on multisite. WP Engine gates its cache-clear admin-bar link and network admin page on `manage_network` (not `manage_options`) on multisite, so qualifying users could see but not use the link; the scoped capability grant now covers whichever capability WP Engine checks.
+
 ## [1.12.0] - 2026-10-22
 
 ### Added
