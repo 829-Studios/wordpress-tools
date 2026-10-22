@@ -443,7 +443,8 @@ class TwoFactor {
 		?>
 		<p><?php esc_html_e( 'Click below to activate Two-Factor Authentication on your account.', 'wordpress-tools' ); ?></p>
 		<p><strong><?php esc_html_e( 'If you did not just set this up yourself, do not confirm - change your password immediately instead.', 'wordpress-tools' ); ?></strong></p>
-		<form method="post">
+		<?php // Same action as core's login form so hosts can tag it (WP Engine drops wp-login.php POSTs without ?wpe-login=true). ?>
+		<form method="post" action="<?php echo esc_url( site_url( 'wp-login.php', 'login_post' ) ); ?>">
 			<input type="hidden" name="<?php echo esc_attr( self::CONFIRM_QUERY_VAR ); ?>" value="1" />
 			<input type="hidden" name="user_id" value="<?php echo esc_attr( $user_id ); ?>" />
 			<input type="hidden" name="token" value="<?php echo esc_attr( $token ); ?>" />
