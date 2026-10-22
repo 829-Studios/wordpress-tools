@@ -21,8 +21,11 @@ if ( ! defined( 'ABSPATH' ) ) {
  * admin page, and REST endpoints behind hardcoded manage_options/has_cap() checks,
  * and their own Display tab only controls who can see the admin-bar menu, not who
  * can actually clear the cache. This class answers "yes" to those specific checks
- * for the roles configured in 829 Settings, scoped to only the three contexts that
- * matter — never anywhere else in wp-admin.
+ * for the editor role (always) and any individually configured users in 829
+ * Settings, scoped to only the three contexts that matter — never anywhere else in
+ * wp-admin. On multisite WPE checks manage_network instead of manage_options for the
+ * admin-bar link and network admin page, so the same scoping covers whichever
+ * primitive cap the check asks for.
  */
 class WpeCacheAccess {
 
@@ -39,6 +42,13 @@ class WpeCacheAccess {
 	];
 
 	/**
+	 * The role that always gets WPE cache-clearing access.
+	 *
+	 * @var string
+	 */
+	const ALWAYS_ALLOWED_ROLE = 'editor';
+
+	/**
 	 * Setup module
 	 */
 	public function setup() {
@@ -46,46 +56,77 @@ class WpeCacheAccess {
 			return;
 		}
 
-		// Layer the configured roles onto WPE's own admin-bar-visibility option at
-		// read time, rather than overwriting it — so manual edits on the WP Engine
-		// Display tab and this setting never clobber each other.
-		add_filter( 'option_wpe-adminbar-roles', [ $this, 'merge_admin_bar_roles' ] );
+		// Persist the editor role into WPE's admin-bar-visibility option so the
+		// cache-clear link shows for editors. Merged in, never overwriting, so
+		// manual edits on the WP Engine Display tab are preserved.
+		add_action( 'admin_init', [ $this, 'ensure_editor_adminbar_access' ] );
 
-		add_filter( 'user_has_cap', [ $this, 'scope_manage_options_to_cache_clearing' ], 10, 4 );
+		add_filter( 'user_has_cap', [ $this, 'grant_wpe_cache_access' ], 10, 4 );
 		add_filter( 'rest_request_before_callbacks', [ $this, 'flag_cache_rest_request' ], 5, 3 );
 		add_filter( 'rest_request_after_callbacks', [ $this, 'unflag_cache_rest_request' ], 20 );
 	}
 
 	/**
-	 * The role slugs configured in 829 Settings as allowed to clear the WPE cache.
+	 * The individual user IDs configured in 829 Settings as allowed to clear the cache.
 	 *
-	 * @return array
+	 * @return int[]
 	 */
-	protected function get_allowed_roles() {
+	protected function get_allowed_user_ids() {
 		$settings = Settings::get_settings();
 
-		return ! empty( $settings['wpe_cache_clear_roles'] ) ? (array) $settings['wpe_cache_clear_roles'] : [];
+		return ! empty( $settings['wpe_cache_clear_users'] )
+			? array_map( 'intval', (array) $settings['wpe_cache_clear_users'] )
+			: [];
 	}
 
 	/**
-	 * Merges the configured roles into the WPE admin-bar-roles option at read time.
+	 * Whether a user may clear the WPE cache: the editor role always qualifies, plus
+	 * any individually configured users.
 	 *
-	 * @param mixed $value The stored option value.
-	 * @return mixed
+	 * @param \WP_User $user The user object.
+	 * @return bool
 	 */
-	public function merge_admin_bar_roles( $value ) {
-		$allowed_roles = $this->get_allowed_roles();
-
-		if ( empty( $allowed_roles ) ) {
-			return $value;
+	protected function user_can_clear_wpe_cache( $user ) {
+		if ( empty( $user ) || empty( $user->ID ) ) {
+			return false;
 		}
 
-		return array_values( array_unique( array_merge( (array) $value, $allowed_roles ) ) );
+		if ( in_array( self::ALWAYS_ALLOWED_ROLE, (array) $user->roles, true ) ) {
+			return true;
+		}
+
+		return in_array( (int) $user->ID, $this->get_allowed_user_ids(), true );
 	}
 
 	/**
-	 * Treat manage_options as granted for configured roles, scoped to the
-	 * WP Engine cache-clearing admin-bar link, admin page tab, and REST routes.
+	 * Ensure the editor role is present in WPE's admin-bar-roles option so editors
+	 * can see the cache-clear link. Merges rather than overwrites, and only writes
+	 * when the role is missing.
+	 */
+	public function ensure_editor_adminbar_access() {
+		$roles = get_option( 'wpe-adminbar-roles', [] );
+		$roles = is_array( $roles ) ? $roles : [];
+
+		if ( in_array( self::ALWAYS_ALLOWED_ROLE, $roles, true ) ) {
+			return;
+		}
+
+		$roles[] = self::ALWAYS_ALLOWED_ROLE;
+		update_option( 'wpe-adminbar-roles', array_values( array_unique( $roles ) ) );
+	}
+
+	/**
+	 * Grant the capabilities WP Engine checks for cache clearing to qualifying
+	 * users (the editor role and individually configured users), scoped to the
+	 * admin-bar link, admin page tab, and REST routes.
+	 *
+	 * On multisite WPE gates the admin-bar link and network admin page on
+	 * manage_network (see WpeCommon::get_required_admin_capability), while the
+	 * caching tab view and REST routes still check manage_options — so we grant
+	 * whichever primitive cap the current check is asking for. During admin-bar
+	 * build WPE also gates link visibility on user_has_access(), which calls
+	 * user_can( $user, 'editor' ) against the saved adminbar roles; we satisfy that
+	 * for configured users whose own role wouldn't otherwise match.
 	 *
 	 * @param array    $allcaps All the capabilities of the user.
 	 * @param array    $caps    Required primitive capabilities for the requested capability.
@@ -93,19 +134,35 @@ class WpeCacheAccess {
 	 * @param \WP_User $user    The user object.
 	 * @return array
 	 */
-	public function scope_manage_options_to_cache_clearing( $allcaps, $caps, $args, $user ) {
-		if ( ! in_array( 'manage_options', $caps, true ) || empty( $user->roles ) ) {
+	public function grant_wpe_cache_access( $allcaps, $caps, $args, $user ) {
+		// Cheap relevance gate first — this filter fires on nearly every cap check,
+		// but we only ever touch the admin caps WPE needs plus the 'editor' marker
+		// its visibility check reads.
+		$admin_caps = is_multisite() ? [ 'manage_options', 'manage_network' ] : [ 'manage_options' ];
+
+		if ( empty( array_intersect( array_merge( $admin_caps, [ self::ALWAYS_ALLOWED_ROLE ] ), $caps ) ) ) {
 			return $allcaps;
 		}
 
-		$allowed_roles = $this->get_allowed_roles();
+		$in_admin_bar = $this->is_admin_bar_cache_link_context();
 
-		if ( empty( $allowed_roles ) || empty( array_intersect( (array) $user->roles, $allowed_roles ) ) ) {
+		if ( ! $in_admin_bar && ! $this->is_cache_admin_page_context() && ! $this->is_cache_rest_context() ) {
 			return $allcaps;
 		}
 
-		if ( $this->is_admin_bar_cache_link_context() || $this->is_cache_admin_page_context() || $this->is_cache_rest_context() ) {
-			$allcaps['manage_options'] = true;
+		if ( ! $this->user_can_clear_wpe_cache( $user ) ) {
+			return $allcaps;
+		}
+
+		foreach ( array_intersect( $admin_caps, $caps ) as $cap ) {
+			$allcaps[ $cap ] = true;
+		}
+
+		// Satisfy WPE's user_has_access() visibility check for configured users.
+		// Only flags has_cap( 'editor' ) true — it does not grant the editor role's
+		// other capabilities.
+		if ( $in_admin_bar && in_array( self::ALWAYS_ALLOWED_ROLE, $caps, true ) ) {
+			$allcaps[ self::ALWAYS_ALLOWED_ROLE ] = true;
 		}
 
 		return $allcaps;
