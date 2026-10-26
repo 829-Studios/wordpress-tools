@@ -97,6 +97,9 @@ class API {
 
 		$allowed_rest_routes_override = apply_filters( 'wpt_rest_api_allowlist', [] );
 
-		return is_user_logged_in() || in_array( $route, $allowed_rest_routes_override, true );
+		// Match the front end's check under Require Login, so multisite users must belong to this site.
+		$is_allowed_user = RequireLogin::is_active() ? RequireLogin::can_view() : is_user_logged_in();
+
+		return $is_allowed_user || in_array( $route, $allowed_rest_routes_override, true );
 	}
 }

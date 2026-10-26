@@ -810,7 +810,7 @@ class Settings {
 		$settings      = self::get_settings();
 		$is_locked     = RequireLogin::is_locked();
 		$is_applicable = $is_locked || is_staging_or_dev();
-		$value         = $is_locked ? (int) (bool) WPT_REQUIRE_LOGIN : (int) $settings['require_login'];
+		$value         = $is_locked ? (int) RequireLogin::is_active() : (int) $settings['require_login'];
 		?>
 		<fieldset>
 			<?php if ( $is_locked ) : ?>

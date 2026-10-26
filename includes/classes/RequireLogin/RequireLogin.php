@@ -18,10 +18,8 @@ if ( ! defined( 'ABSPATH' ) ) {
 /**
  * RequireLogin class
  *
- * Sends logged-out visitors to the login page for everything WordPress serves:
- * pages, feeds, sitemaps, REST, XML-RPC, admin-ajax and admin-post. Application
- * passwords still authenticate REST requests, so MCP keeps working. Static files
- * (uploads, theme assets) are served by the web server and stay public.
+ * Sends logged-out visitors to the login page; application passwords still work for REST, so MCP does too.
+ * Static files like uploads are served by the web server and stay public.
  */
 class RequireLogin {
 
@@ -31,6 +29,8 @@ class RequireLogin {
 	 * Setup hooks.
 	 */
 	public function setup() {
+		add_action( 'add_option_wpt_settings', [ $this, 'on_settings_added' ], 10, 2 );
+		add_action( 'add_site_option_wpt_settings', [ $this, 'on_settings_added' ], 10, 2 );
 		add_action( 'update_option_wpt_settings', [ $this, 'on_settings_update' ], 10, 2 );
 		add_action( 'update_site_option_wpt_settings', [ $this, 'on_network_settings_update' ], 10, 3 );
 
@@ -39,11 +39,14 @@ class RequireLogin {
 		}
 
 		add_action( 'parse_request', [ $this, 'gate_frontend' ], 1 );
-		add_action( 'admin_init', [ $this, 'gate_admin_requests' ], 1 );
-		add_filter( 'robots_txt', [ $this, 'disallow_all_robots' ], PHP_INT_MAX );
+		add_action( 'pre_comment_on_post', [ $this, 'gate_comments' ] );
 		add_filter( 'xmlrpc_methods', '__return_empty_array', PHP_INT_MAX );
-		add_filter( 'pre_option_users_can_register', '__return_zero' );
-		add_filter( 'pre_site_option_registration', [ $this, 'disable_network_registration' ] );
+
+		// Outside wp-admin only, so saving Settings > General doesn't store the override.
+		if ( ! is_admin() ) {
+			add_filter( 'pre_option_users_can_register', '__return_zero' );
+			add_filter( 'pre_site_option_registration', [ $this, 'disable_network_registration' ] );
+		}
 	}
 
 	/**
@@ -62,7 +65,8 @@ class RequireLogin {
 	 */
 	public static function is_active(): bool {
 		if ( self::is_locked() ) {
-			return (bool) WPT_REQUIRE_LOGIN;
+			// Parsed rather than cast, so a string like 'false' doesn't turn it on.
+			return filter_var( WPT_REQUIRE_LOGIN, FILTER_VALIDATE_BOOLEAN );
 		}
 
 		// The setting travels with the database, so a staging copy pushed live must not lock production.
@@ -82,7 +86,7 @@ class RequireLogin {
 	 *
 	 * @return bool
 	 */
-	private static function can_view(): bool {
+	public static function can_view(): bool {
 		return current_user_can( 'read' );
 	}
 
@@ -94,46 +98,51 @@ class RequireLogin {
 	public function gate_frontend( $wp ) {
 		// REST is gated by API::restrict_rest_api(). Checking the user here would cache a logged-out
 		// user before REST_REQUEST is defined, which is what lets application passwords authenticate.
-		if ( ! empty( $wp->query_vars['rest_route'] ) || ! empty( $wp->query_vars['robots'] ) ) {
+		if ( ! empty( $wp->query_vars['rest_route'] ) ) {
 			return;
+		}
+
+		// Answer robots.txt and stop here, so other query vars (e.g. ?robots=1&sitemap=1) can't ride along.
+		if ( ! empty( $wp->query_vars['robots'] ) ) {
+			header( 'Content-Type: text/plain; charset=utf-8' );
+			echo "User-agent: *\nDisallow: /\n";
+			exit;
 		}
 
 		if ( self::can_view() ) {
 			return;
 		}
 
+		nocache_headers();
+
+		// Sending them back to the login form would loop, since they're already logged in.
+		if ( is_user_logged_in() ) {
+			wp_die(
+				esc_html__( 'Your account doesn\'t have access to this site.', 'wordpress-tools' ),
+				'',
+				[
+					'response'  => 403,
+					'link_url'  => esc_url( wp_logout_url() ),
+					'link_text' => esc_html__( 'Log out', 'wordpress-tools' ),
+				]
+			);
+		}
+
 		$redirect_to = isset( $_SERVER['REQUEST_URI'] ) ? esc_url_raw( wp_unslash( $_SERVER['REQUEST_URI'] ) ) : '/';
 
-		nocache_headers();
 		wp_safe_redirect( wp_login_url( $redirect_to ) );
 		exit;
 	}
 
 	/**
-	 * Block logged-out admin-ajax and admin-post requests.
-	 *
-	 * Core already sends logged-out wp-admin screens to the login page before admin_init.
+	 * Block logged-out comment submissions, which never reach parse_request.
 	 */
-	public function gate_admin_requests() {
+	public function gate_comments() {
 		if ( self::can_view() ) {
 			return;
 		}
 
-		// Heartbeat is how an expired admin session learns to show the re-login modal.
-		if ( wp_doing_ajax() && 'heartbeat' === filter_input( INPUT_POST, 'action' ) ) {
-			return;
-		}
-
-		wp_die( esc_html__( 'You must be logged in to view this site.', 'wordpress-tools' ), '', [ 'response' => 403 ] );
-	}
-
-	/**
-	 * Tell crawlers to stay out, rather than redirecting robots.txt to the login page.
-	 *
-	 * @return string
-	 */
-	public function disallow_all_robots() {
-		return "User-agent: *\nDisallow: /\n";
+		wp_die( esc_html__( 'You must be logged in to comment.', 'wordpress-tools' ), '', [ 'response' => 403 ] );
 	}
 
 	/**
@@ -143,6 +152,16 @@ class RequireLogin {
 	 */
 	public function disable_network_registration() {
 		return 'none';
+	}
+
+	/**
+	 * Purge the page cache when the settings are first saved with the setting on.
+	 *
+	 * @param string $option Option name.
+	 * @param mixed  $value  New settings.
+	 */
+	public function on_settings_added( $option, $value ) {
+		$this->maybe_purge_page_cache( [], $value );
 	}
 
 	/**

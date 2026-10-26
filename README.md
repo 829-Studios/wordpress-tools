@@ -55,7 +55,9 @@ This plugin provides multiple layers of security protection:
 - **Require Login to View Site**: Optional setting for staging/dev sites that need to stay private without server-level basic auth (which blocks MCP):
   - Logged-out visitors are sent to the login page for pages, feeds, sitemaps, and search
   - REST API is restricted to logged-in users; application passwords still work, so MCP is unaffected
-  - XML-RPC, logged-out admin-ajax/admin-post requests, and user registration are disabled
+  - XML-RPC, logged-out comments, and user registration are disabled
+  - REST endpoints that log users in (such as a JWT plugin's `/jwt-auth/v1/token`) must be allowed with the `wpt_rest_api_allowlist` filter, which takes exact routes
+  - Needs the standard `wp-login.php`. Plugins that move the login form to a front-end page will loop, and on multisite, add new users with **Skip Confirmation Email** since the activation page is locked too
   - `robots.txt` returns `Disallow: /`
   - Uploaded files and theme/plugin assets are served directly by the web server and stay publicly accessible
   - Ignored in production so a staging database pushed live can't lock the site; use `WPT_REQUIRE_LOGIN` to force it
