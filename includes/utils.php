@@ -75,7 +75,8 @@ function is_staging_or_dev() {
 		return true;
 	}
 
-	return defined( 'WP_ENVIRONMENT_TYPE' ) && 'production' !== WP_ENVIRONMENT_TYPE;
+	// Core's reading, so unrecognized values like 'live' count as production and env vars are respected.
+	return 'production' !== wp_get_environment_type();
 }
 
 /**

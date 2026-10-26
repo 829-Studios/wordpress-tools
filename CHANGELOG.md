@@ -18,6 +18,7 @@ project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 - Sites on a `.dev` domain are no longer treated as local and noindexed. `.dev` is a public domain ending, not a local one.
 - The No-Index Banner no longer shows on staging sites that set `WP_ENVIRONMENT_TYPE` but aren't on a known staging domain, where noindex is expected.
+- Force No-Index and Require Login now read the environment type the way WordPress core does: unrecognized values such as `live` count as production instead of staging, and a `WP_ENVIRONMENT_TYPE` environment variable is respected.
 
 ## [1.13.0] - 2026-10-22
 
