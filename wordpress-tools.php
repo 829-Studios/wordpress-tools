@@ -97,20 +97,7 @@ if ( file_exists( __DIR__ . '/vendor/autoload.php' ) ) {
 }
 
 if ( ! defined( 'WP_ENVIRONMENT_TYPE' ) ) {
-	$staging_domains = [ '829dev.com', 'wpenginepowered.com' ];
-	$current_domain  = strtolower( wp_parse_url( site_url(), PHP_URL_HOST ) );
-	$is_staging      = false;
-
-	// Check if current domain matches or is a subdomain of any staging domain
-	foreach ( $staging_domains as $staging_domain ) {
-		$suffix = '.' . $staging_domain;
-		if ( $current_domain === $staging_domain || substr( $current_domain, -strlen( $suffix ) ) === $suffix ) {
-			$is_staging = true;
-			break;
-		}
-	}
-
-	if ( $is_staging ) {
+	if ( Utils\is_staging_domain() ) {
 		define( 'WP_ENVIRONMENT_TYPE', 'staging' );
 	} elseif ( Utils\is_local_environment() ) {
 		define( 'WP_ENVIRONMENT_TYPE', 'development' );

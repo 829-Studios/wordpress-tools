@@ -10,6 +10,8 @@ namespace WordPressTools\NoIndexBanner;
 use WordPressTools\Singleton;
 use WordPressTools\Settings\Settings;
 use function WordPressTools\Utils\is_829_user;
+use function WordPressTools\Utils\is_domain_or_subdomain;
+use function WordPressTools\Utils\is_staging_or_dev;
 
 if ( ! defined( 'ABSPATH' ) ) {
 	exit;
@@ -33,28 +35,12 @@ class NoIndexBanner {
 	private $page_is_noindex = false;
 
 	/**
-	 * Built-in domains (and the .local TLD) treated as staging/dev.
-	 * These are always excluded regardless of settings.
-	 *
-	 * @var string[]
-	 */
-	private const EXCLUDED_DOMAINS = [
-		'829dev.com',
-		'829stage.com',
-		'pec-dev.com',
-		'pec-stage.com',
-		'wpengine.com',
-		'wpenginepowered.com',
-		'local', // matches any *.local domain
-	];
-
-	/**
 	 * Setup hooks.
 	 */
 	public function setup() {
 		$settings = Settings::get_settings();
 
-		if ( ! $settings['noindex_banner_enabled'] || is_admin() || $this->is_excluded_domain( $settings ) ) {
+		if ( ! $settings['noindex_banner_enabled'] || is_admin() || is_staging_or_dev() || $this->is_excluded_domain( $settings ) ) {
 			return;
 		}
 
@@ -64,23 +50,17 @@ class NoIndexBanner {
 	}
 
 	/**
-	 * Return true when the current domain is a known or user-defined staging/dev environment.
+	 * Return true when the current domain is one of the user-defined excluded domains.
 	 *
 	 * @param  array $settings Plugin settings.
 	 * @return bool
 	 */
 	private function is_excluded_domain( array $settings ): bool {
-		$current_domain = strtolower( (string) wp_parse_url( site_url(), PHP_URL_HOST ) );
+		$current_domain = wp_parse_url( site_url(), PHP_URL_HOST );
+		$excluded       = array_filter( array_map( 'trim', (array) ( $settings['noindex_banner_excluded_domains'] ?? [] ) ) );
 
-		$all_excluded = array_merge(
-			self::EXCLUDED_DOMAINS,
-			array_filter( array_map( 'trim', (array) ( $settings['noindex_banner_excluded_domains'] ?? [] ) ) )
-		);
-
-		foreach ( $all_excluded as $domain ) {
-			$domain = strtolower( $domain );
-			$suffix = '.' . $domain;
-			if ( $current_domain === $domain || substr( $current_domain, -strlen( $suffix ) ) === $suffix ) {
+		foreach ( $excluded as $domain ) {
+			if ( is_domain_or_subdomain( $current_domain, $domain ) ) {
 				return true;
 			}
 		}

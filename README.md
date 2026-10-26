@@ -74,10 +74,10 @@ This plugin provides multiple layers of security protection:
 The plugin automatically adds a color-coded environment indicator to the WordPress admin toolbar, making it easy to identify which environment you're working in:
 
 - **🔴 Production** (Red): Live production sites
-- **🟡 Staging** (Orange): Staging environments (automatically detected for *.829dev.com and *.wpenginepowered.com domains)
+- **🟡 Staging** (Orange): Staging environments (automatically detected for 829dev.com, 829stage.com, pec-dev.com, pec-stage.com, wpengine.com and wpenginepowered.com domains and their subdomains)
 - **🟢 Development** (Green): Local development environments
 
-The environment type is automatically detected based on domain or can be set via the `WP_ENVIRONMENT_TYPE` constant in `wp-config.php`.
+The environment type is automatically detected based on domain or can be set via the `WP_ENVIRONMENT_TYPE` constant in `wp-config.php`. The same domain list decides where Force No-Index and Require Login apply and where the No-Index Banner is skipped, so a staging site on its own domain should set `WP_ENVIRONMENT_TYPE` to `staging`.
 
 ### Other Customizations
 - Custom admin footer text crediting WordPress and 829 Studios

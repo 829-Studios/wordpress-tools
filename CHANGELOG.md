@@ -10,6 +10,15 @@ project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 - **Require Login to View Site**: sends logged-out visitors to the login page for everything WordPress serves (pages, feeds, sitemaps, search, REST API, XML-RPC, admin-ajax and admin-post), serves a `Disallow: /` robots.txt, and turns off user registration. Application passwords still authenticate REST requests, so MCP keeps working on sites that can't use basic auth. Uploaded files and theme assets are served by the web server and stay publicly accessible. The setting is ignored in production so a staging database pushed live can't lock the site; define `WPT_REQUIRE_LOGIN` in `wp-config.php` to force it on or off on any environment.
 
+### Changed
+
+- Staging/dev detection now uses one list of staging domains (829dev.com, 829stage.com, pec-dev.com, pec-stage.com, wpengine.com, wpenginepowered.com) for the environment type, Force No-Index, Require Login and the No-Index Banner. Sites on 829stage.com and pec-dev/pec-stage domains now show **Staging** in the admin bar, and sites on WP Engine domains are always noindexed, even when `WP_ENVIRONMENT_TYPE` says production.
+
+### Fixed
+
+- Sites on a `.dev` domain are no longer treated as local and noindexed. `.dev` is a public domain ending, not a local one.
+- The No-Index Banner no longer shows on staging sites that set `WP_ENVIRONMENT_TYPE` but aren't on a known staging domain, where noindex is expected.
+
 ## [1.13.0] - 2026-10-22
 
 ### Changed

@@ -30,40 +30,52 @@ function is_local_environment() {
 }
 
 /**
- * Return true when the current environment is staging or dev.
+ * Check if a host is the given domain or one of its subdomains.
  *
- * Domain and TLD checks run first and override WP_ENVIRONMENT_TYPE, so a site
- * explicitly set to 'production' is still protected when its domain is a known
- * staging/dev domain or local TLD.
+ * @param string $host   Host to check.
+ * @param string $domain Domain to match.
+ * @return bool
+ */
+function is_domain_or_subdomain( $host, $domain ) {
+	$host   = strtolower( (string) $host );
+	$domain = strtolower( (string) $domain );
+	$suffix = '.' . $domain;
+
+	return $host === $domain || substr( $host, -strlen( $suffix ) ) === $suffix;
+}
+
+/**
+ * Check if the site is on a known staging/dev hosting domain.
+ *
+ * @return bool
+ */
+function is_staging_domain() {
+	$staging_domains = [ '829dev.com', '829stage.com', 'pec-dev.com', 'pec-stage.com', 'wpengine.com', 'wpenginepowered.com' ];
+	$current_domain  = wp_parse_url( site_url(), PHP_URL_HOST );
+
+	foreach ( $staging_domains as $domain ) {
+		if ( is_domain_or_subdomain( $current_domain, $domain ) ) {
+			return true;
+		}
+	}
+
+	return false;
+}
+
+/**
+ * Check if the current environment is staging or dev.
+ *
+ * Staging domains and local hosts win over WP_ENVIRONMENT_TYPE, so a copy of production
+ * that still says 'production' is treated as staging.
  *
  * @return bool
  */
 function is_staging_or_dev() {
-	$current_domain = strtolower( (string) wp_parse_url( site_url(), PHP_URL_HOST ) );
-
-	// Known staging/dev domain patterns — override WP_ENVIRONMENT_TYPE.
-	$staging_domains = [ '829dev.com', '829stage.com', 'pec-dev.com', 'pec-stage.com' ];
-	foreach ( $staging_domains as $domain ) {
-		$suffix = '.' . $domain;
-		if ( $current_domain === $domain || substr( $current_domain, -strlen( $suffix ) ) === $suffix ) {
-			return true;
-		}
-	}
-
-	// Local TLDs — override WP_ENVIRONMENT_TYPE.
-	$local_tlds = [ '.local', '.localhost', '.dev' ];
-	foreach ( $local_tlds as $tld ) {
-		if ( substr( $current_domain, -strlen( $tld ) ) === $tld ) {
-			return true;
-		}
-	}
-
-	// Fall back to WP_ENVIRONMENT_TYPE for any other non-production environment.
-	if ( defined( 'WP_ENVIRONMENT_TYPE' ) && 'production' !== WP_ENVIRONMENT_TYPE ) {
+	if ( is_staging_domain() || is_local_environment() ) {
 		return true;
 	}
 
-	return false;
+	return defined( 'WP_ENVIRONMENT_TYPE' ) && 'production' !== WP_ENVIRONMENT_TYPE;
 }
 
 /**
