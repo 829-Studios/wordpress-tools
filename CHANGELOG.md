@@ -8,7 +8,7 @@ project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ### Added
 
-- **Require Login to View Site** (staging/dev only): sends logged-out visitors to the login page and requires login for REST. Application passwords still work, so MCP works without basic auth. Uploads stay public. `WPT_REQUIRE_LOGIN` overrides it on any environment.
+- Add option to require login to view sites (staging/dev only). When on, logged-out visitors are sent to the login page and REST requires login. Application passwords still work, so MCP works without basic auth. Uploads stay public. `WPT_REQUIRE_LOGIN` overrides the setting on any environment.
 
 ## [1.14.0] - 2026-10-26
 
