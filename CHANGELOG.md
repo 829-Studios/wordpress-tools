@@ -4,7 +4,7 @@ All notable changes to 829 Studios WordPress Tools are documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and this
 project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [1.14.0] - 2026-10-26
+## [Unreleased]
 
 ### Added
 
@@ -19,6 +19,17 @@ project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 - `.dev` domains are no longer treated as local.
 - The No-Index Banner no longer shows on staging sites that set `WP_ENVIRONMENT_TYPE`.
 - Unrecognized `WP_ENVIRONMENT_TYPE` values such as `live` now count as production, as in core.
+
+## [1.14.0] - 2026-10-26
+
+### Added
+
+- `upload-media` MCP ability for adding files to the media library from a URL or base64 data; images require alt text.
+- `list-terms`, `create-term`, and `assign-terms` MCP abilities for managing taxonomy terms on any post type.
+
+### Changed
+
+- The `terms` input on `create-post`, `update-post`, and `list-posts` now also accepts term names.
 
 ## [1.13.0] - 2026-10-22
 
