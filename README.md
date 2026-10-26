@@ -162,9 +162,9 @@ define( 'WPT_UPDATE_CHANNEL', 'beta' );
 2. Add the `define()` from the release notes to the staging site's `wp-config.php`.
 3. **Dashboard → Updates → Check again**, then update as normal.
 
-The pre-release is built from your branch, published as version `1.9.0-<branch-slug>.<date>.<run>`, and deleted automatically when the branch merges or is deleted.
+The pre-release is built from your branch, published as `<version>-beta.<run>.<branch-slug>`, and deleted automatically when the branch merges or is deleted. After a fix, re-run the workflow; sites on that channel get the new build without a version bump.
 
-> If the workflow fails with *"package.json is at X, which is not newer than the latest release"*, bump the version first — see below. A build at or below the current release sorts under stable and no site would be offered it.
+> If `package.json` isn't above the latest release, the build uses the next patch version (`1.14.1-beta.…` after `1.14.0`).
 
 ### Shipping a stable release
 
