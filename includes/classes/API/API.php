@@ -47,7 +47,7 @@ class API {
 		$restrict = $settings['restrict_rest_api'];
 
 		if ( ( 'all' === $restrict || RequireLogin::is_active() ) && ! $this->can_access_rest_api() ) {
-			// Logged-in users only land here under Require Login, when they don't belong to this site.
+			// Logged in but not a member of this site.
 			$message = is_user_logged_in()
 				? __( 'Your account doesn\'t have access to this site.', 'wordpress-tools' )
 				: __( 'Authentication Required', 'wordpress-tools' );
@@ -102,7 +102,7 @@ class API {
 
 		$allowed_rest_routes_override = apply_filters( 'wpt_rest_api_allowlist', [] );
 
-		// Match the front end's check under Require Login, so multisite users must belong to this site.
+		// Require Login also requires membership of this site.
 		$is_allowed_user = RequireLogin::is_active() ? RequireLogin::can_view() : is_user_logged_in();
 
 		return $is_allowed_user || in_array( $route, $allowed_rest_routes_override, true );
