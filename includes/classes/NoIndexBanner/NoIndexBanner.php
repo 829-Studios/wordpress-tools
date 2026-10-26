@@ -50,7 +50,7 @@ class NoIndexBanner {
 	}
 
 	/**
-	 * Return true when the current domain is one of the user-defined excluded domains.
+	 * Whether the site is on a user-excluded domain.
 	 *
 	 * @param  array $settings Plugin settings.
 	 * @return bool

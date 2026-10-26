@@ -63,10 +63,7 @@ function is_staging_domain() {
 }
 
 /**
- * Check if the current environment is staging or dev.
- *
- * Staging domains and local hosts win over WP_ENVIRONMENT_TYPE, so a copy of production
- * that still says 'production' is treated as staging.
+ * Check if the current environment is staging or dev. Staging and local domains override WP_ENVIRONMENT_TYPE.
  *
  * @return bool
  */
@@ -75,7 +72,7 @@ function is_staging_or_dev() {
 		return true;
 	}
 
-	// Core's reading, so unrecognized values like 'live' count as production and env vars are respected.
+	// Core's reading, so unknown values like 'live' count as production.
 	return 'production' !== wp_get_environment_type();
 }
 

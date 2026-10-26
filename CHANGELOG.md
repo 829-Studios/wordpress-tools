@@ -12,13 +12,13 @@ project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ### Changed
 
-- Staging/dev detection now uses one list of staging domains (829dev.com, 829stage.com, pec-dev.com, pec-stage.com, wpengine.com, wpenginepowered.com) for the environment type, Force No-Index, Require Login and the No-Index Banner. Sites on 829stage.com and pec-dev/pec-stage domains now show **Staging** in the admin bar, and sites on WP Engine domains are always noindexed, even when `WP_ENVIRONMENT_TYPE` says production.
+- One staging domain list (829dev, 829stage, pec-dev, pec-stage, WP Engine) now drives the environment type, Force No-Index, Require Login and the No-Index Banner.
 
 ### Fixed
 
-- Sites on a `.dev` domain are no longer treated as local and noindexed. `.dev` is a public domain ending, not a local one.
-- The No-Index Banner no longer shows on staging sites that set `WP_ENVIRONMENT_TYPE` but aren't on a known staging domain, where noindex is expected.
-- Force No-Index and Require Login now read the environment type the way WordPress core does: unrecognized values such as `live` count as production instead of staging, and a `WP_ENVIRONMENT_TYPE` environment variable is respected.
+- `.dev` domains are no longer treated as local.
+- The No-Index Banner no longer shows on staging sites that set `WP_ENVIRONMENT_TYPE`.
+- Unrecognized `WP_ENVIRONMENT_TYPE` values such as `live` now count as production, as in core.
 
 ## [1.13.0] - 2026-10-22
 
