@@ -1224,8 +1224,7 @@ class Settings {
 			$sanitized['update_channel'] = Updates::sanitize_channel( $current_settings['update_channel'] );
 		}
 
-		// Sanitize require_login — the radios are disabled (and not submitted) in production or when
-		// the constant is set; keep the stored value rather than resetting it.
+		// Sanitize require_login — keep the stored value when the radios are disabled.
 		if ( isset( $input['require_login'] ) ) {
 			$sanitized['require_login'] = intval( $input['require_login'] );
 		} else {

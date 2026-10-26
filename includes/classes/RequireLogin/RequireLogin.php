@@ -18,8 +18,7 @@ if ( ! defined( 'ABSPATH' ) ) {
 /**
  * RequireLogin class
  *
- * Sends logged-out visitors to the login page; application passwords still work for REST, so MCP does too.
- * Static files like uploads are served by the web server and stay public.
+ * Locks the site to logged-in users. Static files like uploads stay public.
  */
 class RequireLogin {
 
@@ -42,7 +41,7 @@ class RequireLogin {
 		add_action( 'pre_comment_on_post', [ $this, 'gate_comments' ] );
 		add_filter( 'xmlrpc_methods', '__return_empty_array', PHP_INT_MAX );
 
-		// Outside wp-admin only, so saving Settings > General doesn't store the override.
+		// Front end only, so saving Settings > General doesn't persist it.
 		if ( ! is_admin() ) {
 			add_filter( 'pre_option_users_can_register', '__return_zero' );
 			add_filter( 'pre_site_option_registration', [ $this, 'disable_network_registration' ] );
@@ -65,11 +64,11 @@ class RequireLogin {
 	 */
 	public static function is_active(): bool {
 		if ( self::is_locked() ) {
-			// Parsed rather than cast, so a string like 'false' doesn't turn it on.
+			// Parsed, not cast, so 'false' is false.
 			return filter_var( WPT_REQUIRE_LOGIN, FILTER_VALIDATE_BOOLEAN );
 		}
 
-		// The setting travels with the database, so a staging copy pushed live must not lock production.
+		// Ignored in production, where a staging database may have been pushed.
 		if ( ! is_staging_or_dev() ) {
 			return false;
 		}
@@ -80,9 +79,7 @@ class RequireLogin {
 	}
 
 	/**
-	 * Whether the current user may view the site.
-	 *
-	 * Uses `read` rather than is_user_logged_in() so multisite users must belong to this site.
+	 * Whether the current user may view the site; `read` requires multisite membership.
 	 *
 	 * @return bool
 	 */
@@ -96,13 +93,12 @@ class RequireLogin {
 	 * @param \WP $wp Current WordPress environment.
 	 */
 	public function gate_frontend( $wp ) {
-		// REST is gated by API::restrict_rest_api(). Checking the user here would cache a logged-out
-		// user before REST_REQUEST is defined, which is what lets application passwords authenticate.
+		// REST is gated in API; checking the user this early would break application passwords.
 		if ( ! empty( $wp->query_vars['rest_route'] ) ) {
 			return;
 		}
 
-		// Answer robots.txt and stop here, so other query vars (e.g. ?robots=1&sitemap=1) can't ride along.
+		// Answered here so extra query vars (?robots=1&sitemap=1) can't skip the gate.
 		if ( ! empty( $wp->query_vars['robots'] ) ) {
 			header( 'Content-Type: text/plain; charset=utf-8' );
 			echo "User-agent: *\nDisallow: /\n";
@@ -115,7 +111,7 @@ class RequireLogin {
 
 		nocache_headers();
 
-		// Sending them back to the login form would loop, since they're already logged in.
+		// Already logged in, so redirecting would loop.
 		if ( is_user_logged_in() ) {
 			wp_die(
 				esc_html__( 'Your account doesn\'t have access to this site.', 'wordpress-tools' ),
@@ -135,7 +131,7 @@ class RequireLogin {
 	}
 
 	/**
-	 * Block logged-out comment submissions, which never reach parse_request.
+	 * Block logged-out comments, which skip parse_request.
 	 */
 	public function gate_comments() {
 		if ( self::can_view() ) {
@@ -155,7 +151,7 @@ class RequireLogin {
 	}
 
 	/**
-	 * Purge the page cache when the settings are first saved with the setting on.
+	 * Purge the page cache on first save.
 	 *
 	 * @param string $option Option name.
 	 * @param mixed  $value  New settings.
@@ -165,7 +161,7 @@ class RequireLogin {
 	}
 
 	/**
-	 * Purge the page cache when the setting is turned on.
+	 * Purge the page cache on update.
 	 *
 	 * @param mixed $old_value Previous settings.
 	 * @param mixed $value     New settings.
@@ -175,7 +171,7 @@ class RequireLogin {
 	}
 
 	/**
-	 * Purge the page cache when the network setting is turned on.
+	 * Purge the page cache on network update.
 	 *
 	 * @param string $option    Option name.
 	 * @param mixed  $value     New settings.
@@ -186,7 +182,7 @@ class RequireLogin {
 	}
 
 	/**
-	 * Purge WP Engine's page cache so pages cached before the lock aren't served to logged-out visitors.
+	 * Purge WP Engine's page cache when the setting is turned on.
 	 *
 	 * @param mixed $old_value Previous settings.
 	 * @param mixed $value     New settings.
