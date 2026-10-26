@@ -11,7 +11,8 @@ use WordPressTools\Singleton;
 use WordPressTools\Settings\Settings;
 use function WordPressTools\Utils\is_829_user;
 use function WordPressTools\Utils\is_domain_or_subdomain;
-use function WordPressTools\Utils\is_staging_or_dev;
+use function WordPressTools\Utils\is_local_environment;
+use function WordPressTools\Utils\is_staging_domain;
 
 if ( ! defined( 'ABSPATH' ) ) {
 	exit;
@@ -40,7 +41,8 @@ class NoIndexBanner {
 	public function setup() {
 		$settings = Settings::get_settings();
 
-		if ( ! $settings['noindex_banner_enabled'] || is_admin() || is_staging_or_dev() || $this->is_excluded_domain( $settings ) ) {
+		// Domains only, not WP_ENVIRONMENT_TYPE, so a live site misconfigured as staging still gets the warning.
+		if ( ! $settings['noindex_banner_enabled'] || is_admin() || is_staging_domain() || is_local_environment() || $this->is_excluded_domain( $settings ) ) {
 			return;
 		}
 

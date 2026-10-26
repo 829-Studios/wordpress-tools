@@ -17,7 +17,6 @@ project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 ### Fixed
 
 - `.dev` domains are no longer treated as local.
-- The No-Index Banner no longer shows on staging sites that set `WP_ENVIRONMENT_TYPE`.
 - Unrecognized `WP_ENVIRONMENT_TYPE` values such as `live` now count as production, as in core.
 
 ## [1.14.0] - 2026-10-26
