@@ -4,6 +4,12 @@ All notable changes to 829 Studios WordPress Tools are documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and this
 project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.14.0] - 2026-10-26
+
+### Added
+
+- **Require Login to View Site**: sends logged-out visitors to the login page for everything WordPress serves (pages, feeds, sitemaps, search, REST API, XML-RPC, admin-ajax and admin-post), serves a `Disallow: /` robots.txt, and turns off user registration. Application passwords still authenticate REST requests, so MCP keeps working on sites that can't use basic auth. Uploaded files and theme assets are served by the web server and stay publicly accessible. The setting is ignored in production so a staging database pushed live can't lock the site; define `WPT_REQUIRE_LOGIN` in `wp-config.php` to force it on or off on any environment.
+
 ## [1.13.0] - 2026-10-22
 
 ### Changed

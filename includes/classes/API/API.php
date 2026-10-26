@@ -9,6 +9,7 @@ namespace WordPressTools\API;
 
 use WordPressTools\Singleton;
 use WordPressTools\Settings\Settings;
+use WordPressTools\RequireLogin\RequireLogin;
 
 /**
  * REST API customizations class
@@ -45,7 +46,7 @@ class API {
 		$settings = Settings::get_settings();
 		$restrict = $settings['restrict_rest_api'];
 
-		if ( 'all' === $restrict && ! $this->can_access_rest_api() ) {
+		if ( ( 'all' === $restrict || RequireLogin::is_active() ) && ! $this->can_access_rest_api() ) {
 			return new \WP_Error( 'rest_api_restricted', esc_html__( 'Authentication Required', 'wordpress-tools' ), array( 'status' => rest_authorization_required_code() ) );
 		}
 

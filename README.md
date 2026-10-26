@@ -52,6 +52,13 @@ This plugin provides multiple layers of security protection:
   - Restrict all REST API access to authenticated users only
   - Restrict only the users endpoint to authenticated users (default)
   - Allow public access to all REST API endpoints
+- **Require Login to View Site**: Optional setting for staging/dev sites that need to stay private without server-level basic auth (which blocks MCP):
+  - Logged-out visitors are sent to the login page for pages, feeds, sitemaps, and search
+  - REST API is restricted to logged-in users; application passwords still work, so MCP is unaffected
+  - XML-RPC, logged-out admin-ajax/admin-post requests, and user registration are disabled
+  - `robots.txt` returns `Disallow: /`
+  - Uploaded files and theme/plugin assets are served directly by the web server and stay publicly accessible
+  - Ignored in production so a staging database pushed live can't lock the site; use `WPT_REQUIRE_LOGIN` to force it
 
 
 ### Access Management
@@ -101,6 +108,7 @@ All settings are managed through the centralized **829 Settings** page:
 - **Enable Password Protected Content**: Allow password protected posts/pages
 - **Restrict Plugin/Theme Management**: Limit plugin and theme management to 829 administrators only
 - **REST API Availability**: Control access to WordPress REST API endpoints
+- **Require Login to View Site**: Require a WordPress login to view the site (staging/dev only)
 - **Limit Login Attempts**: Enable/disable login attempt limiting (enabled by default)
 - **Plugin Update Channel**: Which builds this site updates to — Stable, Beta, or a single branch (see [Releases](#releases))
 
@@ -114,6 +122,9 @@ The following constants can be defined in `wp-config.php` to customize plugin be
 
 ### Settings Access
 - `WPT_ALLOW_ADMIN_SETTINGS_ACCESS` (default: `false`) - If set to `true`, allows any administrator (or super admin on multisite) to access the 829 Settings page
+
+### Require Login
+- `WPT_REQUIRE_LOGIN` (default: not set) - `true` requires login to view the site on any environment, including production; `false` turns it off. Overrides the settings page, and survives staging refreshes from production. Purge the page cache after turning it on so previously cached pages aren't served
 
 ### Updates
 - `WPT_UPDATE_CHANNEL` (default: `stable`) - Which builds this site updates to. Overrides the settings page. See [Releases](#releases)
