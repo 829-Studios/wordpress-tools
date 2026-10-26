@@ -47,7 +47,12 @@ class API {
 		$restrict = $settings['restrict_rest_api'];
 
 		if ( ( 'all' === $restrict || RequireLogin::is_active() ) && ! $this->can_access_rest_api() ) {
-			return new \WP_Error( 'rest_api_restricted', esc_html__( 'Authentication Required', 'wordpress-tools' ), array( 'status' => rest_authorization_required_code() ) );
+			// Logged-in users only land here under Require Login, when they don't belong to this site.
+			$message = is_user_logged_in()
+				? __( 'Your account doesn\'t have access to this site.', 'wordpress-tools' )
+				: __( 'Authentication Required', 'wordpress-tools' );
+
+			return new \WP_Error( 'rest_api_restricted', $message, array( 'status' => rest_authorization_required_code() ) );
 		}
 
 		return $result;
