@@ -3,7 +3,7 @@
  * Plugin Name: 829 Studios - WordPress Tools
  * Plugin URI: https://www.829studios.com/
  * Description: WordPress tools for 829 Studios.
- * Version: 1.11.0
+ * Version: 1.13.0
  * Author: 829 Studios
  * Author URI: https://www.829studios.com/
  * Text Domain: 829-wordpress-tools
@@ -33,6 +33,8 @@ use WordPressTools\Roles;
 use WordPressTools\Updates;
 use WordPressTools\RoleManagement\RoleManagement;
 use WordPressTools\NoIndex\NoIndex;
+use WordPressTools\WpeCacheAccess\WpeCacheAccess;
+use WordPressTools\NoIndexBanner\NoIndexBanner;
 use WP_CLI;
 
 // Prevent direct access.
@@ -40,7 +42,7 @@ if ( ! defined( 'ABSPATH' ) ) {
 	exit;
 }
 
-define( 'WPT_VERSION', '1.11.0' );
+define( 'WPT_VERSION', '1.13.0' );
 define( 'WPT_PLUGIN_DIR', plugin_dir_path( __FILE__ ) );
 define( 'WPT_PLUGIN_URL', plugin_dir_url( __FILE__ ) );
 
@@ -169,6 +171,8 @@ add_action(
 		MCP::instance();
 		RoleManagement::instance();
 		NoIndex::instance();
+		WpeCacheAccess::instance();
+		NoIndexBanner::instance();
 	}
 );
 

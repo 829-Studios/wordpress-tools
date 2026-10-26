@@ -15,6 +15,34 @@ project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 - The `terms` input on `create-post`, `update-post`, and `list-posts` now also accepts term names.
 
+## [1.13.0] - 2026-10-22
+
+### Changed
+
+- **WPE Cache Clear Management** now always grants the **editor** role access to clear the WP Engine cache, and the setting is now a user picker instead of a role picker — add individual users to grant them the same access alongside editors. The editor role is automatically added to WP Engine's admin-bar visibility option, and configured users are also allowed to see the cache-clear toolbar link.
+
+### Fixed
+
+- **WPE Cache Clear Management** now works on multisite. WP Engine gates its cache-clear admin-bar link and network admin page on `manage_network` (not `manage_options`) on multisite, so qualifying users could see but not use the link; the scoped capability grant now covers whichever capability WP Engine checks.
+
+## [1.12.0] - 2026-10-22
+
+### Added
+
+- **No-Index Banner**: a red warning banner on the frontend for logged-in 829 users when a page is set to no-index on what looks like a production domain. Known dev/staging domains (829dev, 829stage, WP Engine, `.local`) are skipped, and more can be excluded on the 829 Settings page.
+
+## [1.11.2] - 2026-10-22
+
+### Fixed
+
+- Fixed the 2FA email confirmation form failing on WP Engine (Cloudflare 520). The form now posts to core's login form action, which WP Engine tags with `?wpe-login=true`.
+
+## [1.11.1] - 2026-10-09
+
+### Added
+
+- **WPE Cache Clear Management** setting on the 829 Settings page (WP Engine hosts only): select existing user roles that can clear the WP Engine cache via the admin bar, without granting them `manage_options` or any other administrator-level access.
+
 ## [1.11.0] - 2026-09-21
 
 Tooling and code style only. No functional changes.
@@ -288,7 +316,8 @@ Initial release.
 - **829 Settings page**, restricted to @829llc.com in production, with multisite support.
 - Self-updating from GitHub releases.
 
-[1.11.0]: https://github.com/829-Studios/wordpress-tools/compare/1.10.0...HEAD
+[1.11.1]: https://github.com/829-Studios/wordpress-tools/compare/1.11.0...HEAD
+[1.11.0]: https://github.com/829-Studios/wordpress-tools/releases/tag/1.11.0
 [1.10.0]: https://github.com/829-Studios/wordpress-tools/releases/tag/1.10.0
 [1.9.0]: https://github.com/829-Studios/wordpress-tools/releases/tag/1.9.0
 [1.8.2]: https://github.com/829-Studios/wordpress-tools/releases/tag/1.8.2
