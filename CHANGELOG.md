@@ -4,6 +4,12 @@ All notable changes to 829 Studios WordPress Tools are documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and this
 project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Unreleased]
+
+### Fixed
+
+- Sites on the beta and branch update channels now get the newest pre-release build, and move to the stable release once it ships. Pre-releases are versioned `<version>-beta.<run>.<branch>`, so rebuilding a branch doesn't need a version bump.
+
 ## [1.14.0] - 2026-10-26
 
 ### Added
