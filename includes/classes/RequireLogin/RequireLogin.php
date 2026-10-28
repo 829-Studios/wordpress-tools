@@ -79,12 +79,14 @@ class RequireLogin {
 	}
 
 	/**
-	 * Whether the current user may view the site; `read` requires multisite membership.
+	 * Whether the current user may view the site: any role here (multisite membership), or `read` for super admins.
+	 *
+	 * Not `read` alone, since API-only roles from some integrations often lack it.
 	 *
 	 * @return bool
 	 */
 	public static function can_view(): bool {
-		return current_user_can( 'read' );
+		return current_user_can( 'read' ) || ! empty( wp_get_current_user()->roles );
 	}
 
 	/**
