@@ -170,7 +170,7 @@ The pre-release is built from your branch, published as version `1.9.0-<branch-s
 
 `main` is the next version in progress. Merging to it ships nothing; sites only update when a release is published.
 
-1. **Start the cycle** by bumping `main` right after the previous release. Pre-release builds are numbered from it.
+1. **Start the cycle** with a PR that bumps `main` right after the previous release. Pre-release builds are numbered from it.
    ```bash
    npm run set-version 1.15.0    # updates the plugin header, WPT_VERSION and package.json
    ```
