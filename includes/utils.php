@@ -30,6 +30,43 @@ function is_local_environment() {
 }
 
 /**
+ * Return true when the current environment is staging or dev.
+ *
+ * Domain and TLD checks run first and override WP_ENVIRONMENT_TYPE, so a site
+ * explicitly set to 'production' is still protected when its domain is a known
+ * staging/dev domain or local TLD.
+ *
+ * @return bool
+ */
+function is_staging_or_dev() {
+	$current_domain = strtolower( (string) wp_parse_url( site_url(), PHP_URL_HOST ) );
+
+	// Known staging/dev domain patterns — override WP_ENVIRONMENT_TYPE.
+	$staging_domains = [ '829dev.com', '829stage.com', 'pec-dev.com', 'pec-stage.com' ];
+	foreach ( $staging_domains as $domain ) {
+		$suffix = '.' . $domain;
+		if ( $current_domain === $domain || substr( $current_domain, -strlen( $suffix ) ) === $suffix ) {
+			return true;
+		}
+	}
+
+	// Local TLDs — override WP_ENVIRONMENT_TYPE.
+	$local_tlds = [ '.local', '.localhost', '.dev' ];
+	foreach ( $local_tlds as $tld ) {
+		if ( substr( $current_domain, -strlen( $tld ) ) === $tld ) {
+			return true;
+		}
+	}
+
+	// Fall back to WP_ENVIRONMENT_TYPE for any other non-production environment.
+	if ( defined( 'WP_ENVIRONMENT_TYPE' ) && 'production' !== WP_ENVIRONMENT_TYPE ) {
+		return true;
+	}
+
+	return false;
+}
+
+/**
  * Check if the plugin is network activated
  *
  * @param string $plugin The plugin basename
