@@ -166,17 +166,23 @@ The pre-release is built from your branch, published as version `1.9.0-<branch-s
 
 > If the workflow fails with *"package.json is at X, which is not newer than the latest release"*, bump the version first — see below. A build at or below the current release sorts under stable and no site would be offered it.
 
-### Shipping a stable release
+### Release cycle
 
-```bash
-npm run set-version 1.9.0    # updates the plugin header, WPT_VERSION and package.json
-```
+`main` is the next version in progress. Merging to it ships nothing; sites only update when a release is published.
 
-1. Commit the version bump and merge to `main`.
-2. Create a GitHub release tagged `1.9.0` (`gh release create 1.9.0 --generate-notes`).
-3. Actions builds the zip and attaches it. Sites on `stable` pick it up within a day.
+1. **Start the cycle** by bumping `main` right after the previous release. Pre-release builds are numbered from it.
+   ```bash
+   npm run set-version 1.15.0    # updates the plugin header, WPT_VERSION and package.json
+   ```
+2. **Merge feature PRs into `main`.** Each adds its CHANGELOG entry under `## [Unreleased]` and leaves the version alone. Merge only finished work, since anything on `main` ships with the next tag.
+3. **Test the combined build** (optional): run **Publish pre-release** on `main`. Delete these builds after the release; they aren't cleaned up automatically.
+4. **Release:** rename `## [Unreleased]` to `## [1.15.0] - <date>`, merge that, then tag `main`:
+   ```bash
+   gh release create 1.15.0 --target main --generate-notes
+   ```
+   Actions builds the zip and attaches it. Sites on `stable` pick it up within a day.
 
-Bump the version at the **start** of a release cycle — pre-release builds are numbered from it.
+**Hotfix while `main` has unreleased work:** branch from the last release tag, release `1.14.1` from that branch, then merge it into `main`, keeping `main`'s version.
 
 ### When a branch merges
 
