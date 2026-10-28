@@ -30,6 +30,53 @@ function is_local_environment() {
 }
 
 /**
+ * Check if a host is the given domain or one of its subdomains.
+ *
+ * @param string $host   Host to check.
+ * @param string $domain Domain to match.
+ * @return bool
+ */
+function is_domain_or_subdomain( $host, $domain ) {
+	$host   = strtolower( (string) $host );
+	$domain = strtolower( (string) $domain );
+	$suffix = '.' . $domain;
+
+	return $host === $domain || substr( $host, -strlen( $suffix ) ) === $suffix;
+}
+
+/**
+ * Check if the site is on a known staging/dev hosting domain.
+ *
+ * @return bool
+ */
+function is_staging_domain() {
+	$staging_domains = [ '829dev.com', '829stage.com', 'pec-dev.com', 'pec-stage.com', 'wpengine.com', 'wpenginepowered.com' ];
+	$current_domain  = wp_parse_url( site_url(), PHP_URL_HOST );
+
+	foreach ( $staging_domains as $domain ) {
+		if ( is_domain_or_subdomain( $current_domain, $domain ) ) {
+			return true;
+		}
+	}
+
+	return false;
+}
+
+/**
+ * Check if the current environment is staging or dev. Staging and local domains override WP_ENVIRONMENT_TYPE.
+ *
+ * @return bool
+ */
+function is_staging_or_dev() {
+	if ( is_staging_domain() || is_local_environment() ) {
+		return true;
+	}
+
+	// Core's reading, so unknown values like 'live' count as production.
+	return 'production' !== wp_get_environment_type();
+}
+
+/**
  * Check if the plugin is network activated
  *
  * @param string $plugin The plugin basename
