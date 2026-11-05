@@ -9,6 +9,7 @@ namespace WordPressTools\API;
 
 use WordPressTools\Singleton;
 use WordPressTools\Settings\Settings;
+use WordPressTools\RequireLogin\RequireLogin;
 
 /**
  * REST API customizations class
@@ -45,8 +46,13 @@ class API {
 		$settings = Settings::get_settings();
 		$restrict = $settings['restrict_rest_api'];
 
-		if ( 'all' === $restrict && ! $this->can_access_rest_api() ) {
-			return new \WP_Error( 'rest_api_restricted', esc_html__( 'Authentication Required', 'wordpress-tools' ), array( 'status' => rest_authorization_required_code() ) );
+		if ( ( 'all' === $restrict || RequireLogin::is_active() ) && ! $this->can_access_rest_api() ) {
+			// Logged in but not a member of this site.
+			$message = is_user_logged_in()
+				? __( 'Your account doesn\'t have access to this site.', 'wordpress-tools' )
+				: __( 'Authentication Required', 'wordpress-tools' );
+
+			return new \WP_Error( 'rest_api_restricted', $message, array( 'status' => rest_authorization_required_code() ) );
 		}
 
 		return $result;
@@ -96,6 +102,9 @@ class API {
 
 		$allowed_rest_routes_override = apply_filters( 'wpt_rest_api_allowlist', [] );
 
-		return is_user_logged_in() || in_array( $route, $allowed_rest_routes_override, true );
+		// Require Login also requires membership of this site.
+		$is_allowed_user = RequireLogin::is_active() ? RequireLogin::can_view() : is_user_logged_in();
+
+		return $is_allowed_user || in_array( $route, $allowed_rest_routes_override, true );
 	}
 }

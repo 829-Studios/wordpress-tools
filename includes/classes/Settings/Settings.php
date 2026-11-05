@@ -9,8 +9,10 @@ namespace WordPressTools\Settings;
 
 use WordPressTools\Singleton;
 use WordPressTools\NoIndex\NoIndex;
+use WordPressTools\RequireLogin\RequireLogin;
 use WordPressTools\Updates;
 use function WordPressTools\Utils\is_local_environment;
+use function WordPressTools\Utils\is_staging_or_dev;
 
 if ( ! defined( 'ABSPATH' ) ) {
 	exit; // Exit if accessed directly.
@@ -71,6 +73,7 @@ class Settings {
 			'wpe_cache_clear_users'           => [],
 			'noindex_banner_enabled'          => 1,
 			'noindex_banner_excluded_domains' => [],
+			'require_login'                   => 0,
 		];
 
 		// Get settings from single option
@@ -230,6 +233,7 @@ class Settings {
 					'wpe_cache_clear_users'           => [],
 					'noindex_banner_enabled'          => 1,
 					'noindex_banner_excluded_domains' => [],
+					'require_login'                   => 0,
 				],
 			]
 		);
@@ -356,6 +360,15 @@ class Settings {
 			'wpt_noindex_status',
 			esc_html__( 'Force No-Index on Staging/Dev', 'wordpress-tools' ),
 			[ $this, 'noindex_status_setting_callback' ],
+			'wpt-829-settings',
+			'wpt_829_general_section'
+		);
+
+		// Require Login setting field
+		add_settings_field(
+			'wpt_require_login',
+			esc_html__( 'Require Login to View Site', 'wordpress-tools' ),
+			[ $this, 'require_login_setting_callback' ],
 			'wpt-829-settings',
 			'wpt_829_general_section'
 		);
@@ -784,6 +797,43 @@ class Settings {
 	}
 
 	/**
+	 * Require Login setting callback.
+	 */
+	public function require_login_setting_callback() {
+		$this->render_require_login_field();
+	}
+
+	/**
+	 * Shared fieldset for the Require Login setting.
+	 */
+	private function render_require_login_field(): void {
+		$settings      = self::get_settings();
+		$is_locked     = RequireLogin::is_locked();
+		$is_applicable = $is_locked || is_staging_or_dev();
+		$value         = $is_locked ? (int) RequireLogin::is_active() : (int) $settings['require_login'];
+		?>
+		<fieldset>
+			<?php if ( $is_locked ) : ?>
+				<p class="description"><?php echo wp_kses_post( __( 'Set by the <code>WPT_REQUIRE_LOGIN</code> constant in <code>wp-config.php</code>, which overrides the setting below.', 'wordpress-tools' ) ); ?></p>
+			<?php elseif ( ! $is_applicable ) : ?>
+				<p class="description"><?php echo wp_kses_post( __( 'Not available in production, so a staging database pushed live can\'t lock the site. Define <code>WPT_REQUIRE_LOGIN</code> in <code>wp-config.php</code> to force it on.', 'wordpress-tools' ) ); ?></p>
+			<?php endif; ?>
+
+			<input id="wpt-require-login-yes" name="wpt_settings[require_login]" type="radio" value="1"<?php checked( 1, $value ); ?><?php disabled( ! $is_applicable || $is_locked ); ?> />
+			<label for="wpt-require-login-yes">
+				<?php esc_html_e( 'Yes', 'wordpress-tools' ); ?>
+			</label><br>
+
+			<input id="wpt-require-login-no" name="wpt_settings[require_login]" type="radio" value="0"<?php checked( 0, $value ); ?><?php disabled( ! $is_applicable || $is_locked ); ?> />
+			<label for="wpt-require-login-no">
+				<?php esc_html_e( 'No', 'wordpress-tools' ); ?>
+			</label>
+			<p class="description"><?php esc_html_e( 'Sends logged-out visitors to the login page, restricts the REST API to logged-in users, and turns off XML-RPC and user registration. Application passwords still work, so MCP is unaffected. Uploaded files are served directly by the web server and stay publicly accessible.', 'wordpress-tools' ); ?></p>
+		</fieldset>
+		<?php
+	}
+
+	/**
 	 * Plugin Update Channel setting callback.
 	 */
 	public function update_channel_setting_callback() {
@@ -853,7 +903,7 @@ class Settings {
 	 * Shared fieldset for the Force No-Index status setting.
 	 */
 	private function render_noindex_status_field(): void {
-		$is_applicable  = NoIndex::is_staging_or_dev();
+		$is_applicable  = is_staging_or_dev();
 		$disabled_until = $is_applicable ? NoIndex::get_disabled_until() : 0;
 		$is_disabled    = $disabled_until > 0;
 		?>
@@ -1172,6 +1222,14 @@ class Settings {
 		} else {
 			$current_settings            = self::get_settings();
 			$sanitized['update_channel'] = Updates::sanitize_channel( $current_settings['update_channel'] );
+		}
+
+		// Sanitize require_login — keep the stored value when the radios are disabled.
+		if ( isset( $input['require_login'] ) ) {
+			$sanitized['require_login'] = intval( $input['require_login'] );
+		} else {
+			$current_settings           = self::get_settings();
+			$sanitized['require_login'] = intval( $current_settings['require_login'] );
 		}
 
 		// Sanitize noindex_banner_enabled
@@ -1601,6 +1659,14 @@ class Settings {
 							</th>
 							<td>
 								<?php $this->render_noindex_status_field(); ?>
+							</td>
+						</tr>
+						<tr>
+							<th scope="row">
+								<?php esc_html_e( 'Require Login to View Site', 'wordpress-tools' ); ?>
+							</th>
+							<td>
+								<?php $this->render_require_login_field(); ?>
 							</td>
 						</tr>
 						<tr>

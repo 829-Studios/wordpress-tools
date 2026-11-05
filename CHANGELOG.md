@@ -4,6 +4,21 @@ All notable changes to 829 Studios WordPress Tools are documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and this
 project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Unreleased]
+
+### Added
+
+- Add option to require login to view sites (staging/dev only). When on, logged-out visitors are sent to the login page and REST requires login. Application passwords still work, so MCP works without basic auth. Uploads stay public. `WPT_REQUIRE_LOGIN` overrides the setting on any environment.
+
+### Changed
+
+- One staging domain list (829dev, 829stage, pec-dev, pec-stage, WP Engine) now drives the environment type, Force No-Index, Require Login and the No-Index Banner.
+
+### Fixed
+
+- `.dev` domains are no longer treated as local.
+- Unrecognized `WP_ENVIRONMENT_TYPE` values such as `live` now count as production, as in core.
+
 ## [1.14.0] - 2026-10-26
 
 ### Added
