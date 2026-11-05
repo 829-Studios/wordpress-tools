@@ -52,6 +52,10 @@ This plugin provides multiple layers of security protection:
   - Restrict all REST API access to authenticated users only
   - Restrict only the users endpoint to authenticated users (default)
   - Allow public access to all REST API endpoints
+- **Require Login to View Site**: Optional, staging/dev only. Sends logged-out visitors to the login page and restricts REST to logged-in users, so a site can stay private without basic auth (which blocks MCP). Application passwords still work.
+  - Uploads and other static files stay public
+  - Allow REST login endpoints (e.g. JWT) with the `wpt_rest_api_allowlist` filter
+  - `WPT_REQUIRE_LOGIN` overrides the setting, including in production
 
 
 ### Access Management
@@ -67,10 +71,10 @@ This plugin provides multiple layers of security protection:
 The plugin automatically adds a color-coded environment indicator to the WordPress admin toolbar, making it easy to identify which environment you're working in:
 
 - **🔴 Production** (Red): Live production sites
-- **🟡 Staging** (Orange): Staging environments (automatically detected for *.829dev.com and *.wpenginepowered.com domains)
+- **🟡 Staging** (Orange): Staging environments (automatically detected for 829dev.com, 829stage.com, pec-dev.com, pec-stage.com, wpengine.com and wpenginepowered.com domains and their subdomains)
 - **🟢 Development** (Green): Local development environments
 
-The environment type is automatically detected based on domain or can be set via the `WP_ENVIRONMENT_TYPE` constant in `wp-config.php`.
+The environment type is automatically detected based on domain or can be set via the `WP_ENVIRONMENT_TYPE` constant in `wp-config.php`. The same domain list decides where Force No-Index and Require Login apply and where the No-Index Banner is skipped, so a staging site on its own domain should set `WP_ENVIRONMENT_TYPE` to `staging`.
 
 ### Other Customizations
 - Custom admin footer text crediting WordPress and 829 Studios
@@ -101,6 +105,7 @@ All settings are managed through the centralized **829 Settings** page:
 - **Enable Password Protected Content**: Allow password protected posts/pages
 - **Restrict Plugin/Theme Management**: Limit plugin and theme management to 829 administrators only
 - **REST API Availability**: Control access to WordPress REST API endpoints
+- **Require Login to View Site**: Require a WordPress login to view the site (staging/dev only)
 - **Limit Login Attempts**: Enable/disable login attempt limiting (enabled by default)
 - **Plugin Update Channel**: Which builds this site updates to — Stable, Beta, or a single branch (see [Releases](#releases))
 
@@ -114,6 +119,9 @@ The following constants can be defined in `wp-config.php` to customize plugin be
 
 ### Settings Access
 - `WPT_ALLOW_ADMIN_SETTINGS_ACCESS` (default: `false`) - If set to `true`, allows any administrator (or super admin on multisite) to access the 829 Settings page
+
+### Require Login
+- `WPT_REQUIRE_LOGIN` (default: not set) - `true` requires login to view the site on any environment, including production; `false` turns it off. Overrides the settings page, and survives staging refreshes from production. Purge the page cache after turning it on so previously cached pages aren't served
 
 ### Updates
 - `WPT_UPDATE_CHANNEL` (default: `stable`) - Which builds this site updates to. Overrides the settings page. See [Releases](#releases)
@@ -166,17 +174,23 @@ The pre-release is built from your branch, published as `<version>-beta.<run>.<b
 
 > If `package.json` isn't above the latest release, the build uses the next patch version (`1.14.1-beta.…` after `1.14.0`).
 
-### Shipping a stable release
+### Release cycle
 
-```bash
-npm run set-version 1.9.0    # updates the plugin header, WPT_VERSION and package.json
-```
+`main` is the next version in progress. Merging to it ships nothing; sites only update when a release is published.
 
-1. Commit the version bump and merge to `main`.
-2. Create a GitHub release tagged `1.9.0` (`gh release create 1.9.0 --generate-notes`).
-3. Actions builds the zip and attaches it. Sites on `stable` pick it up within a day.
+1. **Start the cycle** with a PR that bumps `main` right after the previous release. Pre-release builds are numbered from it.
+   ```bash
+   npm run set-version 1.15.0    # updates the plugin header, WPT_VERSION and package.json
+   ```
+2. **Merge feature PRs into `main`.** Each adds its CHANGELOG entry under `## [Unreleased]` and leaves the version alone. Merge only finished work, since anything on `main` ships with the next tag.
+3. **Test the combined build** (optional): run **Publish pre-release** on `main`. Delete these builds after the release; they aren't cleaned up automatically.
+4. **Release:** rename `## [Unreleased]` to `## [1.15.0] - <date>`, merge that, then tag `main`:
+   ```bash
+   gh release create 1.15.0 --target main --generate-notes
+   ```
+   Actions builds the zip and attaches it. Sites on `stable` pick it up within a day.
 
-Bump the version at the **start** of a release cycle — pre-release builds are numbered from it.
+**Hotfix while `main` has unreleased work:** branch from the last release tag, release `1.14.1` from that branch, then merge it into `main`, keeping `main`'s version.
 
 ### When a branch merges
 

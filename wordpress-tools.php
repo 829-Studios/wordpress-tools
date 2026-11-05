@@ -3,7 +3,7 @@
  * Plugin Name: 829 Studios - WordPress Tools
  * Plugin URI: https://www.829studios.com/
  * Description: WordPress tools for 829 Studios.
- * Version: 1.14.0
+ * Version: 1.15.0
  * Author: 829 Studios
  * Author URI: https://www.829studios.com/
  * Text Domain: 829-wordpress-tools
@@ -35,6 +35,7 @@ use WordPressTools\RoleManagement\RoleManagement;
 use WordPressTools\NoIndex\NoIndex;
 use WordPressTools\WpeCacheAccess\WpeCacheAccess;
 use WordPressTools\NoIndexBanner\NoIndexBanner;
+use WordPressTools\RequireLogin\RequireLogin;
 use WP_CLI;
 
 // Prevent direct access.
@@ -42,7 +43,7 @@ if ( ! defined( 'ABSPATH' ) ) {
 	exit;
 }
 
-define( 'WPT_VERSION', '1.14.0' );
+define( 'WPT_VERSION', '1.15.0' );
 define( 'WPT_PLUGIN_DIR', plugin_dir_path( __FILE__ ) );
 define( 'WPT_PLUGIN_URL', plugin_dir_url( __FILE__ ) );
 
@@ -96,20 +97,7 @@ if ( file_exists( __DIR__ . '/vendor/autoload.php' ) ) {
 }
 
 if ( ! defined( 'WP_ENVIRONMENT_TYPE' ) ) {
-	$staging_domains = [ '829dev.com', 'wpenginepowered.com' ];
-	$current_domain  = strtolower( wp_parse_url( site_url(), PHP_URL_HOST ) );
-	$is_staging      = false;
-
-	// Check if current domain matches or is a subdomain of any staging domain
-	foreach ( $staging_domains as $staging_domain ) {
-		$suffix = '.' . $staging_domain;
-		if ( $current_domain === $staging_domain || substr( $current_domain, -strlen( $suffix ) ) === $suffix ) {
-			$is_staging = true;
-			break;
-		}
-	}
-
-	if ( $is_staging ) {
+	if ( Utils\is_staging_domain() ) {
 		define( 'WP_ENVIRONMENT_TYPE', 'staging' );
 	} elseif ( Utils\is_local_environment() ) {
 		define( 'WP_ENVIRONMENT_TYPE', 'development' );
@@ -173,6 +161,7 @@ add_action(
 		NoIndex::instance();
 		WpeCacheAccess::instance();
 		NoIndexBanner::instance();
+		RequireLogin::instance();
 	}
 );
 
