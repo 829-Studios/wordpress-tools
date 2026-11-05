@@ -4,7 +4,7 @@ All notable changes to 829 Studios WordPress Tools are documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and this
 project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [Unreleased]
+## [1.15.0] - 2026-11-05
 
 ### Added
 
@@ -332,7 +332,12 @@ Initial release.
 - **829 Settings page**, restricted to @829llc.com in production, with multisite support.
 - Self-updating from GitHub releases.
 
-[1.11.1]: https://github.com/829-Studios/wordpress-tools/compare/1.11.0...HEAD
+[1.15.0]: https://github.com/829-Studios/wordpress-tools/releases/tag/1.15.0
+[1.14.0]: https://github.com/829-Studios/wordpress-tools/releases/tag/1.14.0
+[1.13.0]: https://github.com/829-Studios/wordpress-tools/releases/tag/1.13.0
+[1.12.0]: https://github.com/829-Studios/wordpress-tools/releases/tag/1.12.0
+[1.11.2]: https://github.com/829-Studios/wordpress-tools/releases/tag/1.11.2
+[1.11.1]: https://github.com/829-Studios/wordpress-tools/releases/tag/1.11.1
 [1.11.0]: https://github.com/829-Studios/wordpress-tools/releases/tag/1.11.0
 [1.10.0]: https://github.com/829-Studios/wordpress-tools/releases/tag/1.10.0
 [1.9.0]: https://github.com/829-Studios/wordpress-tools/releases/tag/1.9.0
