@@ -38,8 +38,8 @@ class API {
 	 * @return WP_Error|null|bool
 	 */
 	public function restrict_rest_api( $result ) {
-		// Respect other handlers
-		if ( null !== $result ) {
+		// Keep other handlers' results, but Require Login still checks membership for users they authenticated (e.g. application passwords).
+		if ( is_wp_error( $result ) || ( null !== $result && ! RequireLogin::is_active() ) ) {
 			return $result;
 		}
 
