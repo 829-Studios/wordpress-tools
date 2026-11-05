@@ -18,6 +18,7 @@ project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 - `.dev` domains are no longer treated as local.
 - Unrecognized `WP_ENVIRONMENT_TYPE` values such as `live` now count as production, as in core.
+- Sites on the beta and branch update channels now get the newest pre-release build, and move to the stable release once it ships. Pre-releases are versioned `<version>-beta.<run>.<branch>`, so rebuilding a branch doesn't need a version bump.
 
 ## [1.14.0] - 2026-10-26
 

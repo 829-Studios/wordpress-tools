@@ -162,15 +162,14 @@ class Updates {
 	}
 
 	/**
-	 * Build the version pattern matching pre-releases from one branch.
+	 * Build the version pattern matching pre-releases from one branch (`<base>-beta.<run>.<slug>`).
 	 *
-	 * Anchored to the start so a slug can't match another branch that merely
-	 * ends with the same characters (`updates` vs `mcp-updates`).
+	 * Anchored at both ends so `updates` doesn't match `mcp-updates`.
 	 *
 	 * @param  string $slug Branch slug.
 	 * @return string
 	 */
 	public static function branch_version_pattern( $slug ) {
-		return '/^\d+\.\d+\.\d+-' . preg_quote( $slug, '/' ) . '\./';
+		return '/^\d+\.\d+\.\d+-beta\.\d+\.' . preg_quote( $slug, '/' ) . '$/';
 	}
 }

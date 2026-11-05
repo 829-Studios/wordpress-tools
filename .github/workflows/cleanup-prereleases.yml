@@ -24,11 +24,10 @@ jobs:
           SLUG="$(node npm-scripts/branch-slug.js "$BRANCH")"
           echo "Cleaning pre-releases for branch '${BRANCH}' (slug: ${SLUG})"
 
-          # Anchored so a slug can't match a branch that merely ends the same way
-          # ('updates' vs 'mcp-updates'). isPrerelease guards stable releases —
-          # deleting one would break updates on every production site.
+          # Matches <base>-beta.<run>.<slug> and the old <base>-<slug>.<date>.<run>, anchored so
+          # 'updates' doesn't match 'mcp-updates'. isPrerelease keeps stable releases safe.
           TAGS="$(gh release list --limit 100 --json tagName,isPrerelease \
-            --jq "[.[] | select(.isPrerelease) | select(.tagName | test(\"^[0-9]+\\\\.[0-9]+\\\\.[0-9]+-${SLUG}\\\\.\")) | .tagName] | .[]")"
+            --jq "[.[] | select(.isPrerelease) | select(.tagName | test(\"^[0-9]+\\\\.[0-9]+\\\\.[0-9]+-(beta\\\\.[0-9]+\\\\.${SLUG}$|${SLUG}\\\\.)\")) | .tagName] | .[]")"
 
           if [ -z "$TAGS" ]; then
             echo "No pre-releases found for this branch."
