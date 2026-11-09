@@ -56,6 +56,7 @@ This plugin provides multiple layers of security protection:
   - Uploads and other static files stay public
   - Allow REST login endpoints (e.g. JWT) with the `wpt_rest_api_allowlist` filter
   - `WPT_REQUIRE_LOGIN` overrides the setting, including in production
+- **Gravity Forms reCAPTCHA Project Privacy**: When the Gravity Forms reCAPTCHA add-on uses v3 Enterprise, non-829 users only see the project already saved on the site in the Project ID dropdown, so other clients' projects on the connected Google account stay hidden. Site-key lookups for any other project are blocked for them as well.
 
 
 ### Access Management

@@ -4,6 +4,12 @@ All notable changes to 829 Studios WordPress Tools are documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and this
 project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Unreleased]
+
+### Added
+
+- Gravity Forms reCAPTCHA: in v3 Enterprise settings, users without an @829llc.com email now only see the reCAPTCHA project already saved on the site, not every project on the connected Google account. Site-key lookups for other projects are blocked for them too.
+
 ## [1.15.0] - 2026-11-05
 
 ### Added
