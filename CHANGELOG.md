@@ -10,6 +10,7 @@ project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 - Turn off the `/random/` redirect to a random post added in WordPress 7.2. Each visit runs an uncacheable `ORDER BY RAND()` query, and it can surface posts meant to stay out of search.
 - `list-redirect-groups` and `create-redirect-group` MCP abilities, and `create-redirect` now accepts a `group` name as well as `group_id`.
+- Gravity Forms reCAPTCHA: in v3 Enterprise settings, users without an @829llc.com email now only see the reCAPTCHA project already saved on the site, not every project on the connected Google account. Site-key lookups for other projects are blocked for them too.
 
 ### Fixed
 

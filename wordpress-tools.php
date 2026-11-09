@@ -37,6 +37,7 @@ use WordPressTools\WpeCacheAccess\WpeCacheAccess;
 use WordPressTools\NoIndexBanner\NoIndexBanner;
 use WordPressTools\RequireLogin\RequireLogin;
 use WordPressTools\RandomContent\RandomContent;
+use WordPressTools\GravityFormsRecaptcha\GravityFormsRecaptcha;
 use WP_CLI;
 
 // Prevent direct access.
@@ -164,6 +165,7 @@ add_action(
 		NoIndexBanner::instance();
 		RequireLogin::instance();
 		RandomContent::instance();
+		GravityFormsRecaptcha::instance();
 	}
 );
 
