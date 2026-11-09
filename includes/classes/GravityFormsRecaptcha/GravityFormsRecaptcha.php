@@ -1,6 +1,6 @@
 <?php
 /**
- * Hide other clients' reCAPTCHA Enterprise projects from non-829 users.
+ * Hide other clients' reCAPTCHA projects and keys from non-829 users.
  *
  * @package  WordPressTools
  */
@@ -21,6 +21,7 @@ if ( ! defined( 'ABSPATH' ) ) {
  * the connected (829) Google account, which exposes other clients' projects and keys
  * to client admins. The add-on has no filter for this, so the Google API responses are
  * filtered instead: non-829 users only see the project and site key saved on this site.
+ * In Classic and v2 modes the secret key is masked and locked for them instead.
  */
 class GravityFormsRecaptcha {
 
@@ -29,6 +30,12 @@ class GravityFormsRecaptcha {
 	const PROJECTS_URL = 'https://cloudresourcemanager.googleapis.com/v1/projects';
 
 	const KEYS_URL_PATTERN = '#^https://recaptchaenterprise\.googleapis\.com/v1/projects/([^/?]+)/keys#';
+
+	const ADDON_SLUG = 'gravityformsrecaptcha';
+
+	const SECRET_KEY_FIELDS = [ 'secret_key_v3', 'secret_key_v2' ];
+
+	const SECRET_MASK = '••••••••••••••••';
 
 	/**
 	 * Setup module
@@ -40,6 +47,104 @@ class GravityFormsRecaptcha {
 
 		add_filter( 'pre_http_request', [ $this, 'block_other_project_keys' ], 10, 3 );
 		add_filter( 'http_response', [ $this, 'filter_google_lists' ], 10, 3 );
+
+		// Priority 0: before the verify_secret_key AJAX handler and the settings save read $_POST.
+		add_action( 'admin_init', [ $this, 'lock_posted_secret_keys' ], 0 );
+		add_action( 'admin_init', [ $this, 'mask_secret_key_fields' ] );
+	}
+
+	/**
+	 * Whether this request is for the reCAPTCHA add-on's settings page.
+	 *
+	 * @return bool
+	 */
+	protected function is_settings_page() {
+		// phpcs:disable WordPress.Security.NonceVerification.Recommended
+		$page    = isset( $_GET['page'] ) ? sanitize_key( wp_unslash( $_GET['page'] ) ) : '';
+		$subview = isset( $_GET['subview'] ) ? sanitize_key( wp_unslash( $_GET['subview'] ) ) : '';
+		// phpcs:enable
+
+		return 'gf_settings' === $page && self::ADDON_SLUG === $subview;
+	}
+
+	/**
+	 * Overwrite any posted Classic/v2 secret key with the saved one for non-829 users.
+	 *
+	 * The add-on saves whatever secret is posted, both on settings save and from the
+	 * verify_secret_key AJAX call its settings page makes on every load, so the
+	 * masked or missing value from the disabled field must never reach it.
+	 */
+	public function lock_posted_secret_keys() {
+		// phpcs:disable WordPress.Security.NonceVerification.Missing -- Only replaces values; the add-on verifies its own nonces.
+		if ( empty( $_POST ) || ! $this->should_restrict() ) {
+			return;
+		}
+
+		$settings = gf_recaptcha()->get_plugin_settings();
+
+		if ( wp_doing_ajax() ) {
+			$action = isset( $_POST['action'] ) ? sanitize_key( wp_unslash( $_POST['action'] ) ) : '';
+
+			if ( 'verify_secret_key' === $action ) {
+				$_POST['secret_key_v3'] = (string) rgar( $settings, 'secret_key_v3' );
+			}
+
+			return;
+		}
+
+		if ( ! $this->is_settings_page() ) {
+			return;
+		}
+
+		foreach ( self::SECRET_KEY_FIELDS as $name ) {
+			$_POST[ '_gform_setting_' . $name ] = wp_slash( (string) rgar( $settings, $name ) );
+		}
+		// phpcs:enable
+	}
+
+	/**
+	 * Swap the Classic/v2 secret key inputs for disabled, masked ones for non-829 users,
+	 * so the real secret is never sent to their browser.
+	 */
+	public function mask_secret_key_fields() {
+		if ( wp_doing_ajax() || ! $this->is_settings_page() || ! $this->should_restrict() ) {
+			return;
+		}
+
+		$renderer = gf_recaptcha()->get_settings_renderer();
+
+		if ( ! $renderer ) {
+			return;
+		}
+
+		$settings = gf_recaptcha()->get_plugin_settings();
+
+		foreach ( self::SECRET_KEY_FIELDS as $name ) {
+			$field = $renderer->get_field( $name );
+
+			if ( ! $field ) {
+				continue;
+			}
+
+			// Same id/name as the original input: the add-on's JS looks it up by both.
+			$html = sprintf(
+				'<span class="gform-settings-input__container"><input type="text" id="%1$s" name="_gform_setting_%1$s" value="%2$s" disabled="disabled" /></span><div class="gform-settings-description">%3$s</div>',
+				esc_attr( $name ),
+				'' === (string) rgar( $settings, $name ) ? '' : esc_attr( self::SECRET_MASK ),
+				esc_html__( 'Managed by 829 Studios.', 'wordpress-tools' )
+			);
+
+			$renderer->replace_field(
+				$name,
+				[
+					'name'       => $name,
+					'label'      => rgobj( $field, 'label' ),
+					'type'       => 'html',
+					'html'       => $html,
+					'dependency' => rgobj( $field, 'dependency' ),
+				]
+			);
+		}
 	}
 
 	/**
