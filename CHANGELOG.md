@@ -4,6 +4,12 @@ All notable changes to 829 Studios WordPress Tools are documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and this
 project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Unreleased]
+
+### Added
+
+- Turn off the `/random/` redirect to a random post added in WordPress 7.2. Each visit runs an uncacheable `ORDER BY RAND()` query, and it can surface posts meant to stay out of search.
+
 ## [1.15.0] - 2026-11-05
 
 ### Added
