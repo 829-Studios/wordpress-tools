@@ -7,6 +7,8 @@
 
 namespace WordPressTools;
 
+use WordPressTools\NotFound\NotFoundDigest;
+use WordPressTools\NotFound\NotFoundLog;
 use WP_CLI_Command;
 use WP_CLI;
 
@@ -101,6 +103,95 @@ class Commands extends WP_CLI_Command {
 		}
 
 		WP_CLI::success( $key );
+	}
+
+	/**
+	 * List the most-visited 404 URLs.
+	 *
+	 * ## OPTIONS
+	 *
+	 * [--days=<days>]
+	 * : Days to include, counting today. Up to 30.
+	 * ---
+	 * default: 7
+	 * ---
+	 *
+	 * [--limit=<limit>]
+	 * : Max URLs to list.
+	 * ---
+	 * default: 50
+	 * ---
+	 *
+	 * [--format=<format>]
+	 * : Output format.
+	 * ---
+	 * default: table
+	 * options:
+	 *   - table
+	 *   - csv
+	 *   - json
+	 * ---
+	 *
+	 * ## EXAMPLES
+	 *
+	 *     $ wp 829-tools 404s --days=1
+	 *
+	 * @subcommand 404s
+	 * @param array $args Positional arguments.
+	 * @param array $assoc_args Associative arguments.
+	 */
+	public function list_404s( $args, $assoc_args ) {
+		$days   = max( 1, min( NotFoundLog::RETENTION_DAYS, (int) $assoc_args['days'] ) );
+		$report = NotFoundLog::instance()->get_recent_report( $days, max( 1, (int) $assoc_args['limit'] ) );
+
+		if ( empty( $report['urls'] ) ) {
+			WP_CLI::success( sprintf( 'No 404s logged since %s.', $report['from'] ) );
+			return;
+		}
+
+		\WP_CLI\Utils\format_items( $assoc_args['format'], $report['urls'], [ 'path', 'hits', 'first_seen', 'last_seen', 'referrer' ] );
+	}
+
+	/**
+	 * Send yesterday's 404 report now.
+	 *
+	 * Unlike the daily email, this also sends from staging and dev.
+	 *
+	 * ## OPTIONS
+	 *
+	 * [--to=<emails>]
+	 * : Comma-separated addresses. Defaults to the Daily Report Recipients in 829 Settings.
+	 *
+	 * ## EXAMPLES
+	 *
+	 *     $ wp 829-tools 404-digest --to=dev@example.com
+	 *
+	 * @subcommand 404-digest
+	 * @param array $args Positional arguments.
+	 * @param array $assoc_args Associative arguments.
+	 */
+	public function send_404_digest( $args, $assoc_args ) {
+		$recipients = isset( $assoc_args['to'] )
+			? array_filter( array_map( 'trim', explode( ',', $assoc_args['to'] ) ), 'is_email' )
+			: NotFoundDigest::get_recipients();
+
+		if ( empty( $recipients ) ) {
+			WP_CLI::error( 'No recipients. Pass --to or set Daily Report Recipients in 829 Settings.' );
+		}
+
+		$digest   = NotFoundDigest::instance();
+		$sections = $digest->get_sections();
+
+		if ( empty( $sections ) ) {
+			WP_CLI::success( 'No 404s yesterday, so nothing was sent.' );
+			return;
+		}
+
+		if ( ! $digest->send( $recipients, $sections ) ) {
+			WP_CLI::error( 'wp_mail() failed to send the report.' );
+		}
+
+		WP_CLI::success( sprintf( 'Sent to %s.', implode( ', ', $recipients ) ) );
 	}
 
 	/**

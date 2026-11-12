@@ -4,6 +4,14 @@ All notable changes to 829 Studios WordPress Tools are documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and this
 project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.16.0]
+
+### Added
+
+- 404 monitoring, on by default. Counts visits to missing URLs per day with the last page that linked to them, skips common bot probes, and stores no IP addresses. Kept for 30 days and included in the Site Info endpoint for Apollo.
+- Optional daily 404 report email, set under **829 Settings → 404 Monitoring**. Network installs send one email covering every site, and staging/dev never send.
+- `wp 829-tools 404s` and `wp 829-tools 404-digest` commands.
+
 ## [1.15.0] - 2026-11-05
 
 ### Added

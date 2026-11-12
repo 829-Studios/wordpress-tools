@@ -13,6 +13,7 @@ A comprehensive WordPress security and management plugin designed to enhance sit
 - Security hardening features
 - Environment indicator in admin toolbar
 - Automatic environment detection (Production/Staging/Development)
+- 404 monitoring, with an optional daily email report
 
 
 ## Security
@@ -80,6 +81,27 @@ The environment type is automatically detected based on domain or can be set via
 - Custom admin footer text crediting WordPress and 829 Studios
 
 
+## 404 Monitoring
+
+Every front-end 404 is counted per URL per day, along with the last page that linked to it. Rows are kept for 30 days (max 10,000 per site) in the `{base_prefix}wpt_404_log` table.
+
+- **Skipped:** non-GET requests, requests with no user agent, 404 pages served with another status (e.g. Redirection's "410 Gone" rules), and common bot probes (dotfiles like `.env`, `.php` and backup/config extensions, `wp-admin`/`wp-includes`/plugin/theme paths, `ads.txt`, `apple-touch-icon` and similar). Add your own with the `wpt_404_ignore_patterns` filter.
+- **Not stored:** IP addresses, user agents and query strings.
+- **Apollo:** the Site Info endpoint returns the top 100 URLs from the last 30 days under `not_found`.
+- **Daily report:** add addresses under **829 Settings → 404 Monitoring** to get each calendar day's 404s by email just after midnight site time. Network installs send one email covering every site. Staging and dev never send.
+
+```php
+add_filter(
+	'wpt_404_ignore_patterns',
+	function ( $patterns ) {
+		$patterns[] = '#^/legacy-feed/#';
+		return $patterns;
+	}
+);
+```
+
+> Counts only include requests that reach WordPress. 404s served from the host's page cache, or missing static files the web server answers directly, aren't counted.
+
 ## Requirements
 
 - PHP 7.4 or higher
@@ -107,6 +129,7 @@ All settings are managed through the centralized **829 Settings** page:
 - **REST API Availability**: Control access to WordPress REST API endpoints
 - **Require Login to View Site**: Require a WordPress login to view the site (staging/dev only)
 - **Limit Login Attempts**: Enable/disable login attempt limiting (enabled by default)
+- **404 Monitoring**: Log 404s (enabled by default) and choose who gets the daily 404 report email
 - **Plugin Update Channel**: Which builds this site updates to — Stable, Beta, or a single branch (see [Releases](#releases))
 
 ## Constants
@@ -142,6 +165,22 @@ wp 829-tools clear-login-attempts
 ```
 Clearing login attempt transients...
 Success: Cleared 5 login attempt transient(s).
+```
+
+### 404s
+
+List the most-visited 404 URLs. `--days` (default 7, max 30), `--limit` (default 50), `--format=table|csv|json`.
+
+```bash
+wp 829-tools 404s --days=1
+```
+
+### Send the 404 Report
+
+Send yesterday's 404 report now, to `--to` or the configured recipients. Unlike the daily email, this also sends from staging and dev.
+
+```bash
+wp 829-tools 404-digest --to=you@example.com
 ```
 
 ## Releases

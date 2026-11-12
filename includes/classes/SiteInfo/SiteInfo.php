@@ -9,6 +9,7 @@ namespace WordPressTools\SiteInfo;
 
 use WordPressTools\Singleton;
 use WordPressTools\Settings\Settings;
+use WordPressTools\NotFound\NotFoundLog;
 
 if ( ! defined( 'ABSPATH' ) ) {
 	exit;
@@ -142,6 +143,7 @@ class SiteInfo {
 			'themes'               => $this->get_themes_info(),
 			'users'                => $this->get_users_info(),
 			'activity_logs'        => $this->get_activity_logs(),
+			'not_found'            => $this->get_not_found_info(),
 			'smart_plugin_manager' => $this->get_smart_plugin_manager_info(),
 		];
 	}
@@ -244,6 +246,18 @@ class SiteInfo {
 	 */
 	private function get_activity_logs() {
 		return ActivityLog::instance()->get_recent_logs();
+	}
+
+	/**
+	 * Get the most-hit 404 URLs from the last 30 days.
+	 *
+	 * @return array
+	 */
+	private function get_not_found_info() {
+		return array_merge(
+			[ 'enabled' => NotFoundLog::is_enabled() ],
+			NotFoundLog::instance()->get_recent_report()
+		);
 	}
 
 	/**

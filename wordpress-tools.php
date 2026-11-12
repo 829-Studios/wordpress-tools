@@ -36,6 +36,8 @@ use WordPressTools\NoIndex\NoIndex;
 use WordPressTools\WpeCacheAccess\WpeCacheAccess;
 use WordPressTools\NoIndexBanner\NoIndexBanner;
 use WordPressTools\RequireLogin\RequireLogin;
+use WordPressTools\NotFound\NotFoundLog;
+use WordPressTools\NotFound\NotFoundDigest;
 use WP_CLI;
 
 // Prevent direct access.
@@ -162,6 +164,8 @@ add_action(
 		WpeCacheAccess::instance();
 		NoIndexBanner::instance();
 		RequireLogin::instance();
+		NotFoundLog::instance();
+		NotFoundDigest::instance();
 	}
 );
 

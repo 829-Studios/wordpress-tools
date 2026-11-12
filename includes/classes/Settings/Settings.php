@@ -74,6 +74,8 @@ class Settings {
 			'noindex_banner_enabled'          => 1,
 			'noindex_banner_excluded_domains' => [],
 			'require_login'                   => 0,
+			'log_404s'                        => 1,
+			'digest_404_emails'               => [],
 		];
 
 		// Get settings from single option
@@ -234,6 +236,8 @@ class Settings {
 					'noindex_banner_enabled'          => 1,
 					'noindex_banner_excluded_domains' => [],
 					'require_login'                   => 0,
+					'log_404s'                        => 1,
+					'digest_404_emails'               => [],
 				],
 			]
 		);
@@ -351,6 +355,15 @@ class Settings {
 			'wpt_enable_mcp',
 			esc_html__( 'Enable MCP', 'wordpress-tools' ),
 			[ $this, 'mcp_setting_callback' ],
+			'wpt-829-settings',
+			'wpt_829_general_section'
+		);
+
+		// 404 Monitoring setting field
+		add_settings_field(
+			'wpt_404_monitoring',
+			esc_html__( '404 Monitoring', 'wordpress-tools' ),
+			[ $this, 'not_found_setting_callback' ],
 			'wpt-829-settings',
 			'wpt_829_general_section'
 		);
@@ -790,6 +803,38 @@ class Settings {
 	}
 
 	/**
+	 * 404 Monitoring setting callback.
+	 */
+	public function not_found_setting_callback() {
+		$settings    = self::get_settings();
+		$log_404s    = $settings['log_404s'];
+		$emails_text = implode( "\n", (array) $settings['digest_404_emails'] );
+		?>
+		<fieldset>
+			<input id="wpt-log-404s-yes" name="wpt_settings[log_404s]" type="radio" value="1"<?php checked( 1, $log_404s ); ?> />
+			<label for="wpt-log-404s-yes"><?php esc_html_e( 'Yes', 'wordpress-tools' ); ?></label><br>
+
+			<input id="wpt-log-404s-no" name="wpt_settings[log_404s]" type="radio" value="0"<?php checked( 0, $log_404s ); ?> />
+			<label for="wpt-log-404s-no"><?php esc_html_e( 'No', 'wordpress-tools' ); ?></label>
+
+			<p class="description"><?php esc_html_e( 'Counts visits to URLs that return a 404 (page not found) and the page that linked to them, for 30 days. Included in the Site Info endpoint for Apollo. Bot requests for files like .env or wp-admin scripts are skipped, and no IP addresses are stored.', 'wordpress-tools' ); ?></p>
+
+			<p class="description" style="margin: 12px 0 4px;"><strong><?php esc_html_e( 'Daily Report Recipients', 'wordpress-tools' ); ?></strong></p>
+			<p class="description" style="margin: 0 0 6px;">
+				<?php
+				if ( WPT_IS_NETWORK ) {
+					esc_html_e( 'One email address per line. Just after midnight, these addresses get one email listing the 404s from the day that just ended, for every site in the network. Leave empty to send nothing. Never sent from staging or dev.', 'wordpress-tools' );
+				} else {
+					esc_html_e( 'One email address per line. Just after midnight, these addresses get a list of the 404s from the day that just ended. Leave empty to send nothing. Never sent from staging or dev.', 'wordpress-tools' );
+				}
+				?>
+			</p>
+			<textarea name="wpt_settings[digest_404_emails]" rows="3" class="large-text" style="max-width:400px;"><?php echo esc_textarea( $emails_text ); ?></textarea>
+		</fieldset>
+		<?php
+	}
+
+	/**
 	 * Force No-Index on Staging/Dev setting callback.
 	 */
 	public function noindex_status_setting_callback() {
@@ -1201,6 +1246,17 @@ class Settings {
 
 		// Sanitize enable_mcp
 		$sanitized['enable_mcp'] = isset( $input['enable_mcp'] ) ? intval( $input['enable_mcp'] ) : 1;
+
+		// Sanitize log_404s
+		$sanitized['log_404s'] = isset( $input['log_404s'] ) ? intval( $input['log_404s'] ) : 1;
+
+		// Sanitize digest_404_emails — split on newlines/commas, drop invalid addresses
+		$sanitized['digest_404_emails'] = [];
+		if ( isset( $input['digest_404_emails'] ) && is_string( $input['digest_404_emails'] ) ) {
+			$emails = preg_split( '/[\s,]+/', $input['digest_404_emails'], -1, PREG_SPLIT_NO_EMPTY );
+
+			$sanitized['digest_404_emails'] = array_values( array_unique( array_filter( array_map( 'sanitize_email', $emails ), 'is_email' ) ) );
+		}
 
 		// Sanitize wpe_cache_clear_users — drops IDs for deleted users
 		$sanitized['wpe_cache_clear_users'] = isset( $input['wpe_cache_clear_users'] )
@@ -1651,6 +1707,14 @@ class Settings {
 									</label>
 									<p class="description"><?php esc_html_e( 'Exposes site management tools (plugins, themes, users, system info) via the WordPress MCP Adapter.', 'wordpress-tools' ); ?></p>
 								</fieldset>
+							</td>
+						</tr>
+						<tr>
+							<th scope="row">
+								<?php esc_html_e( '404 Monitoring', 'wordpress-tools' ); ?>
+							</th>
+							<td>
+								<?php $this->not_found_setting_callback(); ?>
 							</td>
 						</tr>
 						<tr>
