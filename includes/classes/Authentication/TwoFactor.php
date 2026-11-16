@@ -91,6 +91,7 @@ class TwoFactor {
 		add_action( 'init', [ $this, 'maybe_confirm_2fa_setup' ] );
 		add_action( 'admin_notices', [ $this, 'show_2fa_required_notice' ] );
 		add_action( 'admin_init', [ $this, 'redirect_to_profile_if_no_2fa' ] );
+		add_filter( 'woocommerce_prevent_admin_access', [ $this, 'allow_admin_access_for_2fa_setup' ] );
 	}
 
 	/**
@@ -543,6 +544,21 @@ class TwoFactor {
 		// Redirect to profile page.
 		wp_safe_redirect( admin_url( 'profile.php' ) );
 		exit;
+	}
+
+	/**
+	 * Stop WooCommerce treating capability-restricted users as customers and
+	 * redirecting them out of wp-admin before they can reach profile.php.
+	 *
+	 * @param bool $prevent_access Whether WooCommerce will block wp-admin access.
+	 * @return bool
+	 */
+	public function allow_admin_access_for_2fa_setup( $prevent_access ) {
+		if ( $this->current_user_needs_2fa() ) {
+			return false;
+		}
+
+		return $prevent_access;
 	}
 }
 
