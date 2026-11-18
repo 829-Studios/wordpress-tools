@@ -118,6 +118,27 @@ class GravityFormsRecaptcha {
 			return;
 		}
 
+		$this->replace_secret_key_fields( $renderer );
+
+		// A save on a site with no saved connection type rebuilds the fields unmasked, so mask again
+		// after the save. This callback runs between the save and the render; the add-on only uses it in Enterprise.
+		if ( 'enterprise' !== gf_recaptcha()->get_connection_type() ) {
+			$renderer->set_postback_message_callback(
+				function ( $message ) use ( $renderer ) {
+					$this->replace_secret_key_fields( $renderer );
+
+					return $message;
+				}
+			);
+		}
+	}
+
+	/**
+	 * Replace the Classic/v2 secret key fields with disabled, masked ones.
+	 *
+	 * @param \Gravity_Forms\Gravity_Forms\Settings\Settings $renderer Settings renderer.
+	 */
+	protected function replace_secret_key_fields( $renderer ) {
 		$settings = gf_recaptcha()->get_plugin_settings();
 
 		foreach ( self::SECRET_KEY_FIELDS as $name ) {
