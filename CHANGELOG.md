@@ -12,7 +12,7 @@ project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ### Changed
 
-- Two-Factor Authentication is no longer required for member-only accounts: users whose only roles are `subscriber` or `customer` (WooCommerce). Every other role still requires it. Sites can add their own member roles with the `wpt_two_factor_exempt_roles` filter.
+- Two-Factor Authentication is no longer required for member-only accounts: users whose only roles are `subscriber` or `customer` (WooCommerce) and who can do nothing beyond `read`. Every other role still requires it, including a staff role on another site in a multisite network. Members who choose to set up 2FA still confirm it by email. Sites can add their own member roles with the `wpt_two_factor_exempt_roles` filter, and extra member capabilities with `wpt_two_factor_exempt_capabilities`.
 
 ### Fixed
 
