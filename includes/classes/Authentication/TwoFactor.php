@@ -76,6 +76,16 @@ class TwoFactor {
 	const CONFIRM_QUERY_VAR = 'wpt_confirm_2fa';
 
 	/**
+	 * Member-only roles that don't need 2FA. Filterable via wpt_two_factor_exempt_roles.
+	 *
+	 * @var array
+	 */
+	const EXEMPT_ROLES = [
+		'subscriber',
+		'customer', // WooCommerce.
+	];
+
+	/**
 	 * Setup 2FA enforcement.
 	 */
 	public function __construct() {
@@ -108,7 +118,8 @@ class TwoFactor {
 	 *
 	 * SSO users (@829llc.com) don't need 2FA - they use SSO authentication.
 	 * Users on the "2FA Login Exceptions" allow list are also exempt, for
-	 * accounts belonging to third-party integrations that can't do 2FA.
+	 * accounts belonging to third-party integrations that can't do 2FA,
+	 * as are users whose only roles are member-only ones (subscriber, customer).
 	 *
 	 * @param int $user_id The user ID.
 	 * @return bool
@@ -118,7 +129,45 @@ class TwoFactor {
 			return false;
 		}
 
+		if ( $this->user_has_only_exempt_roles( $user_id ) ) {
+			return false;
+		}
+
 		return ! $this->user_is_2fa_exempt( $user_id );
+	}
+
+	/**
+	 * Check if every role a user has is a member-only role.
+	 *
+	 * Fails closed: unknown roles, no roles, directly granted capabilities
+	 * and super admins all still require 2FA, so new staff roles stay covered.
+	 *
+	 * @param int $user_id The user ID.
+	 * @return bool
+	 */
+	public function user_has_only_exempt_roles( int $user_id ): bool {
+		$user = get_userdata( $user_id );
+
+		if ( ! $user || empty( $user->roles ) || is_super_admin( $user_id ) ) {
+			return false;
+		}
+
+		// Capabilities granted to the user directly, outside any role.
+		$direct_caps = array_diff( array_keys( array_filter( (array) $user->caps ) ), $user->roles );
+
+		if ( ! empty( $direct_caps ) ) {
+			return false;
+		}
+
+		/**
+		 * Filter the member-only roles that don't require 2FA.
+		 *
+		 * @param array $roles   Role slugs.
+		 * @param int   $user_id The user being checked.
+		 */
+		$exempt_roles = (array) apply_filters( 'wpt_two_factor_exempt_roles', self::EXEMPT_ROLES, $user_id );
+
+		return empty( array_diff( $user->roles, $exempt_roles ) );
 	}
 
 	/**

@@ -10,6 +10,10 @@ project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 - `list-redirect-groups` and `create-redirect-group` MCP abilities, and `create-redirect` now accepts a `group` name as well as `group_id`.
 
+### Changed
+
+- Two-Factor Authentication is no longer required for member-only accounts: users whose only roles are `subscriber` or `customer` (WooCommerce). Every other role still requires it. Sites can add their own member roles with the `wpt_two_factor_exempt_roles` filter.
+
 ### Fixed
 
 - The `create-redirect` and `update-redirect` MCP abilities failed on every call because they wrote to columns the Redirection plugin doesn't have. They now save through Redirection itself, so new redirects get the match data Redirection needs to fire. 404/410 and other error codes are saved as error responses instead of being turned into 301s, and `hits` now shows the real hit count.

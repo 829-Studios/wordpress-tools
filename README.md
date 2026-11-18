@@ -28,6 +28,13 @@ This plugin provides multiple layers of security protection:
   - Users are redirected to their profile page to set up 2FA
   - Only `read` capability is allowed until 2FA is configured
   - 829 Studios accounts (@829llc.com) are exempt as they use SSO
+  - Member-only accounts are exempt: users whose only roles are `subscriber` or `customer` (WooCommerce). Any other role, a directly granted capability, or super admin still requires 2FA. Add a site's own member roles with the `wpt_two_factor_exempt_roles` filter:
+    ```php
+    add_filter( 'wpt_two_factor_exempt_roles', function ( $roles ) {
+    	$roles[] = 'student';
+    	return $roles;
+    } );
+    ```
   - Individual accounts can be exempted via **External Email Users → 2FA Login Exceptions** on the 829 Settings page (intended for third-party integration accounts that can't complete a 2FA challenge)
 - **Strong Password Enforcement**:
   - Validates password strength using the Zxcvbn library (medium strength or greater required)
