@@ -1001,11 +1001,11 @@ class MCP {
 						),
 						'target_url' => array(
 							'type'        => 'string',
-							'description' => 'Target URL or path the redirect points to.',
+							'description' => 'Target URL or path the redirect points to. Required for 3xx codes, ignored for 4xx/5xx.',
 						),
 						'code'       => array(
 							'type'        => 'integer',
-							'description' => 'HTTP status code: 301, 302, 307, 308, 410, 404. Default 301.',
+							'description' => 'HTTP status code. 301, 302, 303, 304, 307, 308 redirect to target_url; 400, 401, 403, 404, 410, 418, 451, 500-504 return that error instead. Default 301.',
 							'default'     => 301,
 						),
 						'regex'      => array(
@@ -1022,8 +1022,12 @@ class MCP {
 							'description' => 'Redirection group ID. Default 1.',
 							'default'     => 1,
 						),
+						'group'      => array(
+							'type'        => 'string',
+							'description' => 'Group name (case-insensitive), instead of group_id. Takes precedence over group_id. Must already exist; see list-redirect-groups / create-redirect-group.',
+						),
 					),
-					'required'   => array( 'source_url', 'target_url' ),
+					'required'   => array( 'source_url' ),
 				),
 				'output_schema'       => array(
 					'type'       => 'object',
@@ -1067,7 +1071,7 @@ class MCP {
 						),
 						'code'       => array(
 							'type'        => 'integer',
-							'description' => 'New HTTP status code.',
+							'description' => 'New HTTP status code (same values as create-redirect).',
 						),
 						'regex'      => array(
 							'type'        => 'boolean',
@@ -1127,6 +1131,68 @@ class MCP {
 					'annotations' => array(
 						'destructive' => true,
 						'idempotent'  => false,
+					),
+				),
+			)
+		);
+
+		wp_register_ability(
+			'829-tools/list-redirect-groups',
+			array(
+				'category'            => '829-tools',
+				'label'               => 'List Redirect Groups',
+				'description'         => 'Lists the Redirection plugin\'s groups with their IDs and redirect counts.',
+				'input_schema'        => array(
+					'type'       => 'object',
+					'properties' => array(),
+				),
+				'output_schema'       => array(
+					'type'       => 'object',
+					'properties' => array( 'groups' => array( 'type' => 'array' ) ),
+				),
+				'permission_callback' => [ $this, 'check_admin_permission' ],
+				'execute_callback'    => [ $this, 'list_redirect_groups' ],
+				'meta'                => array(
+					'mcp'         => array( 'public' => true ),
+					'annotations' => array(
+						'readonly'    => true,
+						'destructive' => false,
+						'idempotent'  => true,
+					),
+				),
+			)
+		);
+
+		wp_register_ability(
+			'829-tools/create-redirect-group',
+			array(
+				'category'            => '829-tools',
+				'label'               => 'Create Redirect Group',
+				'description'         => 'Creates a Redirection group. If a group with this name already exists, returns it instead (created: false).',
+				'input_schema'        => array(
+					'type'       => 'object',
+					'properties' => array(
+						'name' => array(
+							'type'        => 'string',
+							'description' => 'Group name (max 50 characters).',
+						),
+					),
+					'required'   => array( 'name' ),
+				),
+				'output_schema'       => array(
+					'type'       => 'object',
+					'properties' => array(
+						'created' => array( 'type' => 'boolean' ),
+						'group'   => array( 'type' => 'object' ),
+					),
+				),
+				'permission_callback' => [ $this, 'check_admin_permission' ],
+				'execute_callback'    => [ $this, 'create_redirect_group' ],
+				'meta'                => array(
+					'mcp'         => array( 'public' => true ),
+					'annotations' => array(
+						'destructive' => false,
+						'idempotent'  => true,
 					),
 				),
 			)
@@ -3125,6 +3191,123 @@ class MCP {
 	}
 
 	/**
+	 * Like redirection_table(), but also requires Redirection to be active so we can use its classes.
+	 *
+	 * @return string|WP_Error
+	 */
+	private function redirection_api_table() {
+		if ( ! class_exists( 'Red_Item' ) || ! class_exists( 'Red_Group' ) ) {
+			return new WP_Error( 'redirection_inactive', 'The Redirection plugin must be active for this ability.' );
+		}
+
+		return $this->redirection_table();
+	}
+
+	/**
+	 * All Redirection groups, formatted.
+	 *
+	 * @return array
+	 */
+	private function redirect_groups() {
+		return array_map(
+			function ( $group ) {
+				return array(
+					'id'        => (int) $group['id'],
+					'name'      => $group['name'],
+					'redirects' => (int) $group['redirects'],
+					'module'    => $group['moduleName'],
+					'enabled'   => (bool) $group['enabled'],
+				);
+			},
+			\Red_Group::get_all()
+		);
+	}
+
+	/**
+	 * Groups whose name matches case-insensitively.
+	 *
+	 * @param  string $name Group name.
+	 * @return array
+	 */
+	private function redirect_groups_named( $name ) {
+		return array_values(
+			array_filter(
+				$this->redirect_groups(),
+				function ( $group ) use ( $name ) {
+					return 0 === strcasecmp( trim( $group['name'] ), $name );
+				}
+			)
+		);
+	}
+
+	/**
+	 * Resolve the group ID from a `group` name or `group_id`.
+	 *
+	 * @param  array $input Ability input.
+	 * @return int|WP_Error
+	 */
+	private function redirect_group_id( $input ) {
+		$name = trim( (string) ( $input['group'] ?? '' ) );
+
+		if ( '' === $name ) {
+			return intval( $input['group_id'] ?? 1 );
+		}
+
+		$matches = $this->redirect_groups_named( $name );
+
+		if ( 1 === count( $matches ) ) {
+			return $matches[0]['id'];
+		}
+
+		if ( count( $matches ) > 1 ) {
+			return new WP_Error( 'ambiguous_group', "More than one group is named \"{$name}\" (IDs " . implode( ', ', wp_list_pluck( $matches, 'id' ) ) . '). Pass group_id instead.' );
+		}
+
+		$existing = array_map(
+			function ( $group ) {
+				return "{$group['name']} ({$group['id']})";
+			},
+			$this->redirect_groups()
+		);
+
+		return new WP_Error( 'group_not_found', "No redirect group named \"{$name}\". Existing groups: " . implode( ', ', $existing ) . '. Use create-redirect-group to add it.' );
+	}
+
+	/**
+	 * Map a status code and target to Redirection's action fields.
+	 *
+	 * @param  int    $code   HTTP status code.
+	 * @param  string $target Target URL (3xx codes only).
+	 * @return array|WP_Error
+	 */
+	private function redirect_action( $code, $target ) {
+		// Red_Item silently swaps codes outside these lists for 301/404, so reject them here.
+		if ( in_array( $code, array( 301, 302, 303, 304, 307, 308 ), true ) ) {
+			$target = trim( (string) $target );
+
+			if ( '' === $target ) {
+				return new WP_Error( 'missing_target', "target_url is required for a {$code} redirect." );
+			}
+
+			return array(
+				'action_type' => 'url',
+				'action_code' => $code,
+				'action_data' => array( 'url' => $target ),
+			);
+		}
+
+		if ( in_array( $code, array( 400, 401, 403, 404, 410, 418, 451, 500, 501, 502, 503, 504 ), true ) ) {
+			return array(
+				'action_type' => 'error',
+				'action_code' => $code,
+				'action_data' => array( 'url' => '' ),
+			);
+		}
+
+		return new WP_Error( 'invalid_code', "Unsupported status code {$code}." );
+	}
+
+	/**
 	 * Format a redirection_items DB row as an array.
 	 *
 	 * @param  object $row DB row.
@@ -3140,7 +3323,7 @@ class MCP {
 			'regex'       => (bool) $row->regex,
 			'group_id'    => (int) $row->group_id,
 			'title'       => $row->title,
-			'hits'        => (int) $row->hits,
+			'hits'        => (int) $row->last_count,
 			'last_access' => $row->last_access,
 		);
 	}
@@ -3278,48 +3461,46 @@ class MCP {
 	public function create_redirect( $input = array() ) {
 		global $wpdb;
 
-		$table = $this->redirection_table();
+		$table = $this->redirection_api_table();
 		if ( is_wp_error( $table ) ) {
 			return $table;
 		}
 
-		$source = trim( $input['source_url'] ?? '' );
-		$target = trim( $input['target_url'] ?? '' );
+		$source = trim( (string) ( $input['source_url'] ?? '' ) );
 
-		if ( empty( $source ) || empty( $target ) ) {
-			return new WP_Error( 'missing_urls', 'source_url and target_url are required.' );
+		if ( '' === $source ) {
+			return new WP_Error( 'missing_source', 'source_url is required.' );
 		}
 
-		$code     = intval( $input['code'] ?? 301 );
-		$regex    = ! empty( $input['regex'] ) ? 1 : 0;
-		$group_id = intval( $input['group_id'] ?? 1 );
-		$title    = $input['title'] ?? '';
+		$action = $this->redirect_action( intval( $input['code'] ?? 301 ), $input['target_url'] ?? '' );
+		if ( is_wp_error( $action ) ) {
+			return $action;
+		}
 
-		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery -- third-party table, no core API.
-		$result = $wpdb->insert(
-			$table,
-			array(
-				'url'         => $source,
-				'action_code' => $code,
-				'action_type' => 'url',
-				'action_data' => $target,
-				'match_type'  => 'url',
-				'status'      => 'enabled',
-				'regex'       => $regex,
-				'group_id'    => $group_id,
-				'position'    => 0,
-				'hits'        => 0,
-				'title'       => $title,
-				'updated'     => current_time( 'mysql' ),
-			),
-			array( '%s', '%d', '%s', '%s', '%s', '%s', '%d', '%d', '%d', '%d', '%s', '%s' )
+		$group_id = $this->redirect_group_id( $input );
+		if ( is_wp_error( $group_id ) ) {
+			return $group_id;
+		}
+
+		// Red_Item builds match_url/match_data, validates the group and appends to its position order.
+		$item = \Red_Item::create(
+			array_merge(
+				$action,
+				array(
+					'url'        => $source,
+					'match_type' => 'url',
+					'regex'      => ! empty( $input['regex'] ) ? 1 : 0,
+					'group_id'   => $group_id,
+					'title'      => (string) ( $input['title'] ?? '' ),
+				)
+			)
 		);
 
-		if ( ! $result ) {
-			return new WP_Error( 'insert_failed', 'Failed to create redirect.' );
+		if ( is_wp_error( $item ) ) {
+			return $item;
 		}
 
-		$new_id = $wpdb->insert_id;
+		$new_id = $item->get_id();
 		$this->flush_redirection_cache( $new_id );
 
 		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, WordPress.DB.PreparedSQL.InterpolatedNotPrepared -- just inserted, nothing to cache yet.
@@ -3340,72 +3521,80 @@ class MCP {
 	 * @return array|WP_Error
 	 */
 	public function update_redirect( $input = array() ) {
-		global $wpdb;
-
-		$table = $this->redirection_table();
+		$table = $this->redirection_api_table();
 		if ( is_wp_error( $table ) ) {
 			return $table;
 		}
 
-		$id        = intval( $input['id'] ?? 0 );
-		$cache_key = 'wpt_mcp_redirect_' . $id;
-		$existing  = wp_cache_get( $cache_key, 'wpt_mcp' );
+		$id   = intval( $input['id'] ?? 0 );
+		$item = \Red_Item::get_by_id( $id );
 
-		if ( false === $existing ) {
-			// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.PreparedSQL.InterpolatedNotPrepared -- third-party table, no core API.
-			$existing = $wpdb->get_row( $wpdb->prepare( "SELECT * FROM {$table} WHERE id = %d", $id ) );
-
-			if ( $existing ) {
-				wp_cache_set( $cache_key, $existing, 'wpt_mcp', 5 * MINUTE_IN_SECONDS );
-			}
-		}
-
-		if ( ! $existing ) {
+		if ( ! $item ) {
 			return new WP_Error( 'not_found', "Redirect {$id} not found." );
 		}
 
-		$data    = array();
-		$formats = array();
+		// Red_Item::update() re-sanitizes a full record, so start from the current one.
+		$details = $item->to_json();
+		$changed = false;
+
+		// to_json() formats last_access for display; passing it back would overwrite the stored time.
+		unset( $details['hits'], $details['last_access'] );
 
 		if ( isset( $input['source_url'] ) ) {
-			$data['url'] = trim( $input['source_url'] );
-			$formats[]   = '%s';
-		}
-
-		if ( isset( $input['target_url'] ) ) {
-			$data['action_data'] = trim( $input['target_url'] );
-			$formats[]           = '%s';
-		}
-
-		if ( isset( $input['code'] ) ) {
-			$data['action_code'] = intval( $input['code'] );
-			$formats[]           = '%d';
+			$details['url'] = trim( (string) $input['source_url'] );
+			$changed        = true;
 		}
 
 		if ( isset( $input['regex'] ) ) {
-			$data['regex'] = ! empty( $input['regex'] ) ? 1 : 0;
-			$formats[]     = '%d';
+			// The sanitizer reads flag_regex over the regex column when match_data is present.
+			$details['regex']                              = ! empty( $input['regex'] ) ? 1 : 0;
+			$details['match_data']['source']['flag_regex'] = ! empty( $input['regex'] );
+			$changed                                       = true;
+		}
+
+		if ( isset( $input['code'] ) || isset( $input['target_url'] ) ) {
+			if ( 'url' !== $details['match_type'] ) {
+				return new WP_Error( 'unsupported_match', "Redirect {$id} uses the \"{$details['match_type']}\" match type; edit its code and target in the Redirection admin." );
+			}
+
+			$action = $this->redirect_action(
+				isset( $input['code'] ) ? intval( $input['code'] ) : (int) $details['action_code'],
+				$input['target_url'] ?? ( $details['action_data']['url'] ?? '' )
+			);
+
+			if ( is_wp_error( $action ) ) {
+				return $action;
+			}
+
+			$details = array_merge( $details, $action );
+			$changed = true;
 		}
 
 		if ( isset( $input['title'] ) ) {
-			$data['title'] = $input['title'];
-			$formats[]     = '%s';
+			$details['title'] = (string) $input['title'];
+			$changed          = true;
 		}
 
-		if ( isset( $input['status'] ) && in_array( $input['status'], array( 'enabled', 'disabled' ), true ) ) {
-			$data['status'] = $input['status'];
-			$formats[]      = '%s';
-		}
+		$status = $input['status'] ?? null;
 
-		if ( empty( $data ) ) {
+		if ( ! $changed && ! in_array( $status, array( 'enabled', 'disabled' ), true ) ) {
 			return array( 'updated' => false );
 		}
 
-		$data['updated'] = current_time( 'mysql' );
-		$formats[]       = '%s';
+		if ( $changed ) {
+			$result = $item->update( $details );
 
-		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching -- write, nothing to cache.
-		$wpdb->update( $table, $data, array( 'id' => $id ), $formats, array( '%d' ) );
+			if ( is_wp_error( $result ) ) {
+				return $result;
+			}
+		}
+
+		if ( 'enabled' === $status ) {
+			$item->enable();
+		} elseif ( 'disabled' === $status ) {
+			$item->disable();
+		}
+
 		$this->flush_redirection_cache( $id );
 
 		return array( 'updated' => true );
@@ -3443,6 +3632,67 @@ class MCP {
 		$this->flush_redirection_cache( $id );
 
 		return array( 'deleted' => (bool) $result );
+	}
+
+	/**
+	 * Execute callback: list redirect groups.
+	 *
+	 * @return array|WP_Error
+	 */
+	public function list_redirect_groups() {
+		$table = $this->redirection_api_table();
+		if ( is_wp_error( $table ) ) {
+			return $table;
+		}
+
+		return array( 'groups' => $this->redirect_groups() );
+	}
+
+	/**
+	 * Execute callback: create a redirect group, or return the existing one with that name.
+	 *
+	 * @param  array $input Ability input.
+	 * @return array|WP_Error
+	 */
+	public function create_redirect_group( $input = array() ) {
+		$table = $this->redirection_api_table();
+		if ( is_wp_error( $table ) ) {
+			return $table;
+		}
+
+		$name = trim( (string) ( $input['name'] ?? '' ) );
+
+		if ( '' === $name ) {
+			return new WP_Error( 'missing_name', 'name is required.' );
+		}
+
+		// Redirection truncates longer names, which would defeat the existing-group check on retries.
+		if ( strlen( $name ) > 50 ) {
+			return new WP_Error( 'name_too_long', 'Group names can be at most 50 characters.' );
+		}
+
+		$existing = $this->redirect_groups_named( $name );
+
+		if ( $existing ) {
+			return array(
+				'created' => false,
+				'group'   => $existing[0],
+			);
+		}
+
+		// Module 1 is Redirection's WordPress module; Apache/Nginx groups are managed in its admin.
+		$group = \Red_Group::create( $name, 1 );
+
+		if ( ! $group ) {
+			return new WP_Error( 'create_failed', 'Failed to create redirect group.' );
+		}
+
+		$created = wp_list_filter( $this->redirect_groups(), array( 'id' => $group->get_id() ) );
+
+		return array(
+			'created' => true,
+			'group'   => reset( $created ),
+		);
 	}
 
 	/**

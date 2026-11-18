@@ -9,6 +9,11 @@ project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 ### Added
 
 - Turn off the `/random/` redirect to a random post added in WordPress 7.2. Each visit runs an uncacheable `ORDER BY RAND()` query, and it can surface posts meant to stay out of search.
+- `list-redirect-groups` and `create-redirect-group` MCP abilities, and `create-redirect` now accepts a `group` name as well as `group_id`.
+
+### Fixed
+
+- The `create-redirect` and `update-redirect` MCP abilities failed on every call because they wrote to columns the Redirection plugin doesn't have. They now save through Redirection itself, so new redirects get the match data Redirection needs to fire. 404/410 and other error codes are saved as error responses instead of being turned into 301s, and `hits` now shows the real hit count.
 
 ## [1.16.0] - 2026-11-16
 
