@@ -8,6 +8,7 @@ project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ### Added
 
+- Turn off the `/random/` redirect to a random post added in WordPress 7.2. Each visit runs an uncacheable `ORDER BY RAND()` query, and it can surface posts meant to stay out of search.
 - `list-redirect-groups` and `create-redirect-group` MCP abilities, and `create-redirect` now accepts a `group` name as well as `group_id`.
 
 ### Fixed

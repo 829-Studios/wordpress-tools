@@ -56,6 +56,7 @@ This plugin provides multiple layers of security protection:
   - Uploads and other static files stay public
   - Allow REST login endpoints (e.g. JWT) with the `wpt_rest_api_allowlist` filter
   - `WPT_REQUIRE_LOGIN` overrides the setting, including in production
+- **Random Post Redirect Disabled**: Turns off the `/random/` URLs added in WordPress 7.2, which redirect to a random post. Each visit runs an uncacheable `ORDER BY RAND()` query that bots can hammer, and it can surface posts meant to stay out of search.
 
 
 ### Access Management
