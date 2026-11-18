@@ -8,6 +8,7 @@
 namespace WordPressTools\GravityFormsRecaptcha;
 
 use WordPressTools\Singleton;
+use WordPressTools\Settings\Settings;
 use function WordPressTools\Utils\is_829_user;
 
 if ( ! defined( 'ABSPATH' ) ) {
@@ -41,7 +42,7 @@ class GravityFormsRecaptcha {
 	 * Setup module
 	 */
 	public function setup() {
-		if ( ! function_exists( 'gf_recaptcha' ) ) {
+		if ( ! function_exists( 'gf_recaptcha' ) || ! Settings::get_settings()['restrict_gf_recaptcha'] ) {
 			return;
 		}
 

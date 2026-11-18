@@ -74,6 +74,7 @@ class Settings {
 			'noindex_banner_enabled'          => 1,
 			'noindex_banner_excluded_domains' => [],
 			'require_login'                   => 0,
+			'restrict_gf_recaptcha'           => 1,
 		];
 
 		// Get settings from single option
@@ -234,6 +235,7 @@ class Settings {
 					'noindex_banner_enabled'          => 1,
 					'noindex_banner_excluded_domains' => [],
 					'require_login'                   => 0,
+					'restrict_gf_recaptcha'           => 1,
 				],
 			]
 		);
@@ -351,6 +353,15 @@ class Settings {
 			'wpt_enable_mcp',
 			esc_html__( 'Enable MCP', 'wordpress-tools' ),
 			[ $this, 'mcp_setting_callback' ],
+			'wpt-829-settings',
+			'wpt_829_general_section'
+		);
+
+		// Gravity Forms reCAPTCHA restriction setting field
+		add_settings_field(
+			'wpt_restrict_gf_recaptcha',
+			esc_html__( 'Restrict Gravity Forms reCAPTCHA Settings', 'wordpress-tools' ),
+			[ $this, 'restrict_gf_recaptcha_setting_callback' ],
 			'wpt-829-settings',
 			'wpt_829_general_section'
 		);
@@ -790,6 +801,28 @@ class Settings {
 	}
 
 	/**
+	 * Restrict Gravity Forms reCAPTCHA Settings setting callback.
+	 */
+	public function restrict_gf_recaptcha_setting_callback() {
+		$settings = self::get_settings();
+		$restrict = $settings['restrict_gf_recaptcha'];
+		?>
+		<fieldset>
+			<input id="wpt-restrict-gf-recaptcha-yes" name="wpt_settings[restrict_gf_recaptcha]" type="radio" value="1"<?php checked( 1, $restrict ); ?> />
+			<label for="wpt-restrict-gf-recaptcha-yes">
+				<?php esc_html_e( 'Yes', 'wordpress-tools' ); ?>
+			</label><br>
+
+			<input id="wpt-restrict-gf-recaptcha-no" name="wpt_settings[restrict_gf_recaptcha]" type="radio" value="0"<?php checked( 0, $restrict ); ?> />
+			<label for="wpt-restrict-gf-recaptcha-no">
+				<?php esc_html_e( 'No', 'wordpress-tools' ); ?>
+			</label>
+			<p class="description"><?php esc_html_e( 'Hides 829\'s reCAPTCHA projects and keys from non-829 users on the Gravity Forms reCAPTCHA settings page: v3 Enterprise only lists the saved project and site key, and the v3 Classic and v2 secret key is masked and locked. Turn this off for clients who manage their own reCAPTCHA keys.', 'wordpress-tools' ); ?></p>
+		</fieldset>
+		<?php
+	}
+
+	/**
 	 * Force No-Index on Staging/Dev setting callback.
 	 */
 	public function noindex_status_setting_callback() {
@@ -1201,6 +1234,9 @@ class Settings {
 
 		// Sanitize enable_mcp
 		$sanitized['enable_mcp'] = isset( $input['enable_mcp'] ) ? intval( $input['enable_mcp'] ) : 1;
+
+		// Sanitize restrict_gf_recaptcha
+		$sanitized['restrict_gf_recaptcha'] = isset( $input['restrict_gf_recaptcha'] ) ? intval( $input['restrict_gf_recaptcha'] ) : 1;
 
 		// Sanitize wpe_cache_clear_users — drops IDs for deleted users
 		$sanitized['wpe_cache_clear_users'] = isset( $input['wpe_cache_clear_users'] )
@@ -1651,6 +1687,14 @@ class Settings {
 									</label>
 									<p class="description"><?php esc_html_e( 'Exposes site management tools (plugins, themes, users, system info) via the WordPress MCP Adapter.', 'wordpress-tools' ); ?></p>
 								</fieldset>
+							</td>
+						</tr>
+						<tr>
+							<th scope="row">
+								<?php esc_html_e( 'Restrict Gravity Forms reCAPTCHA Settings', 'wordpress-tools' ); ?>
+							</th>
+							<td>
+								<?php $this->restrict_gf_recaptcha_setting_callback(); ?>
 							</td>
 						</tr>
 						<tr>

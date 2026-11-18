@@ -57,7 +57,7 @@ This plugin provides multiple layers of security protection:
   - Allow REST login endpoints (e.g. JWT) with the `wpt_rest_api_allowlist` filter
   - `WPT_REQUIRE_LOGIN` overrides the setting, including in production
 - **Random Post Redirect Disabled**: Turns off the `/random/` URLs added in WordPress 7.2, which redirect to a random post. Each visit runs an uncacheable `ORDER BY RAND()` query that bots can hammer, and it can surface posts meant to stay out of search.
-- **Gravity Forms reCAPTCHA Project Privacy**: When the Gravity Forms reCAPTCHA add-on uses v3 Enterprise, non-829 users only see the project and site key already saved on the site in the Project ID and Enterprise Site Key dropdowns, so other clients' projects and keys on the connected Google account stay hidden. Site-key lookups for any other project are blocked for them as well. In v3 Classic and v2 modes, the secret key is shown to them as a masked, disabled field and can't be changed; the real key is never sent to their browser.
+- **Gravity Forms reCAPTCHA Project Privacy**: When the Gravity Forms reCAPTCHA add-on uses v3 Enterprise, non-829 users only see the project and site key already saved on the site in the Project ID and Enterprise Site Key dropdowns, so other clients' projects and keys on the connected Google account stay hidden. Site-key lookups for any other project are blocked for them as well. In v3 Classic and v2 modes, the secret key is shown to them as a masked, disabled field and can't be changed; the real key is never sent to their browser. Controlled by **Restrict Gravity Forms reCAPTCHA Settings** (on by default); turn it off for clients who manage their own reCAPTCHA keys.
 
 
 ### Access Management
