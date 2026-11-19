@@ -48,8 +48,9 @@ class GravityFormsRecaptcha {
 
 		add_filter( 'http_response', [ $this, 'filter_google_lists' ], 10, 3 );
 
-		// Priority 9: before the add-on's handler.
+		// Priority 9: before the add-on's handlers.
 		add_action( 'wp_ajax_get_enterprise_site_keys', [ $this, 'reject_other_project_keys' ], 9 );
+		add_action( 'wp_ajax_save_recaptcha_enterprise_data', [ $this, 'reject_other_project_save' ], 9 );
 
 		// Priority 0: before the verify_secret_key AJAX handler and the settings save read $_POST.
 		add_action( 'admin_init', [ $this, 'lock_posted_secret_keys' ], 0 );
@@ -288,13 +289,44 @@ class GravityFormsRecaptcha {
 	 * value exactly so paths like "SAVED/../OTHER" can't reach other projects.
 	 */
 	public function reject_other_project_keys() {
-		// phpcs:ignore WordPress.Security.NonceVerification.Missing -- Only rejects; the add-on verifies its own nonce.
-		$project = isset( $_POST['project'] ) ? sanitize_text_field( wp_unslash( $_POST['project'] ) ) : '';
+		$project = $this->get_posted( 'project' );
 
 		if ( ! $this->should_restrict() || ( '' !== $project && $project === $this->get_saved_project_number() ) ) {
 			return;
 		}
 
+		$this->send_restricted_error();
+	}
+
+	/**
+	 * Refuse Enterprise saves that change the project or site key, so a known
+	 * project number can't be saved to make it pass the checks above.
+	 */
+	public function reject_other_project_save() {
+		$project = $this->get_posted( 'project_number' );
+
+		if ( ! $this->should_restrict() || ( '' !== $project && $project === $this->get_saved_project_number() && $this->get_posted( 'site_key_v3_enterprise' ) === $this->get_saved_site_key() ) ) {
+			return;
+		}
+
+		$this->send_restricted_error();
+	}
+
+	/**
+	 * A sanitized $_POST value.
+	 *
+	 * @param string $name Field name.
+	 * @return string
+	 */
+	protected function get_posted( $name ) {
+		// phpcs:ignore WordPress.Security.NonceVerification.Missing -- Only used to reject requests; the add-on verifies its own nonces.
+		return isset( $_POST[ $name ] ) ? sanitize_text_field( wp_unslash( $_POST[ $name ] ) ) : '';
+	}
+
+	/**
+	 * End the AJAX request with a restricted-access error.
+	 */
+	protected function send_restricted_error() {
 		wp_send_json_error( new \WP_Error( 'wpt_recaptcha_restricted', __( 'Access to this reCAPTCHA project is restricted.', 'wordpress-tools' ) ) );
 	}
 }
