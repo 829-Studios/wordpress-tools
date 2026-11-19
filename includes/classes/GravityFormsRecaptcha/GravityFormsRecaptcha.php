@@ -46,8 +46,10 @@ class GravityFormsRecaptcha {
 			return;
 		}
 
-		add_filter( 'pre_http_request', [ $this, 'block_other_project_keys' ], 10, 3 );
 		add_filter( 'http_response', [ $this, 'filter_google_lists' ], 10, 3 );
+
+		// Priority 9: before the add-on's handler.
+		add_action( 'wp_ajax_get_enterprise_site_keys', [ $this, 'reject_other_project_keys' ], 9 );
 
 		// Priority 0: before the verify_secret_key AJAX handler and the settings save read $_POST.
 		add_action( 'admin_init', [ $this, 'lock_posted_secret_keys' ], 0 );
@@ -282,32 +284,17 @@ class GravityFormsRecaptcha {
 	}
 
 	/**
-	 * Refuse site-key lookups for any project other than the saved one, so the
-	 * get_enterprise_site_keys AJAX action can't be used to probe other projects.
-	 *
-	 * @param false|array|\WP_Error $preempt     Short-circuit response.
-	 * @param array                 $parsed_args Request arguments.
-	 * @param string                $url         Request URL.
-	 * @return false|array|\WP_Error
+	 * Refuse site-key lookups for any project but the saved one, matching the posted
+	 * value exactly so paths like "SAVED/../OTHER" can't reach other projects.
 	 */
-	public function block_other_project_keys( $preempt, $parsed_args, $url ) {
-		if ( false !== $preempt || ! preg_match( self::KEYS_URL_PATTERN, $url, $matches ) || ! $this->should_restrict() ) {
-			return $preempt;
+	public function reject_other_project_keys() {
+		// phpcs:ignore WordPress.Security.NonceVerification.Missing -- Only rejects; the add-on verifies its own nonce.
+		$project = isset( $_POST['project'] ) ? sanitize_text_field( wp_unslash( $_POST['project'] ) ) : '';
+
+		if ( ! $this->should_restrict() || ( '' !== $project && $project === $this->get_saved_project_number() ) ) {
+			return;
 		}
 
-		if ( rawurldecode( $matches[1] ) === $this->get_saved_project_number() ) {
-			return $preempt;
-		}
-
-		return [
-			'headers'  => [],
-			'body'     => wp_json_encode( [ 'error' => [ 'message' => 'Access to this reCAPTCHA project is restricted.' ] ] ),
-			'response' => [
-				'code'    => 403,
-				'message' => 'Forbidden',
-			],
-			'cookies'  => [],
-			'filename' => null,
-		];
+		wp_send_json_error( new \WP_Error( 'wpt_recaptcha_restricted', __( 'Access to this reCAPTCHA project is restricted.', 'wordpress-tools' ) ) );
 	}
 }
