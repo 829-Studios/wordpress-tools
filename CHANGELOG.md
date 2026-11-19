@@ -11,8 +11,13 @@ project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 - Turn off the `/random/` redirect to a random post added in WordPress 7.2. Each visit runs an uncacheable `ORDER BY RAND()` query, and it can surface posts meant to stay out of search.
 - `list-redirect-groups` and `create-redirect-group` MCP abilities, and `create-redirect` now accepts a `group` name as well as `group_id`.
 
+### Changed
+
+- Two-Factor Authentication is no longer required for member-only accounts: users whose only roles are `subscriber` or `customer` (WooCommerce) and who can do nothing beyond `read`. Every other role still requires it, including a staff role on another site in a multisite network. Members who choose to set up 2FA still confirm it by email. Sites can add their own member roles with the `wpt_two_factor_exempt_roles` filter, and extra member capabilities with `wpt_two_factor_exempt_capabilities`.
+
 ### Fixed
 
+- Editors picked up admin capabilities from plugins that lock their own post types to one: `manage_options` from ACF (Settings screens, field groups and other admin-only pages), `manage_woocommerce` from WooCommerce (all WooCommerce settings, including payment gateways) and `wpcode_edit_snippets` from WPCode (PHP snippets and the file editor). Editors still get full access to custom post types, but only through post-style capabilities such as `edit_events` — never a plugin's admin capability.
 - The `create-redirect` and `update-redirect` MCP abilities failed on every call because they wrote to columns the Redirection plugin doesn't have. They now save through Redirection itself, so new redirects get the match data Redirection needs to fire. 404/410 and other error codes are saved as error responses instead of being turned into 301s, and `hits` now shows the real hit count.
 
 ## [1.16.0] - 2026-11-16

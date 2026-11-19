@@ -16,7 +16,8 @@ if ( ! defined( 'ABSPATH' ) ) {
 /**
  * Grants additional capabilities to the Editor role:
  * - All Yoast SEO settings and capabilities
- * - Full create/edit/delete access to all custom post types
+ * - Full create/edit/delete access to all custom post types (except
+ *   post types locked to an admin capability)
  */
 class RoleManagement {
 
@@ -53,6 +54,57 @@ class RoleManagement {
 	];
 
 	/**
+	 * Core admin-only capabilities never granted through a post type - plugins
+	 * like ACF use manage_options to keep their internal post types admin-only.
+	 *
+	 * @var string[]
+	 */
+	private const ADMIN_ONLY_CAPS = [
+		'manage_options',
+		'activate_plugins',
+		'install_plugins',
+		'update_plugins',
+		'delete_plugins',
+		'edit_plugins',
+		'switch_themes',
+		'install_themes',
+		'update_themes',
+		'delete_themes',
+		'edit_themes',
+		'edit_theme_options',
+		'customize',
+		'edit_files',
+		'update_core',
+		'import',
+		'export',
+		'edit_dashboard',
+		'list_users',
+		'create_users',
+		'add_users',
+		'edit_users',
+		'promote_users',
+		'remove_users',
+		'delete_users',
+		'unfiltered_upload',
+		'manage_network',
+		'manage_sites',
+		'manage_network_users',
+		'manage_network_plugins',
+		'manage_network_themes',
+		'manage_network_options',
+		'upgrade_network',
+		'setup_network',
+	];
+
+	/**
+	 * Only post-style capabilities are copied from post types; anything else
+	 * (manage_woocommerce, wpcode_edit_snippets) is a plugin's own admin gate.
+	 *
+	 * @var string
+	 */
+	private const POST_CAP_PATTERN = '/^(create|edit|delete|publish|read)_/';
+
+	/**
 	 * Setup module.
 	 */
 	public function setup() {
@@ -85,7 +137,7 @@ class RoleManagement {
 	}
 
 	/**
-	 * Collect all capability strings across registered non-builtin post types.
+	 * Collect the post-style capabilities of registered non-builtin post types.
 	 *
 	 * @return string[]
 	 */
@@ -103,6 +155,8 @@ class RoleManagement {
 			}
 		}
 
-		return array_unique( $caps );
+		$caps = array_diff( array_unique( $caps ), self::ADMIN_ONLY_CAPS );
+
+		return array_values( preg_grep( self::POST_CAP_PATTERN, $caps ) );
 	}
 }

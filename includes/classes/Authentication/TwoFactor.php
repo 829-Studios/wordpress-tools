@@ -76,6 +76,16 @@ class TwoFactor {
 	const CONFIRM_QUERY_VAR = 'wpt_confirm_2fa';
 
 	/**
+	 * Member-only roles that don't need 2FA. Filterable via wpt_two_factor_exempt_roles.
+	 *
+	 * @var array
+	 */
+	const EXEMPT_ROLES = [
+		'subscriber',
+		'customer', // WooCommerce.
+	];
+
+	/**
 	 * Setup 2FA enforcement.
 	 */
 	public function __construct() {
@@ -108,17 +118,114 @@ class TwoFactor {
 	 *
 	 * SSO users (@829llc.com) don't need 2FA - they use SSO authentication.
 	 * Users on the "2FA Login Exceptions" allow list are also exempt, for
-	 * accounts belonging to third-party integrations that can't do 2FA.
+	 * accounts belonging to third-party integrations that can't do 2FA,
+	 * as are users whose only roles are member-only ones (subscriber, customer).
 	 *
 	 * @param int $user_id The user ID.
 	 * @return bool
 	 */
 	public function user_requires_2fa( int $user_id ): bool {
-		if ( is_829_user( $user_id ) ) {
+		return $this->user_enrollment_is_guarded( $user_id ) && ! $this->user_has_only_exempt_roles( $user_id );
+	}
+
+	/**
+	 * Check if a user's first-time 2FA setup must be confirmed by email.
+	 *
+	 * Wider than user_requires_2fa(): member-only accounts are included, so a
+	 * factor enrolled while exempt can still be trusted if they're promoted later.
+	 *
+	 * @param int $user_id The user ID.
+	 * @return bool
+	 */
+	public function user_enrollment_is_guarded( int $user_id ): bool {
+		return ! is_829_user( $user_id ) && ! $this->user_is_2fa_exempt( $user_id );
+	}
+
+	/**
+	 * Check if every role a user has is a member-only role.
+	 *
+	 * Fails closed: unknown roles, no roles, directly granted capabilities,
+	 * roles that can do more than read, and super admins all still require 2FA.
+	 *
+	 * @param int $user_id The user ID.
+	 * @return bool
+	 */
+	public function user_has_only_exempt_roles( int $user_id ): bool {
+		$user = get_userdata( $user_id );
+
+		if ( ! $user ) {
 			return false;
 		}
 
-		return ! $this->user_is_2fa_exempt( $user_id );
+		// Multisite only: single-site is_super_admin() checks a capability, which re-enters our map_meta_cap filter.
+		if ( is_multisite() && is_super_admin( $user_id ) ) {
+			return false;
+		}
+
+		$granted = $this->get_granted_roles_and_caps( $user );
+
+		if ( empty( $granted ) ) {
+			return false;
+		}
+
+		/**
+		 * Filter the member-only roles that don't require 2FA.
+		 *
+		 * @param array $roles   Role slugs.
+		 * @param int   $user_id The user being checked.
+		 */
+		$exempt_roles = (array) apply_filters( 'wpt_two_factor_exempt_roles', self::EXEMPT_ROLES, $user_id );
+
+		if ( ! empty( array_diff( $granted, $exempt_roles ) ) ) {
+			return false;
+		}
+
+		/**
+		 * Filter the capabilities a member-only account may hold and stay exempt.
+		 *
+		 * @param array $capabilities Capability names.
+		 * @param int   $user_id      The user being checked.
+		 */
+		$exempt_caps = (array) apply_filters( 'wpt_two_factor_exempt_capabilities', self::ALLOWED_CAPABILITIES, $user_id );
+
+		// Judge the roles by what they can do here, not by name - a site may have added capabilities to them.
+		$effective_caps = array_diff( array_keys( array_filter( (array) $user->allcaps ) ), (array) $user->roles );
+
+		return empty( array_diff( $effective_caps, $exempt_caps ) );
+	}
+
+	/**
+	 * Get the role slugs and directly granted capabilities a user holds.
+	 *
+	 * Covers every site on multisite: roles are per-site but the user's email
+	 * and Two-Factor usermeta are shared, so one staff role anywhere counts.
+	 *
+	 * @param \WP_User $user The user.
+	 * @return array
+	 */
+	private function get_granted_roles_and_caps( $user ): array {
+		if ( ! is_multisite() ) {
+			return array_keys( array_filter( (array) $user->caps ) );
+		}
+
+		global $wpdb;
+
+		$pattern = '/^' . preg_quote( $wpdb->base_prefix, '/' ) . '(\d+_)?capabilities$/';
+		$granted = [];
+
+		foreach ( (array) get_user_meta( $user->ID ) as $meta_key => $values ) {
+			if ( ! preg_match( $pattern, $meta_key ) ) {
+				continue;
+			}
+
+			$site_caps = maybe_unserialize( $values[0] ?? '' );
+
+			if ( is_array( $site_caps ) ) {
+				$granted = array_merge( $granted, array_keys( array_filter( $site_caps ) ) );
+			}
+		}
+
+		return array_unique( $granted );
 	}
 
 	/**
@@ -309,7 +416,7 @@ class TwoFactor {
 		}
 
 		// Only gate first-time setup - not disabling, or an already-confirmed user changing providers.
-		if ( ! $this->user_requires_2fa( $object_id ) || $this->user_has_2fa_enabled( $object_id ) ) {
+		if ( ! $this->user_enrollment_is_guarded( $object_id ) || $this->user_has_2fa_enabled( $object_id ) ) {
 			return $check;
 		}
 
@@ -457,6 +564,17 @@ class TwoFactor {
 	}
 
 	/**
+	 * Check if a user has an unexpired 2FA setup awaiting email confirmation.
+	 *
+	 * @param int $user_id User ID.
+	 * @return bool
+	 */
+	private function user_has_pending_2fa_setup( int $user_id ): bool {
+		return get_user_meta( $user_id, self::PENDING_TOKEN_META_KEY, true )
+			&& time() <= (int) get_user_meta( $user_id, self::PENDING_EXPIRES_META_KEY, true );
+	}
+
+	/**
 	 * Clear any pending (unconfirmed) 2FA setup for a user.
 	 *
 	 * @param int $user_id User ID.
@@ -474,21 +592,33 @@ class TwoFactor {
 	 * @return void
 	 */
 	public function show_2fa_required_notice(): void {
-		if ( ! $this->current_user_needs_2fa() ) {
+		$user_id = get_current_user_id();
+
+		if ( ! $user_id || ! $this->user_enrollment_is_guarded( $user_id ) || $this->user_has_2fa_enabled( $user_id ) ) {
 			return;
 		}
 
-		$user_id = get_current_user_id();
+		$required = $this->user_requires_2fa( $user_id );
 
-		if ( get_user_meta( $user_id, self::PENDING_TOKEN_META_KEY, true ) ) {
+		if ( $this->user_has_pending_2fa_setup( $user_id ) ) {
 			?>
 			<div class="notice notice-warning">
 				<h2><?php esc_html_e( 'Two-Factor Authentication Pending Confirmation', 'wordpress-tools' ); ?></h2>
 				<p>
-					<?php esc_html_e( 'A confirmation email has been sent to your account\'s email address. Click the link in that email to activate 2FA - your account capabilities remain restricted until then.', 'wordpress-tools' ); ?>
+					<?php
+					if ( $required ) {
+						esc_html_e( 'A confirmation email has been sent to your account\'s email address. Click the link in that email to activate 2FA - your account capabilities remain restricted until then.', 'wordpress-tools' );
+					} else {
+						esc_html_e( 'A confirmation email has been sent to your account\'s email address. Click the link in that email to activate 2FA.', 'wordpress-tools' );
+					}
+					?>
 				</p>
 			</div>
 			<?php
+			return;
+		}
+
+		if ( ! $required ) {
 			return;
 		}
 
