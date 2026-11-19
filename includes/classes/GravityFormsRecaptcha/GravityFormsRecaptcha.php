@@ -200,35 +200,37 @@ class GravityFormsRecaptcha {
 	}
 
 	/**
-	 * The project number saved on this site, read from storage rather than the
+	 * A saved add-on setting, preferring its constant. Read from storage, not the
 	 * add-on's get_recaptcha_key(), which prefers $_POST values in wp-admin.
+	 *
+	 * @param string $name     Setting name.
+	 * @param string $constant Constant that overrides it.
+	 * @return string
+	 */
+	protected function get_saved_setting( $name, $constant ) {
+		if ( defined( $constant ) && constant( $constant ) ) {
+			return (string) constant( $constant );
+		}
+
+		return (string) gf_recaptcha()->get_plugin_setting( $name );
+	}
+
+	/**
+	 * The saved Enterprise project number.
 	 *
 	 * @return string
 	 */
 	protected function get_saved_project_number() {
-		if ( defined( 'GF_RECAPTCHA_PROJECT_NUMBER' ) && GF_RECAPTCHA_PROJECT_NUMBER ) {
-			return (string) GF_RECAPTCHA_PROJECT_NUMBER;
-		}
-
-		$addon = gf_recaptcha();
-
-		return $addon ? (string) $addon->get_plugin_setting( 'project_number' ) : '';
+		return $this->get_saved_setting( 'project_number', 'GF_RECAPTCHA_PROJECT_NUMBER' );
 	}
 
 	/**
-	 * The Enterprise site key saved on this site, read from storage for the same
-	 * reason as get_saved_project_number().
+	 * The saved Enterprise site key.
 	 *
 	 * @return string
 	 */
 	protected function get_saved_site_key() {
-		if ( defined( 'GF_RECAPTCHA_V3_SITE_KEY_ENTERPRISE' ) && GF_RECAPTCHA_V3_SITE_KEY_ENTERPRISE ) {
-			return (string) GF_RECAPTCHA_V3_SITE_KEY_ENTERPRISE;
-		}
-
-		$addon = gf_recaptcha();
-
-		return $addon ? (string) $addon->get_plugin_setting( 'site_key_v3_enterprise' ) : '';
+		return $this->get_saved_setting( 'site_key_v3_enterprise', 'GF_RECAPTCHA_V3_SITE_KEY_ENTERPRISE' );
 	}
 
 	/**
