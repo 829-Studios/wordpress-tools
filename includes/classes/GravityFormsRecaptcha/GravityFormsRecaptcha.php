@@ -159,27 +159,32 @@ class GravityFormsRecaptcha {
 		foreach ( self::SECRET_KEY_FIELDS as $name ) {
 			$field = $renderer->get_field( $name );
 
-			// No saved secret: leave the field editable so the site can be set up.
-			if ( ! $field || '' === (string) rgar( $settings, $name ) ) {
+			// No saved secret: leave the field editable so the site can be set up. An html
+			// field is already masked; GF calls the postback callback on every render, not only saves.
+			if ( ! $field || 'html' === rgar( $field, 'type' ) || '' === (string) rgar( $settings, $name ) ) {
 				continue;
 			}
 
 			// Same id/name as the original input: the add-on's JS looks it up by both.
+			// after_input holds the add-on's "defined using the constant" note.
 			$html = sprintf(
-				'<span class="gform-settings-input__container"><input type="text" id="%1$s" name="_gform_setting_%1$s" value="%2$s" disabled="disabled" /></span><div class="gform-settings-description">%3$s</div>',
+				'<span class="gform-settings-input__container"><input type="text" id="%1$s" name="_gform_setting_%1$s" value="%2$s" disabled="disabled" /></span>%3$s<div class="gform-settings-description">%4$s</div>',
 				esc_attr( $name ),
 				esc_attr( self::SECRET_MASK ),
+				wp_kses_post( (string) rgar( $field, 'after_input' ) ),
 				esc_html__( 'Managed by 829 Studios.', 'wordpress-tools' )
 			);
 
+			// Field objects implement ArrayAccess, which also reaches their protected properties.
 			$renderer->replace_field(
 				$name,
 				[
 					'name'       => $name,
-					'label'      => rgobj( $field, 'label' ),
+					'label'      => rgar( $field, 'label' ),
+					'tooltip'    => rgar( $field, 'tooltip' ),
 					'type'       => 'html',
 					'html'       => $html,
-					'dependency' => rgobj( $field, 'dependency' ),
+					'dependency' => rgar( $field, 'dependency' ),
 				]
 			);
 		}
