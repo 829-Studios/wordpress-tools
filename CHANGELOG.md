@@ -10,9 +10,10 @@ project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 - Turn off the `/random/` redirect to a random post added in WordPress 7.2. Each visit runs an uncacheable `ORDER BY RAND()` query, and it can surface posts meant to stay out of search.
 - `list-redirect-groups` and `create-redirect-group` MCP abilities, and `create-redirect` now accepts a `group` name as well as `group_id`.
-- Gravity Forms reCAPTCHA: in v3 Enterprise settings, users without an @829llc.com email now only see the project and site key already saved on the site in the Project ID and Enterprise Site Key dropdowns, not every project and key on the connected Google account. Site-key lookups for other projects are blocked for them too.
-- Gravity Forms reCAPTCHA: in v3 Classic and v2 settings, users without an @829llc.com email now see the secret key as a masked, disabled field and can't change it.
-- **Restrict Gravity Forms reCAPTCHA Settings** setting (on by default) controls both Gravity Forms reCAPTCHA restrictions above. Turn it off for clients who manage their own reCAPTCHA keys.
+- Gravity Forms reCAPTCHA: in v3 Enterprise settings, users without an @829llc.com email now only see the project and site key already saved on the site in the Project ID and Enterprise Site Key dropdowns, not every project and key on the connected Google account. Site-key lookups for other projects are blocked for them too, and they can't change the saved project or site key.
+- Gravity Forms reCAPTCHA: in v3 Classic and v2 settings, users without an @829llc.com email now see the secret key as a masked, disabled field and can't change it. A site with no saved secret can still have one entered.
+- Gravity Forms reCAPTCHA: once reCAPTCHA is set up, users without an @829llc.com email can't disconnect it, change the connection type or connect another Google account.
+- **Restrict Gravity Forms reCAPTCHA Settings** setting (on by default) controls all of the Gravity Forms reCAPTCHA restrictions above. Turn it off for clients who manage their own reCAPTCHA keys.
 
 ### Fixed
 

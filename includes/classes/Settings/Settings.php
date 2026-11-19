@@ -817,7 +817,7 @@ class Settings {
 			<label for="wpt-restrict-gf-recaptcha-no">
 				<?php esc_html_e( 'No', 'wordpress-tools' ); ?>
 			</label>
-			<p class="description"><?php esc_html_e( 'Hides 829\'s reCAPTCHA projects and keys from non-829 users on the Gravity Forms reCAPTCHA settings page: v3 Enterprise only lists the saved project and site key, and the v3 Classic and v2 secret key is masked and locked. Turn this off for clients who manage their own reCAPTCHA keys.', 'wordpress-tools' ); ?></p>
+			<p class="description"><?php esc_html_e( 'Hides 829\'s reCAPTCHA projects and keys from non-829 users on the Gravity Forms reCAPTCHA settings page: v3 Enterprise only lists the saved project and site key, the v3 Classic and v2 secret key is masked and locked, and the setup can\'t be disconnected or replaced. Turn this off for clients who manage their own reCAPTCHA keys.', 'wordpress-tools' ); ?></p>
 		</fieldset>
 		<?php
 	}
