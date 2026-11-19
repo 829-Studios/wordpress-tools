@@ -89,7 +89,7 @@ class GravityFormsRecaptcha {
 		if ( wp_doing_ajax() ) {
 			$action = isset( $_POST['action'] ) ? sanitize_key( wp_unslash( $_POST['action'] ) ) : '';
 
-			if ( 'verify_secret_key' === $action ) {
+			if ( 'verify_secret_key' === $action && '' !== (string) rgar( $settings, 'secret_key_v3' ) ) {
 				$_POST['secret_key_v3'] = (string) rgar( $settings, 'secret_key_v3' );
 			}
 
@@ -100,8 +100,11 @@ class GravityFormsRecaptcha {
 			return;
 		}
 
+		// Only a saved secret is locked, so a site with none can still be set up.
 		foreach ( self::SECRET_KEY_FIELDS as $name ) {
-			$_POST[ '_gform_setting_' . $name ] = wp_slash( (string) rgar( $settings, $name ) );
+			if ( '' !== (string) rgar( $settings, $name ) ) {
+				$_POST[ '_gform_setting_' . $name ] = wp_slash( (string) rgar( $settings, $name ) );
+			}
 		}
 		// phpcs:enable
 	}
@@ -147,7 +150,8 @@ class GravityFormsRecaptcha {
 		foreach ( self::SECRET_KEY_FIELDS as $name ) {
 			$field = $renderer->get_field( $name );
 
-			if ( ! $field ) {
+			// No saved secret: leave the field editable so the site can be set up.
+			if ( ! $field || '' === (string) rgar( $settings, $name ) ) {
 				continue;
 			}
 
@@ -155,7 +159,7 @@ class GravityFormsRecaptcha {
 			$html = sprintf(
 				'<span class="gform-settings-input__container"><input type="text" id="%1$s" name="_gform_setting_%1$s" value="%2$s" disabled="disabled" /></span><div class="gform-settings-description">%3$s</div>',
 				esc_attr( $name ),
-				'' === (string) rgar( $settings, $name ) ? '' : esc_attr( self::SECRET_MASK ),
+				esc_attr( self::SECRET_MASK ),
 				esc_html__( 'Managed by 829 Studios.', 'wordpress-tools' )
 			);
 
