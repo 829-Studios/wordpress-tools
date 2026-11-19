@@ -16,13 +16,8 @@ if ( ! defined( 'ABSPATH' ) ) {
 }
 
 /**
- * Gravity Forms reCAPTCHA class
- *
- * The add-on's v3 Enterprise settings list every Google Cloud project and site key on
- * the connected (829) Google account, which exposes other clients' projects and keys
- * to client admins. The add-on has no filter for this, so the Google API responses are
- * filtered instead: non-829 users only see the project and site key saved on this site.
- * In Classic and v2 modes the secret key is masked and locked for them instead.
+ * Keeps non-829 users to this site's saved reCAPTCHA setup. The add-on lists every
+ * project and key on 829's Google account and has no filter, so its API responses are filtered.
  */
 class GravityFormsRecaptcha {
 
@@ -75,11 +70,8 @@ class GravityFormsRecaptcha {
 	}
 
 	/**
-	 * Overwrite any posted Classic/v2 secret key with the saved one for non-829 users.
-	 *
-	 * The add-on saves whatever secret is posted, both on settings save and from the
-	 * verify_secret_key AJAX call its settings page makes on every load, so the
-	 * masked or missing value from the disabled field must never reach it.
+	 * Overwrite any posted Classic/v2 secret with the saved one for non-829 users. The add-on
+	 * saves whatever is posted, including from the verify_secret_key call on every page load.
 	 */
 	public function lock_posted_secret_keys() {
 		// phpcs:disable WordPress.Security.NonceVerification.Missing -- Only replaces values; the add-on verifies its own nonces.
