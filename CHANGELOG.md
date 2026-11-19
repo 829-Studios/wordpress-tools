@@ -16,7 +16,7 @@ project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ### Fixed
 
-- Editors were given `manage_options` on sites running ACF, which opened the Settings screens, ACF field groups and other admin-only pages to them. Editors still get full access to custom post types, but no longer pick up core admin capabilities that a plugin uses to keep its own post types admin-only.
+- Editors picked up admin capabilities from plugins that lock their own post types to one: `manage_options` from ACF (Settings screens, field groups and other admin-only pages), `manage_woocommerce` from WooCommerce (all WooCommerce settings, including payment gateways) and `wpcode_edit_snippets` from WPCode (PHP snippets and the file editor). Editors still get full access to custom post types, but only through post-style capabilities such as `edit_events` — never a plugin's admin capability.
 - The `create-redirect` and `update-redirect` MCP abilities failed on every call because they wrote to columns the Redirection plugin doesn't have. They now save through Redirection itself, so new redirects get the match data Redirection needs to fire. 404/410 and other error codes are saved as error responses instead of being turned into 301s, and `hits` now shows the real hit count.
 
 ## [1.16.0] - 2026-11-16

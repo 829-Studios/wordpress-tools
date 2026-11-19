@@ -17,7 +17,7 @@ if ( ! defined( 'ABSPATH' ) ) {
  * Grants additional capabilities to the Editor role:
  * - All Yoast SEO settings and capabilities
  * - Full create/edit/delete access to all custom post types (except
- *   post types locked to core admin-only capabilities)
+ *   post types locked to an admin capability)
  */
 class RoleManagement {
 
@@ -97,6 +97,14 @@ class RoleManagement {
 	];
 
 	/**
+	 * Only post-style capabilities are copied from post types; anything else
+	 * (manage_woocommerce, wpcode_edit_snippets) is a plugin's own admin gate.
+	 *
+	 * @var string
+	 */
+	private const POST_CAP_PATTERN = '/^(create|edit|delete|publish|read)_/';
+
+	/**
 	 * Setup module.
 	 */
 	public function setup() {
@@ -129,7 +137,7 @@ class RoleManagement {
 	}
 
 	/**
-	 * Collect all capability strings across registered non-builtin post types.
+	 * Collect the post-style capabilities of registered non-builtin post types.
 	 *
 	 * @return string[]
 	 */
@@ -147,6 +155,8 @@ class RoleManagement {
 			}
 		}
 
-		return array_values( array_diff( array_unique( $caps ), self::ADMIN_ONLY_CAPS ) );
+		$caps = array_diff( array_unique( $caps ), self::ADMIN_ONLY_CAPS );
+
+		return array_values( preg_grep( self::POST_CAP_PATTERN, $caps ) );
 	}
 }
