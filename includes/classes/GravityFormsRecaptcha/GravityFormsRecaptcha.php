@@ -87,12 +87,16 @@ class GravityFormsRecaptcha {
 			return;
 		}
 
-		$settings = gf_recaptcha()->get_plugin_settings();
-
 		if ( wp_doing_ajax() ) {
 			$action = isset( $_POST['action'] ) ? sanitize_key( wp_unslash( $_POST['action'] ) ) : '';
 
-			if ( 'verify_secret_key' === $action && '' !== (string) rgar( $settings, 'secret_key_v3' ) ) {
+			if ( 'verify_secret_key' !== $action ) {
+				return;
+			}
+
+			$settings = gf_recaptcha()->get_plugin_settings();
+
+			if ( '' !== (string) rgar( $settings, 'secret_key_v3' ) ) {
 				$_POST['secret_key_v3'] = wp_slash( (string) rgar( $settings, 'secret_key_v3' ) );
 			}
 
@@ -102,6 +106,8 @@ class GravityFormsRecaptcha {
 		if ( ! $this->is_settings_page() ) {
 			return;
 		}
+
+		$settings = gf_recaptcha()->get_plugin_settings();
 
 		// Only a saved secret is locked, so a site with none can still be set up.
 		foreach ( self::SECRET_KEY_FIELDS as $name ) {
