@@ -51,6 +51,9 @@ class GravityFormsRecaptcha {
 		// Priority 9: before the add-on's handlers.
 		add_action( 'wp_ajax_get_enterprise_site_keys', [ $this, 'reject_other_project_keys' ], 9 );
 		add_action( 'wp_ajax_save_recaptcha_enterprise_data', [ $this, 'reject_other_project_save' ], 9 );
+		add_action( 'wp_ajax_disconnect_recaptcha', [ $this, 'reject_setup_change' ], 9 );
+		add_action( 'wp_ajax_update_reload_settings', [ $this, 'reject_setup_change' ], 9 );
+		add_action( 'wp_ajax_perform_enterprise_oauth', [ $this, 'reject_setup_change' ], 9 );
 
 		// Priority 0: before the verify_secret_key AJAX handler and the settings save read $_POST.
 		add_action( 'admin_init', [ $this, 'lock_posted_secret_keys' ], 0 );
@@ -314,6 +317,36 @@ class GravityFormsRecaptcha {
 		}
 
 		$this->send_restricted_error();
+	}
+
+	/**
+	 * Refuse disconnecting, switching the connection type or connecting another
+	 * Google account once reCAPTCHA is configured, so 829's setup can't be replaced.
+	 */
+	public function reject_setup_change() {
+		if ( ! $this->should_restrict() || ! $this->is_configured() ) {
+			return;
+		}
+
+		$this->send_restricted_error();
+	}
+
+	/**
+	 * Whether any reCAPTCHA credentials are saved, including Gravity Forms core's
+	 * v2 keys, which the add-on's disconnect also deletes.
+	 *
+	 * @return bool
+	 */
+	protected function is_configured() {
+		$settings = gf_recaptcha()->get_plugin_settings();
+
+		foreach ( [ 'access_token', 'secret_key_v3', 'secret_key_v2' ] as $name ) {
+			if ( '' !== (string) rgar( $settings, $name ) ) {
+				return true;
+			}
+		}
+
+		return '' !== $this->get_saved_project_number() || '' !== (string) get_option( 'rg_gforms_captcha_private_key' );
 	}
 
 	/**
