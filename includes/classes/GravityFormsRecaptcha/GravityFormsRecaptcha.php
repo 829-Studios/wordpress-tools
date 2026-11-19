@@ -93,7 +93,7 @@ class GravityFormsRecaptcha {
 			$action = isset( $_POST['action'] ) ? sanitize_key( wp_unslash( $_POST['action'] ) ) : '';
 
 			if ( 'verify_secret_key' === $action && '' !== (string) rgar( $settings, 'secret_key_v3' ) ) {
-				$_POST['secret_key_v3'] = (string) rgar( $settings, 'secret_key_v3' );
+				$_POST['secret_key_v3'] = wp_slash( (string) rgar( $settings, 'secret_key_v3' ) );
 			}
 
 			return;
