@@ -47,6 +47,7 @@ This plugin provides multiple layers of security protection:
   - Only users with @829llc.com email addresses can install, update, or delete plugins/themes
   - Works on all hosts including WP Engine (uses WordPress capabilities, not constants)
   - Restricts: install, activate, delete, update, edit, and upload for both plugins and themes
+- **Protect 829 Admin Roles**: Optional setting (on by default) that stops anyone who isn't an 829 administrator from changing the role of an 829 administrator, or removing them from a multisite site.
 - **Password Protection Control**: Disallow post passwords which inherently don't work with caching.
 - **REST API Restriction**: Configurable REST API access control with three levels:
   - Restrict all REST API access to authenticated users only
@@ -105,6 +106,7 @@ All settings are managed through the centralized **829 Settings** page:
 - **Require Strong Passwords**: Enforce strong password requirements for all users
 - **Enable Password Protected Content**: Allow password protected posts/pages
 - **Restrict Plugin/Theme Management**: Limit plugin and theme management to 829 administrators only
+- **Protect 829 Admin Roles**: Only 829 administrators can change the role of another 829 administrator
 - **REST API Availability**: Control access to WordPress REST API endpoints
 - **Require Login to View Site**: Require a WordPress login to view the site (staging/dev only)
 - **Limit Login Attempts**: Enable/disable login attempt limiting (enabled by default)

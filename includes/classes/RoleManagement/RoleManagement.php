@@ -8,6 +8,8 @@
 namespace WordPressTools\RoleManagement;
 
 use WordPressTools\Singleton;
+use WordPressTools\Settings\Settings;
+use function WordPressTools\Utils\is_829_admin;
 
 if ( ! defined( 'ABSPATH' ) ) {
 	exit;
@@ -17,6 +19,8 @@ if ( ! defined( 'ABSPATH' ) ) {
  * Grants additional capabilities to the Editor role:
  * - All Yoast SEO settings and capabilities
  * - Full create/edit/delete access to all custom post types
+ *
+ * Optionally stops non-829 admins from changing the role of an 829 admin.
  */
 class RoleManagement {
 
@@ -57,6 +61,37 @@ class RoleManagement {
 	 */
 	public function setup() {
 		add_filter( 'user_has_cap', [ $this, 'grant_editor_caps' ], 10, 4 );
+
+		// map_meta_cap also applies to super admins on multisite.
+		add_filter( 'map_meta_cap', [ $this, 'protect_829_admin_roles' ], 10, 4 );
+	}
+
+	/**
+	 * Block non-829 admins from changing the role of an 829 admin.
+	 *
+	 * @param string[] $caps    Required primitive capabilities.
+	 * @param string   $cap     Capability being checked.
+	 * @param int      $user_id User performing the action.
+	 * @param array    $args    Context: [0] => target user ID.
+	 * @return string[]
+	 */
+	public function protect_829_admin_roles( $caps, $cap, $user_id, $args ) {
+		// remove_user strips the user's role on a multisite site.
+		if ( ! in_array( $cap, [ 'promote_user', 'remove_user' ], true ) || empty( $args[0] ) ) {
+			return $caps;
+		}
+
+		$settings = Settings::get_settings();
+
+		if ( ! $settings['protect_829_admin_roles'] ) {
+			return $caps;
+		}
+
+		if ( ! is_829_admin( (int) $args[0] ) || is_829_admin( $user_id ) ) {
+			return $caps;
+		}
+
+		return [ 'do_not_allow' ];
 	}
 
 	/**
