@@ -66,6 +66,7 @@ class Settings {
 			'plugin_management_allow_list'    => [],
 			'restrict_theme_management'       => 1,
 			'theme_management_allow_list'     => [],
+			'protect_829_admin_roles'         => 1,
 			'restrict_rest_api'               => 'users',
 			'limit_login'                     => 1,
 			'enable_mcp'                      => 1,
@@ -226,6 +227,7 @@ class Settings {
 					'plugin_management_allow_list'    => [],
 					'restrict_theme_management'       => 1,
 					'theme_management_allow_list'     => [],
+					'protect_829_admin_roles'         => 1,
 					'restrict_rest_api'               => 'users',
 					'limit_login'                     => 1,
 					'enable_mcp'                      => 1,
@@ -313,6 +315,15 @@ class Settings {
 			'wpt_restrict_theme_management',
 			esc_html__( 'Restrict Theme Management', 'wordpress-tools' ),
 			[ $this, 'restrict_theme_management_setting_callback' ],
+			'wpt-829-settings',
+			'wpt_829_general_section'
+		);
+
+		// Protect 829 Admin Roles setting field
+		add_settings_field(
+			'wpt_protect_829_admin_roles',
+			esc_html__( 'Protect 829 Admin Roles', 'wordpress-tools' ),
+			[ $this, 'protect_829_admin_roles_setting_callback' ],
 			'wpt-829-settings',
 			'wpt_829_general_section'
 		);
@@ -661,6 +672,36 @@ class Settings {
 				<p class="description" style="margin: 0 0 8px;"><?php esc_html_e( 'These users can manage themes even when restriction is enabled.', 'wordpress-tools' ); ?></p>
 				<?php $this->render_user_search_field( 'theme_management_allow_list', $allow_list ); ?>
 			</div>
+		</fieldset>
+		<?php
+	}
+
+	/**
+	 * Protect 829 Admin Roles setting callback.
+	 */
+	public function protect_829_admin_roles_setting_callback() {
+		$settings = self::get_settings();
+		$this->render_protect_829_admin_roles_field( (int) $settings['protect_829_admin_roles'] );
+	}
+
+	/**
+	 * Shared fieldset for the Protect 829 Admin Roles setting.
+	 *
+	 * @param int $protect 1 if protection is enabled.
+	 */
+	private function render_protect_829_admin_roles_field( int $protect ): void {
+		?>
+		<fieldset>
+			<input id="wpt-protect-829-admin-roles-yes" name="wpt_settings[protect_829_admin_roles]" type="radio" value="1"<?php checked( 1, $protect ); ?> />
+			<label for="wpt-protect-829-admin-roles-yes">
+				<?php esc_html_e( 'Yes', 'wordpress-tools' ); ?>
+			</label><br>
+
+			<input id="wpt-protect-829-admin-roles-no" name="wpt_settings[protect_829_admin_roles]" type="radio" value="0"<?php checked( 0, $protect ); ?> />
+			<label for="wpt-protect-829-admin-roles-no">
+				<?php esc_html_e( 'No', 'wordpress-tools' ); ?>
+			</label>
+			<p class="description"><?php esc_html_e( 'Only allows administrators with @829llc.com emails to change the role of another administrator with an @829llc.com email.', 'wordpress-tools' ); ?></p>
 		</fieldset>
 		<?php
 	}
@@ -1189,6 +1230,9 @@ class Settings {
 			? $this->sanitize_user_id_list( $input['theme_management_allow_list'] )
 			: [];
 
+		// Sanitize protect_829_admin_roles
+		$sanitized['protect_829_admin_roles'] = isset( $input['protect_829_admin_roles'] ) ? intval( $input['protect_829_admin_roles'] ) : 1;
+
 		// Sanitize restrict_rest_api
 		if ( isset( $input['restrict_rest_api'] ) && in_array( $input['restrict_rest_api'], [ 'all', 'users', 'none' ], true ) ) {
 			$sanitized['restrict_rest_api'] = $input['restrict_rest_api'];
@@ -1557,6 +1601,14 @@ class Settings {
 							</th>
 							<td>
 								<?php $this->render_theme_management_restriction_field( $restrict_theme_management, $theme_management_allow_list ); ?>
+							</td>
+						</tr>
+						<tr>
+							<th scope="row">
+								<?php esc_html_e( 'Protect 829 Admin Roles', 'wordpress-tools' ); ?>
+							</th>
+							<td>
+								<?php $this->render_protect_829_admin_roles_field( (int) $settings['protect_829_admin_roles'] ); ?>
 							</td>
 						</tr>
 						<?php if ( WPT_IS_WPE || is_local_environment() ) : ?>
